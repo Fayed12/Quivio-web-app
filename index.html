@@ -2,12 +2,61 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    
+    <!-- Favicon & App Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon/quiz.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon/quiz.png" />
+    <link rel="shortcut icon" href="/favicon/quiz.png" type="image/x-icon" />
+    <link rel="apple-touch-icon" href="/favicon/quiz.png" />
+    
+    <!-- Responsiveness & Theme Color -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>15-quivio</title>
+    <meta name="theme-color" content="#1E40AF" />
+    
+    <!-- Primary Meta Tags (SEO) -->
+    <title> Quivio — QuizMaster Pro </title>
+    <meta name="title" content="Quivio — QuizMaster Pro" />
+    <meta name="description" content="Create, manage, and take quizzes with real-time analytics, automated certificate generation, gamification, and custom room management. Designed for instructors and students." />
+    <meta name="keywords" content="Quivio, online quiz creator, student assessment, edtech, SaaS assessment, exam maker, gamified learning, grading system, certificate generation, classroom management" />
+    <meta name="author" content="Quivio Team" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Quivio — QuizMaster Pro" />
+    <meta property="og:description" content="Create, manage, and take quizzes with real-time analytics, automated certificate generation, gamification, and custom room management. Designed for instructors and students." />
+    <meta property="og:image" content="/dark-logo.png" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="Quivio — QuizMaster Pro" />
+    <meta property="twitter:description" content="Create, manage, and take quizzes with real-time analytics, automated certificate generation, gamification, and custom room management. Designed for instructors and students." />
+    <meta property="twitter:image" content="/dark-logo.png" />
+    
+    <!-- Preconnect for Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Typography System: Inter (UI/Text) and JetBrains Mono (Code/Mono) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <!-- Accessibility fallback for users with JavaScript disabled -->
+    <noscript>
+      <div style="font-family: 'Inter', sans-serif; text-align: center; padding: 40px 20px; background-color: #EFF6FF; color: #1E3A8A; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <h1 style="font-size: 28px; margin-bottom: 16px;">JavaScript Required</h1>
+        <p style="font-size: 16px; max-width: 500px; line-height: 1.6; margin-bottom: 24px;">
+          Quivio — QuizMaster Pro requires JavaScript to function properly. Please enable JavaScript in your browser settings to access your dashboard, take quizzes, and manage classrooms.
+        </p>
+      </div>
+    </noscript>
+
+    <!-- Main React App Root -->
     <div id="root"></div>
+
+    <!-- Portal container for modals, popups, and overlay dialogs -->
+    <div id="popup-modal"></div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
