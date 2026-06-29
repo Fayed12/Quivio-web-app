@@ -1,0 +1,192 @@
+.container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--bg-app);
+    z-index: var(--z-modal);
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    height: var(--topbar-height);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-default);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-6);
+}
+
+.body {
+    display: flex;
+    flex: 1;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-default);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.main {
+    flex: 1;
+    padding: var(--space-8) var(--space-6);
+    overflow: hidden;
+}
+
+.headerArea {
+    margin-bottom: var(--space-8);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-6);
+}
+
+.cardCol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+/* Skeletons */
+.skeleton {
+    background: var(--bg-surface-3);
+    border-radius: var(--radius-md);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Shimmer background */
+.skeleton::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.4) 20%,
+        rgba(255, 255, 255, 0.6) 60%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+/* Dark mode adjustment for shimmer */
+:global(.dark) .skeleton::after,
+[data-theme="dark"] .skeleton::after {
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.05) 20%,
+        rgba(255, 255, 255, 0.1) 60%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Specific Sizes */
+.logoSkeleton {
+    width: 120px;
+    height: 24px;
+}
+
+.searchSkeleton {
+    width: 320px;
+    height: 36px;
+    border-radius: var(--radius-full);
+}
+
+.avatarSkeleton {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+}
+
+.navSkeleton {
+    width: 100%;
+    height: 32px;
+}
+
+.titleSkeleton {
+    width: 200px;
+    height: 32px;
+    margin-bottom: var(--space-2);
+}
+
+.subtitleSkeleton {
+    width: 360px;
+    height: 16px;
+}
+
+.cardSkeleton {
+    width: 100%;
+    height: 180px;
+    border-radius: var(--radius-lg);
+}
+
+.largeCardSkeleton {
+    width: 100%;
+    height: 384px;
+    border-radius: var(--radius-lg);
+}
+
+/* Spinner Overlay */
+.spinnerOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.03);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+:global(.dark) .spinnerOverlay,
+[data-theme="dark"] .spinnerOverlay {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.spinnerWrapper {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    padding: var(--space-4) var(--space-6);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+    .topbar {
+        justify-content: flex-end;
+    }
+    .searchSkeleton {
+        display: none;
+    }
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}

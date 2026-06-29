@@ -1,0 +1,178 @@
+/* ── Base button ──────────────────────────────────────────── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-family: var(--font-sans);
+    font-weight: var(--fw-semibold);
+    font-size: var(--text-sm);
+    letter-spacing: var(--tracking-normal);
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+        transform var(--transition-fast),
+        box-shadow var(--transition-base),
+        background-color var(--transition-base),
+        border-color var(--transition-base),
+        color var(--transition-base),
+        opacity var(--transition-base);
+    position: relative;
+    overflow: hidden;
+    padding: 0 var(--space-4);
+    height: 40px; /* 2.5rem */
+}
+
+.btn:active:not(:disabled) {
+    transform: scale(0.97);
+    box-shadow: none;
+}
+
+/* ── Size modifiers ───────────────────────────────────────── */
+.btn[data-size="sm"] {
+    padding: 0 var(--space-3);
+    height: 32px;
+    font-size: var(--text-xs);
+    border-radius: var(--radius-sm);
+}
+.btn[data-size="md"] {
+    padding: 0 var(--space-4);
+    height: 40px;
+    font-size: var(--text-sm);
+    border-radius: var(--radius-md);
+}
+.btn[data-size="lg"] {
+    padding: 0 var(--space-6);
+    height: 48px;
+    font-size: var(--text-base);
+    border-radius: var(--radius-lg);
+}
+.btn[data-size="xl"] {
+    padding: 0 var(--space-8);
+    height: 56px;
+    font-size: var(--text-md);
+    border-radius: var(--radius-lg);
+}
+
+/* ── Variant: primary ──────────────────── */
+.btn[data-variant="primary"],
+.btn:not([data-variant]),
+.btn[data-variant=""] {
+    background: var(--color-accent);
+    color: var(--text-on-accent);
+    border-color: var(--color-accent);
+    box-shadow: var(--shadow-sm);
+}
+.btn[data-variant="primary"]:hover:not(:disabled),
+.btn:not([data-variant]):hover:not(:disabled),
+.btn[data-variant=""]:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ── Variant: ghost ───────────────────────────────────────── */
+.btn[data-variant="ghost"] {
+    background: transparent;
+    color: var(--text-secondary);
+    border-color: transparent;
+}
+.btn[data-variant="ghost"]:hover:not(:disabled) {
+    background: var(--bg-surface-2);
+    color: var(--text-primary);
+    transform: translateY(-2px);
+}
+
+/* ── Variant: outline ─────────────────────────────────────── */
+.btn[data-variant="outline"] {
+    background: transparent;
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+}
+.btn[data-variant="outline"]:hover:not(:disabled) {
+    background: var(--color-accent-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ── Variant: danger ──────────────────────────────────────── */
+.btn[data-variant="danger"] {
+    background: var(--color-danger);
+    color: var(--text-on-accent);
+    border-color: var(--color-danger);
+    box-shadow: var(--shadow-sm);
+}
+.btn[data-variant="danger"]:hover:not(:disabled) {
+    background: var(--color-danger-hover);
+    border-color: var(--color-danger-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ── Variant: success ────────────────────────────────────── */
+.btn[data-variant="success"] {
+    background: var(--color-success);
+    color: var(--text-on-accent);
+    border-color: var(--color-success);
+    box-shadow: var(--shadow-sm);
+}
+.btn[data-variant="success"]:hover:not(:disabled) {
+    background: var(--color-success-hover);
+    border-color: var(--color-success-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ── Variant: glass ───────────────────────────────────────── */
+.btn[data-variant="glass"] {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-sm);
+}
+.btn[data-variant="glass"]:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+:global(.dark) .btn[data-variant="glass"],
+[data-theme="dark"] .btn[data-variant="glass"] {
+    background: rgba(15, 23, 42, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+:global(.dark) .btn[data-variant="glass"]:hover:not(:disabled),
+[data-theme="dark"] .btn[data-variant="glass"]:hover:not(:disabled) {
+    background: rgba(15, 23, 42, 0.45);
+}
+
+/* ── Disabled state ───────────────────────────────────────── */
+.btn:disabled,
+.btn[aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* ── Loading state ────────────────────────────────────────── */
+.btn[data-loading="true"] {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+/* ── Icon sizing inside button ────────────────────────────── */
+.btn svg,
+.btn .btnIcon {
+    font-size: 1.15em;
+    flex-shrink: 0;
+    transition: transform var(--transition-base);
+}

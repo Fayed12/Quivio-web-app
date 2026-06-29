@@ -1,0 +1,134 @@
+/* ── Wrapper ──────────────────────────────────────────────── */
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+/* ── Label ────────────────────────────────────────────────── */
+.label {
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-secondary);
+    transition: color var(--transition-fast);
+}
+
+/* ── Input field ──────────────────────────────────────────── */
+.input {
+    width: 100%;
+    height: 40px; /* Standard input height */
+    padding: 0 var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    font-weight: var(--fw-regular);
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    outline: none;
+    transition:
+        border-color var(--transition-fast),
+        background-color var(--transition-fast),
+        box-shadow var(--transition-base),
+        color var(--transition-fast);
+    caret-color: var(--color-accent);
+}
+
+.input::placeholder {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+}
+
+/* Hover */
+.input:hover {
+    border-color: var(--border-strong);
+    background: var(--bg-surface-2);
+}
+
+/* Focus */
+.input:focus {
+    border-color: var(--color-accent);
+    background: var(--bg-surface);
+    box-shadow: 0 0 0 2px var(--color-accent-mid);
+}
+
+/* Focus updates label */
+.wrapper:has(.input:focus) .label {
+    color: var(--color-accent);
+}
+
+/* ── Size variants ────────────────────────────────────────── */
+.input[data-size="sm"] {
+    height: 32px;
+    font-size: var(--text-sm);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-sm);
+}
+.input[data-size="lg"] {
+    height: 48px;
+    font-size: var(--text-lg);
+    padding: 0 var(--space-5);
+    border-radius: var(--radius-lg);
+}
+
+/* ── Error state ──────────────────────────────────────────── */
+.input[data-error="true"] {
+    border-color: var(--color-danger);
+    background: var(--bg-danger);
+}
+.input[data-error="true"]:focus {
+    box-shadow: 0 0 0 2px var(--bg-danger-mid);
+}
+.errorMsg {
+    font-size: var(--text-xs);
+    color: var(--color-danger);
+    font-family: var(--font-sans);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-top: var(--space-1);
+}
+
+/* ── Success state ────────────────────────────────────────── */
+.input[data-success="true"] {
+    border-color: var(--color-success);
+    background: var(--bg-success);
+}
+.input[data-success="true"]:focus {
+    box-shadow: 0 0 0 2px var(--bg-success-mid);
+}
+
+/* ── Disabled ─────────────────────────────────────────────── */
+.input:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: var(--bg-surface-2);
+    color: var(--text-muted);
+}
+
+/* ── Input with icon wrap ─────────────────────────────────── */
+.inputWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+.inputIcon {
+    position: absolute;
+    left: var(--space-3);
+    color: var(--text-muted);
+    font-size: var(--text-lg);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-fast);
+}
+.inputWrap:has(.input:focus) .inputIcon {
+    color: var(--color-accent);
+}
+.inputWrap .input {
+    padding-left: calc(var(--space-3) + 1.25rem + var(--space-2));
+}
