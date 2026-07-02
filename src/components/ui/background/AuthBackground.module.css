@@ -1,0 +1,97 @@
+.backgroundContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+    background-color: var(--bg-app);
+    pointer-events: none;
+}
+
+.circle {
+    position: absolute;
+    border-radius: var(--radius-full);
+    filter: blur(80px);
+    will-change: transform;
+}
+
+.circle1 {
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, rgba(30, 58, 138, 0.05) 100%);
+    top: 10%;
+    left: 15%;
+}
+
+.circle2 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, rgba(109, 40, 217, 0.05) 100%);
+    bottom: 10%;
+    right: 15%;
+}
+
+.circle3 {
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(20, 184, 166, 0.2) 0%, rgba(13, 148, 136, 0.05) 100%);
+    top: 60%;
+    left: 10%;
+}
+
+.circle4 {
+    width: 360px;
+    height: 360px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+    top: 30%;
+    right: 25%;
+}
+
+.glassOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(4px);
+    background: radial-gradient(circle at center, transparent 0%, rgba(15, 23, 42, 0.02) 100%);
+    z-index: 1;
+}
+
+/* Support dark mode variables */
+:global(.dark) .circle1 {
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.18) 0%, rgba(0, 0, 0, 0) 100%);
+}
+:global(.dark) .circle2 {
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(0, 0, 0, 0) 100%);
+}
+:global(.dark) .circle3 {
+    background: radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, rgba(0, 0, 0, 0) 100%);
+}
+:global(.dark) .circle4 {
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%);
+}
+
+@media (max-width: 768px) {
+    .circle {
+        filter: blur(60px);
+    }
+    .circle1 {
+        width: 200px;
+        height: 200px;
+    }
+    .circle2 {
+        width: 250px;
+        height: 250px;
+    }
+    .circle3 {
+        width: 180px;
+        height: 180px;
+    }
+    .circle4 {
+        width: 220px;
+        height: 220px;
+    }
+}

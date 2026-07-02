@@ -71,6 +71,32 @@
     gap: var(--space-4);
 }
 
+.themeToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface-2);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    font-size: 1.125rem;
+}
+
+.themeToggle:hover {
+    background: var(--bg-surface-3);
+    color: var(--color-accent);
+    border-color: var(--border-accent);
+    transform: scale(1.05);
+}
+
+.themeToggle:active {
+    transform: scale(0.95);
+}
+
 /* ── Hero Section ─────────────────────────────────────────── */
 .heroSection {
     max-width: var(--content-max-width);

@@ -1,9 +1,13 @@
 // local
 import MainButton from "../../components/ui/button/MainButton";
 import styles from "./landingPage.module.css";
+import { toggleTheme } from "../../redux/slices/themeSLice";
 
 // react
 import { useEffect, useRef, useState } from "react";
+
+// react-redux
+import { useDispatch } from "react-redux";
 
 // react-router
 import { useNavigate } from "react-router";
@@ -26,7 +30,9 @@ import {
     FiLinkedin,
     FiArrowRight,
     FiCheck,
-    FiUser
+    FiUser,
+    FiSun,
+    FiMoon
 } from "react-icons/fi";
 import { FaXTwitter } from "react-icons/fa6";
 import { FaFireFlameCurved } from "react-icons/fa6";
@@ -38,6 +44,7 @@ if (typeof window !== "undefined") {
 
 const LandingPage = () => {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const mainRef = useRef(null);
     const heroRef = useRef(null);
 
@@ -225,6 +232,13 @@ const LandingPage = () => {
                 </nav>
 
                 <div className={styles.navActions}>
+                    <button
+                        className={styles.themeToggle}
+                        onClick={() => dispatch(toggleTheme())}
+                        aria-label="Toggle Theme"
+                    >
+                        {isDark ? <FiSun /> : <FiMoon />}
+                    </button>
                     <MainButton variant="ghost" onClick={handleNavLogin} size="sm">
                         Sign In
                     </MainButton>
@@ -586,8 +600,8 @@ const LandingPage = () => {
                     <div className={styles.footerLinksGroup}>
                         <h4>Legal</h4>
                         <nav aria-label="Legal links">
-                            <a href="/login">Terms of Service</a>
-                            <a href="/login">Privacy Policy</a>
+                            <a href="/terms">Terms of Service</a>
+                            <a href="/privacy">Privacy Policy</a>
                             <a href="/login">Data Standards</a>
                         </nav>
                     </div>
