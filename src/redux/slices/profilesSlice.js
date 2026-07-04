@@ -13,7 +13,6 @@ export const fetchMyProfile = createAsyncThunk(
     },
 );
 
-
 // get profile by id thunk
 export const fetchProfileById = createAsyncThunk(
     "profiles/fetchById",
@@ -22,7 +21,6 @@ export const fetchProfileById = createAsyncThunk(
         return error ? rejectWithValue(error) : data;
     },
 );
-
 
 // update profile thunk
 export const updateProfileThunk = createAsyncThunk(
@@ -33,7 +31,6 @@ export const updateProfileThunk = createAsyncThunk(
     },
 );
 
-
 // update avatar thunk
 export const updateAvatarThunk = createAsyncThunk(
     "profiles/avatar",
@@ -43,6 +40,14 @@ export const updateAvatarThunk = createAsyncThunk(
     },
 );
 
+// delete avatar thunk
+export const deleteAvatarThunk = createAsyncThunk(
+    "profiles/avatarDelete",
+    async (_, { rejectWithValue }) => {
+        const { data, error } = await svc.deleteAvatar();
+        return error ? rejectWithValue(error) : data;
+    },
+);
 
 // deactivate student thunk
 export const deactivateStudentThunk = createAsyncThunk(
@@ -53,7 +58,6 @@ export const deactivateStudentThunk = createAsyncThunk(
     },
 );
 
-
 // reactivate student thunk
 export const reactivateStudentThunk = createAsyncThunk(
     "profiles/reactivate",
@@ -62,7 +66,6 @@ export const reactivateStudentThunk = createAsyncThunk(
         return error ? rejectWithValue(error) : data;
     },
 );
-
 
 // ── Slice ─────────────────────────────────────────────────────────────────────
 const slice = createSlice({
@@ -110,6 +113,13 @@ const slice = createSlice({
                 s.myProfile = payload;
             })
             .addCase(updateAvatarThunk.rejected, rejected)
+
+            .addCase(deleteAvatarThunk.pending, pending)
+            .addCase(deleteAvatarThunk.fulfilled, (s, { payload }) => {
+                s.loading = false;
+                s.myProfile = payload;
+            })
+            .addCase(deleteAvatarThunk.rejected, rejected)
 
             .addCase(deactivateStudentThunk.fulfilled, (s, { payload }) => {
                 if (s.viewed[payload.uid])

@@ -64,10 +64,10 @@ function App() {
 
     const navigate = useNavigate();
 
-    // Welcome overlay state (sessionStorage-aware, slides up to hide)
+    // Welcome overlay state (localStorage-aware, slides up to hide)
     const [showWelcome, setShowWelcome] = useState(() => {
         if (typeof window !== "undefined") {
-            return !sessionStorage.getItem("welcomeShown");
+            return !localStorage.getItem("welcomeShown");
         }
         return true;
     });
@@ -166,7 +166,7 @@ function App() {
                 <WelcomePage
                     onComplete={() => {
                         setShowWelcome(false);
-                        sessionStorage.setItem("welcomeShown", "true");
+                        localStorage.setItem("welcomeShown", "true");
                     }}
                 />
             )}

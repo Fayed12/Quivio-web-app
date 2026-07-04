@@ -66,9 +66,22 @@ export async function updateMyProfile(updates) {
 // Request : file: File object
 // Response: updated profiles row with new avatar_url
 // ─────────────────────────────────────────────
+
+// Define constants for validation
+const AVATAR_MAX_BYTES = 5 * 1024 * 1024; // 5MB — matches bucket file_size_limit
+const AVATAR_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']; // matches bucket allowed_mime_types
+
 export async function updateAvatar(file) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { data: null, error: 'Not authenticated' };
+
+  // Client-side file validation
+  if (!AVATAR_ALLOWED_TYPES.includes(file.type)) {
+    return { data: null, error: 'Avatar must be a JPEG, PNG, or WEBP image.' };
+  }
+  if (file.size > AVATAR_MAX_BYTES) {
+    return { data: null, error: 'Avatar must be smaller than 5MB.' };
+  }
 
   const ext  = file.name.split('.').pop();
   const path = `${user.id}/avatar.${ext}`;
@@ -87,6 +100,29 @@ export async function updateAvatar(file) {
     supabase
       .from('profiles')
       .update({ avatar_url: publicUrl })
+      .eq('uid', user.id)
+      .select()
+      .single()
+  );
+}
+
+// ─────────────────────────────────────────────
+// DELETE: remove own avatar (storage object + reset avatar_url)
+// Request : none
+// Response: updated profiles row with avatar_url = null
+// ─────────────────────────────────────────────
+export async function deleteAvatar() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: 'Not authenticated' };
+
+  // Remove all possible extensions for this user's avatar (jpg/jpeg/png/webp)
+  const paths = ['jpg', 'jpeg', 'png', 'webp'].map(ext => `${user.id}/avatar.${ext}`);
+  await supabase.storage.from('avatars').remove(paths);
+
+  return handleQuery(
+    supabase
+      .from('profiles')
+      .update({ avatar_url: null })
       .eq('uid', user.id)
       .select()
       .single()
