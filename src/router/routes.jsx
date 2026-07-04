@@ -33,6 +33,21 @@ const ProtectedInstructorLayout = lazy(() => import("../layouts/ProtectedInstruc
 const StudentDashboard = lazy(() => import("../pages/student/dashboard/Dashboard"));
 const InstructorDashboard = lazy(() => import("../pages/instructor/dashboard/Dashboard"));
 
+// Lazy-loaded instructor pages
+const MyQuizzes = lazy(() => import("../pages/instructor/quizzes/MyQuizzes"));
+const CreateEditQuiz = lazy(() => import("../pages/instructor/quizzes/CreateEditQuiz"));
+const QuestionBank = lazy(() => import("../pages/instructor/questions/QuestionBank"));
+const Rooms = lazy(() => import("../pages/instructor/rooms/Rooms"));
+const RoomDetail = lazy(() => import("../pages/instructor/rooms/RoomDetail"));
+const StudentsManagement = lazy(() => import("../pages/instructor/students/StudentsManagement"));
+const Analytics = lazy(() => import("../pages/instructor/analytics/Analytics"));
+const Assignments = lazy(() => import("../pages/instructor/assignments/Assignments"));
+const AssignmentDetail = lazy(() => import("../pages/instructor/assignments/AssignmentDetail"));
+const Categories = lazy(() => import("../pages/instructor/categories/Categories"));
+const Certificates = lazy(() => import("../pages/instructor/certificates/Certificates"));
+const Notifications = lazy(() => import("../pages/instructor/notifications/Notifications"));
+const Profile = lazy(() => import("../pages/instructor/profile/Profile"));
+
 // Redirect authenticated users away from public auth pages
 const RedirectIfAuth = ({ children }) => {
     const isAuth = useSelector(selectIsAuthenticated);
@@ -172,6 +187,118 @@ const router = createBrowserRouter([
                         element: (
                             <SuspenseComponent>
                                 <InstructorDashboard />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "quizzes",
+                        element: (
+                            <SuspenseComponent>
+                                <MyQuizzes />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "quizzes/create",
+                        element: (
+                            <SuspenseComponent>
+                                <CreateEditQuiz />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "quizzes/:id/edit",
+                        element: (
+                            <SuspenseComponent>
+                                <CreateEditQuiz />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "questions",
+                        element: (
+                            <SuspenseComponent>
+                                <QuestionBank />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "rooms",
+                        element: (
+                            <SuspenseComponent>
+                                <Rooms />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "rooms/:id",
+                        element: (
+                            <SuspenseComponent>
+                                <RoomDetail />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "students",
+                        element: (
+                            <SuspenseComponent>
+                                <StudentsManagement />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "analytics",
+                        element: (
+                            <SuspenseComponent>
+                                <Analytics />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "assignments",
+                        element: (
+                            <SuspenseComponent>
+                                <Assignments />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "assignments/:id",
+                        element: (
+                            <SuspenseComponent>
+                                <AssignmentDetail />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "categories",
+                        element: (
+                            <SuspenseComponent>
+                                <Categories />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "certificates",
+                        element: (
+                            <SuspenseComponent>
+                                <Certificates />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "notifications",
+                        element: (
+                            <SuspenseComponent>
+                                <Notifications />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "profile",
+                        element: (
+                            <SuspenseComponent>
+                                <Profile />
                             </SuspenseComponent>
                         ),
                     },

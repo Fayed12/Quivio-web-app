@@ -1,0 +1,321 @@
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    font-size: var(--text-md);
+    color: var(--text-secondary);
+}
+
+.splitGrid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: var(--space-6);
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .splitGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.leftPanel {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6) var(--space-5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: background-color var(--transition-slow);
+}
+
+.avatarWrapper {
+    width: 100px;
+    height: 100px;
+    border-radius: var(--radius-full);
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.avatarOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(15, 23, 42, 0.4);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+.avatarOverlay span {
+    font-size: 10px;
+    font-weight: var(--fw-semibold);
+}
+
+.avatarWrapper:hover .avatarOverlay {
+    opacity: 1;
+}
+
+.fileInput {
+    display: none;
+}
+
+.profileName {
+    font-size: var(--text-md);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+    margin-top: var(--space-4);
+}
+
+.profileEmail {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-3);
+}
+
+.profileBio {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-normal);
+    max-width: 90%;
+    margin-bottom: var(--space-4);
+}
+
+.divider {
+    height: 1px;
+    width: 100%;
+    background-color: var(--border-default);
+    margin-bottom: var(--space-4);
+}
+
+.statsRow {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+}
+
+.statBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.statBox strong {
+    font-size: var(--text-md);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.statBox span {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* Right card / form card */
+.formCard {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    min-height: 400px;
+    transition: background-color var(--transition-slow);
+}
+
+.tabsRow {
+    display: flex;
+    gap: var(--space-4);
+    border-bottom: 2px solid var(--border-default);
+    padding-bottom: 1px;
+}
+
+.tabBtn {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: color var(--transition-base), border-color var(--transition-base);
+}
+
+.tabBtn:hover {
+    color: var(--text-primary);
+}
+
+.tabBtnActive {
+    color: var(--color-accent) !important;
+    border-color: var(--color-accent) !important;
+}
+
+.formBody {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.label {
+    font-size: var(--text-xs);
+    font-weight: var(--fw-semibold);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.req {
+    color: var(--color-danger);
+}
+
+.input, .textarea {
+    width: 100%;
+    background-color: var(--bg-surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0 var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--transition-base);
+}
+
+.input { height: 40px; }
+.textarea { padding: var(--space-3) 0.75rem; resize: vertical; }
+
+.input:focus, .textarea:focus {
+    border-color: var(--color-accent);
+}
+
+.formFooter {
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border-default);
+    padding-top: var(--space-4);
+    margin-top: var(--space-4);
+}
+
+/* Password update overlay button */
+.showPassBtn {
+    position: absolute;
+    right: var(--space-3);
+    bottom: 10px;
+    font-size: 16px;
+    color: var(--text-muted);
+}
+
+.showPassBtn:hover {
+    color: var(--text-primary);
+}
+
+/* Strength Meter */
+.strengthWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
+}
+
+.strengthBarRow {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+    height: 4px;
+}
+
+.strengthSegment {
+    flex: 1;
+    border-radius: var(--radius-full);
+}
+
+.strengthText {
+    font-size: var(--text-xs);
+    font-weight: var(--fw-semibold);
+}
+
+/* Preference Toggles */
+.toggleRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    background-color: var(--bg-surface-2);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
+    margin-bottom: var(--space-3);
+}
+
+.toggleLabel {
+    font-size: var(--text-sm);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.toggleDesc {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.toggleSwitch {
+    width: 40px;
+    height: 22px;
+    appearance: none;
+    background-color: var(--border-medium);
+    border-radius: var(--radius-full);
+    position: relative;
+    cursor: pointer;
+    outline: none;
+    transition: background-color var(--transition-base);
+}
+
+.toggleSwitch:checked {
+    background-color: var(--color-accent);
+}
+
+.toggleSwitch::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background-color: white;
+    border-radius: var(--radius-full);
+    top: 2px;
+    left: 2px;
+    transition: transform var(--transition-base);
+}
+
+.toggleSwitch:checked::before {
+    transform: translateX(18px);
+}

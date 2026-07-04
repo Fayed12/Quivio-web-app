@@ -1,0 +1,305 @@
+.container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.headerActions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.filterBar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+    background-color: var(--bg-surface);
+    padding: var(--space-4);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-default);
+    transition: background-color var(--transition-slow);
+}
+
+.searchWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 320px;
+}
+
+.searchIcon {
+    position: absolute;
+    left: var(--space-3);
+    color: var(--text-muted);
+}
+
+.clearIcon {
+    position: absolute;
+    right: var(--space-3);
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.searchInput {
+    width: 100%;
+    height: 40px;
+    background-color: var(--bg-surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0 var(--space-8) 0 var(--space-9);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--transition-base);
+}
+
+.searchInput:focus {
+    border-color: var(--color-accent);
+}
+
+/* Table styling */
+.tableContainer {
+    background-color: var(--bg-surface) !important;
+    border: 1px solid var(--border-default) !important;
+    border-radius: var(--radius-xl) !important;
+    box-shadow: var(--shadow-sm) !important;
+    overflow: hidden;
+}
+
+.tableHead {
+    background-color: var(--bg-surface-2) !important;
+}
+
+.thCell {
+    color: var(--text-secondary) !important;
+    font-weight: var(--fw-semibold) !important;
+    font-size: var(--text-xs) !important;
+    text-transform: uppercase !important;
+    border-bottom: 1px solid var(--border-default) !important;
+    padding: var(--space-3) var(--space-4) !important;
+}
+
+.tableRow:hover {
+    background-color: var(--bg-surface-2) !important;
+}
+
+.tdCell {
+    color: var(--text-primary) !important;
+    font-size: var(--text-sm) !important;
+    border-bottom: 1px solid var(--border-default) !important;
+    padding: var(--space-3) var(--space-4) !important;
+}
+
+.completionCount {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    font-weight: var(--fw-medium);
+}
+
+.statusBadge {
+    font-size: var(--text-xs);
+    font-weight: var(--fw-semibold);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+}
+
+.badgeActive {
+    background-color: var(--bg-success);
+    color: var(--text-success);
+}
+
+.badgeOverdue {
+    background-color: var(--bg-danger);
+    color: var(--text-danger);
+}
+
+.actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-1);
+}
+
+.actionBtn {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+.actionBtn:hover {
+    background-color: var(--bg-surface-3);
+    color: var(--text-primary);
+}
+
+.actionBtn.danger:hover {
+    color: var(--color-danger);
+    background-color: var(--bg-danger);
+}
+
+.emptyCell {
+    color: var(--text-muted) !important;
+    font-size: var(--text-sm) !important;
+    padding: var(--space-16) 0 !important;
+}
+
+/* Modals overlays & sizes */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bg-overlay);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    padding: var(--space-4);
+}
+
+.modal {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 440px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    animation: scaleUp 0.3s ease;
+}
+
+@keyframes scaleUp {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.modalHeader h3 {
+    font-size: var(--text-md);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.closeBtn {
+    font-size: 18px;
+    color: var(--text-muted);
+}
+
+.modalBody {
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.label {
+    font-size: var(--text-xs);
+    font-weight: var(--fw-semibold);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.req {
+    color: var(--color-danger);
+}
+
+.input, .select, .textarea {
+    width: 100%;
+    background-color: var(--bg-surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0 var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--transition-base);
+}
+
+.input { height: 40px; }
+.select { height: 40px; cursor: pointer; }
+.textarea { padding: var(--space-3) 0.75rem; resize: vertical; }
+
+.input:focus, .select:focus, .textarea:focus {
+    border-color: var(--color-accent);
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--border-default);
+    background-color: var(--bg-surface-2);
+}
+
+/* Action Confirm modal styles */
+.confirmModal {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
+    width: 100%;
+    max-width: 400px;
+    padding: var(--space-6);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    animation: scaleUp 0.3s ease;
+}
+
+.deleteIconCircle {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+    background-color: var(--bg-danger);
+    color: var(--color-danger);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+.modalWarningText {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-normal);
+}
+
+.modalButtons {
+    display: flex;
+    gap: var(--space-3);
+    width: 100%;
+}
+
+.modalButtons > button {
+    flex: 1;
+}

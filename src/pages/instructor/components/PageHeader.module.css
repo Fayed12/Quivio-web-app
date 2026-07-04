@@ -1,0 +1,113 @@
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-8);
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: var(--space-6);
+}
+
+.breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.breadcrumbLink {
+    cursor: pointer;
+    transition: color var(--transition-base);
+}
+
+.breadcrumbLink:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
+}
+
+.breadcrumbItem {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.separator {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.breadcrumbText {
+    color: var(--text-muted);
+}
+
+.breadcrumbCurrent {
+    color: var(--text-secondary);
+    font-weight: var(--fw-semibold);
+}
+
+.mainRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.titleArea {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex: 1;
+    min-width: 240px;
+}
+
+.backBtn {
+    font-size: 20px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-default);
+    background-color: var(--bg-surface);
+    transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+.backBtn:hover {
+    background-color: var(--bg-surface-2);
+    color: var(--text-primary);
+}
+
+.title {
+    font-size: var(--text-2xl);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+    line-height: var(--leading-tight);
+}
+
+.subtitle {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+    .mainRow {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
