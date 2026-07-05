@@ -1,8 +1,8 @@
 // local components
 import PageHeader from "../components/PageHeader";
 import MainButton from "../../../components/ui/button/MainButton";
-import MainInput from "../../../components/ui/input/MainInput";
 import styles from "./CreateEditQuiz.module.css";
+import ModalPortal from "../components/ModalPortal";
 
 // react
 import { useState, useEffect, useRef } from "react";
@@ -11,24 +11,14 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router";
 
 // redux
-import { useDispatch, useSelector } from "react-redux";
-import { 
-    createQuizThunk, 
-    updateQuizThunk, 
-    fetchQuizById, 
-    selectCurrentQuiz, 
+import { useDispatch } from "react-redux";
+import {
+    createQuizThunk,
+    updateQuizThunk,
     publishQuizThunk,
     unpublishQuizThunk
 } from "../../../redux/slices/quizzesSlice";
-import { fetchCategories, selectCategories } from "../../../redux/slices/categoriesSlice";
-import { 
-    fetchMyQuestions, 
-    selectMyQuestions, 
-    createQuestionThunk, 
-    addToQuizThunk, 
-    removeFromQuizThunk,
-    reorderQuestionsThunk
-} from "../../../redux/slices/questionsSlice";
+import { removeFromQuizThunk } from "../../../redux/slices/questionsSlice";
 
 // react-icons
 import { 
@@ -55,16 +45,16 @@ import { toast } from "react-toastify";
 // supabase Client
 import { supabase } from "../../../services/config/supabaseClient";
 
+import { useCreateEditQuizData } from "../../../hooks/instructor/useCreateEditQuizData";
+
 const CreateEditQuiz = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { id } = useParams();
     const { state } = useLocation();
 
-    // Redux selectors
-    const currentQuiz = useSelector(selectCurrentQuiz);
-    const categories = useSelector(selectCategories);
-    const bankQuestions = useSelector(selectMyQuestions);
+    // Custom hook loaders
+    const { categories, bankQuestions, currentQuiz } = useCreateEditQuizData(id);
 
     // Wizard active step: 1, 2, 3
     const [activeStep, setActiveStep] = useState(state?.step || 1);
@@ -129,14 +119,10 @@ const CreateEditQuiz = () => {
 
     // 1. Initial Load & Fetch details if edit mode
     useEffect(() => {
-        dispatch(fetchCategories());
-        dispatch(fetchMyQuestions());
-
         if (id) {
-            dispatch(fetchQuizById(id));
             loadQuizQuestions(id);
         }
-    }, [id, dispatch]);
+    }, [id]);
 
     // Load Quiz Questions
     const loadQuizQuestions = async (quizId) => {
@@ -1278,6 +1264,7 @@ const CreateEditQuiz = () => {
 
             {/* QUESTION BANK IMPORT MODAL */}
             {isBankModalOpen && (
+                <ModalPortal onClose={() => setIsBankModalOpen(false)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setIsBankModalOpen(false)} // Close on outside click
@@ -1368,10 +1355,12 @@ const CreateEditQuiz = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {/* EDIT PUBLISHED WARNING MODAL */}
             {isEditWarningOpen && (
+                <ModalPortal onClose={() => navigate("/instructor/quizzes")}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => navigate("/instructor/quizzes")} // Redirect back if they click backdrop
@@ -1397,6 +1386,7 @@ const CreateEditQuiz = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );

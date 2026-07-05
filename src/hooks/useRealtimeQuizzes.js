@@ -27,8 +27,9 @@ export function useRealtimeQuizzes() {
     const filter  = isInstructor ? `instructor_uid=eq.${user.id}` : 'status=eq.published';
     const refresh  = () => dispatch(isInstructor ? fetchMyQuizzes() : fetchPublishedQuizzes());
 
+    const uniqueId = Math.random().toString(36).substring(2, 9);
     const channel = supabase
-      .channel(`quizzes:${user.id}`)
+      .channel(`quizzes:${user.id}:${uniqueId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'quizzes', filter }, refresh)
       .subscribe();
     return () => supabase.removeChannel(channel);

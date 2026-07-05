@@ -12,6 +12,7 @@ import { selectIsAuthenticated, selectRole, selectIsInitializing } from "../redu
 import Sidebar from "../pages/instructor/components/Sidebar";
 import Topbar from "../pages/instructor/components/Topbar";
 import MovingBackground from "../pages/instructor/components/MovingBackground";
+import styles from "./ProtectedInstructorLayout.module.css";
 
 const ProtectedInstructorLayout = () => {
     const isAuth = useSelector(selectIsAuthenticated);
@@ -74,7 +75,7 @@ const ProtectedInstructorLayout = () => {
         : (isCollapsed ? "var(--sidebar-collapsed)" : "var(--sidebar-width)");
 
     return (
-        <div className="app-shell" style={{ position: "relative", minHeight: "100vh" }}>
+        <div className={styles.appShell}>
             {/* Organic moving background circles */}
             <MovingBackground />
 
@@ -87,15 +88,11 @@ const ProtectedInstructorLayout = () => {
 
             {/* Main view content */}
             <div 
-                className="main-content" 
+                className={styles.mainContent} 
                 style={{ 
                     marginLeft: currentMarginLeft,
-                    transition: "margin-left var(--transition-slower)",
-                    display: "flex",
-                    flexDirection: "column",
-                    minHeight: "100vh",
-                    position: "relative",
-                    zIndex: 1
+                    width: `calc(100% - ${currentMarginLeft})`,
+                    transition: "margin-left var(--transition-slower), width var(--transition-slower)"
                 }}
             >
                 {/* Topbar */}
@@ -105,8 +102,10 @@ const ProtectedInstructorLayout = () => {
                 />
 
                 {/* Inner views outlet */}
-                <main className="content-wrapper" style={{ flex: 1, position: "relative" }}>
-                    <Outlet />
+                <main className={styles.contentWrapper}>
+                    <div className={styles.innerContainer}>
+                        <Outlet />
+                    </div>
                 </main>
             </div>
         </div>

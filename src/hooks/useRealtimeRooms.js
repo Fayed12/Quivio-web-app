@@ -24,9 +24,10 @@ export function useRealtimeRooms(roomId = null) {
   useEffect(() => {
     if (!user?.id) return;
     const channels = [];
+    const uniqueId = Math.random().toString(36).substring(2, 9);
 
     const roomsCh = supabase
-      .channel(`rooms:${user.id}`)
+      .channel(`rooms:${user.id}:${uniqueId}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'rooms',
         filter: `instructor_uid=eq.${user.id}`,
@@ -36,7 +37,7 @@ export function useRealtimeRooms(roomId = null) {
 
     if (roomId) {
       const membersCh = supabase
-        .channel(`room_members:${roomId}`)
+        .channel(`room_members:${roomId}:${uniqueId}`)
         .on('postgres_changes', {
           event: '*', schema: 'public', table: 'room_members',
           filter: `room_id=eq.${roomId}`,

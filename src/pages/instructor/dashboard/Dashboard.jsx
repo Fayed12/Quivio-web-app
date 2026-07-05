@@ -5,21 +5,17 @@ import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./Dashboard.module.css";
 
 // react
-import { useEffect, useState, useRef } from "react";
+import { useRef } from "react";
 
 // react-router
 import { useNavigate } from "react-router";
 
 // redux
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { selectProfile } from "../../../redux/slices/authSlice";
-import { fetchMyQuizzes, selectMyQuizzes } from "../../../redux/slices/quizzesSlice";
-import { fetchMyStudents, selectMyStudents } from "../../../redux/slices/instructorStudentsSlice";
-import { fetchMyRooms, selectMyRooms } from "../../../redux/slices/roomsSlice";
-import { selectUnreadCount } from "../../../redux/slices/notificationsSlice";
 
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
 
 // react-icons
 import { 
@@ -31,7 +27,6 @@ import {
     FiClock, 
     FiAlertCircle,
     FiClipboard,
-    FiLayers,
     FiUsers,
     FiAward
 } from "react-icons/fi";
@@ -63,186 +58,48 @@ import {
     Paper 
 } from "@mui/material";
 
-// supabase client (for real-time dashboard listeners)
-import { supabase } from "../../../services/config/supabaseClient";
+// custom hook
+import { useDashboardData } from "../../../hooks/instructor/useDashboardData";
 
 const Dashboard = () => {
-    const dispatch = useDispatch();
     const navigate = useNavigate();
     const profile = useSelector(selectProfile);
-    const quizzes = useSelector(selectMyQuizzes);
-    const students = useSelector(selectMyStudents);
-    const rooms = useSelector(selectMyRooms);
+
+    const {
+        loading,
+        quizzes,
+        stats,
+        attemptsOverTime,
+        topStudents,
+        activityFeed,
+        getCategoryData
+    } = useDashboardData();
 
     const containerRef = useRef(null);
-    const [liveAttemptCount, setLiveAttemptCount] = useState(0);
 
-    // Initial data fetch
-    useEffect(() => {
-        dispatch(fetchMyQuizzes());
-        dispatch(fetchMyStudents());
-        dispatch(fetchMyRooms());
-    }, [dispatch]);
-
-    // Real-Time subscription for live attempts taking quizzes
-    useEffect(() => {
-        // Count active attempts (attempts started but not submitted yet)
-        const fetchLiveAttempts = async () => {
-            const { count, error } = await supabase
-                .from("attempts")
-                .select("id", { count: "exact", head: true })
-                .is("submitted_at", null);
-            if (!error) {
-                setLiveAttemptCount(count || 0);
-            }
-        };
-
-        fetchLiveAttempts();
-
-        // Listen for realtime INSERT/UPDATE/DELETE on attempts
-        const channel = supabase
-            .channel("live_attempts_channel")
-            .on("postgres_changes", { event: "*", schema: "public", table: "attempts" }, () => {
-                fetchLiveAttempts();
-            })
-            .subscribe();
-
-        return () => supabase.removeChannel(channel);
-    }, []);
-
-    // GSAP Opening Entrance Animation using fromTo in context to fix layout jump/Strictmode HMR bugs
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-            
-            // Animation for dashboard container
-            tl.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.6 }
-            );
-
-            // Stagger anim for stats cards
-            tl.fromTo(`.${styles.statsGrid} > div`,
-                { opacity: 0, scale: 0.95, y: 20 },
-                { opacity: 1, scale: 1, y: 0, duration: 0.5, stagger: 0.08 },
-                "-=0.4"
-            );
-
-            // Animate layout sections
-            tl.fromTo(`.${styles.gridMain} > div`,
-                { opacity: 0, y: 30 },
-                { opacity: 1, y: 0, duration: 0.6, stagger: 0.1 },
-                "-=0.3"
-            );
-        }, containerRef);
-
-        return () => ctx.revert();
-    }, []);
-
-    // Compute stats dynamically, with safe mock fallback if database is empty
-    const totalQuizzes = quizzes?.length || 0;
-    const totalStudents = students?.length || 0;
-    const totalRooms = rooms?.length || 0;
-
-    // Aggregate attempts count and scores across quizzes
-    let totalAttempts = 0;
-    let scoreSum = 0;
-    let quizzesWithAttempts = 0;
-    let passingAttempts = 0;
-
-    quizzes.forEach(q => {
-        totalAttempts += q.attempt_count || 0;
-        if (q.attempt_count > 0) {
-            scoreSum += q.avg_score || 0;
-            quizzesWithAttempts++;
-            // Estimate passed attempts based on pass rate
-            passingAttempts += Math.round((q.attempt_count * (q.pass_rate || 0)) / 100);
-        }
+    // Page entrance animation
+    usePageAnimation(containerRef, {
+        ready: !loading,
+        staggerSelector: `.${styles.statsGrid} > div`,
     });
-
-    const rawAvgScore = quizzesWithAttempts > 0 ? scoreSum / quizzesWithAttempts : 0;
-    const avgScore = totalQuizzes > 0 ? Math.round(rawAvgScore) : 0;
-    const passRate = totalAttempts > 0 ? Math.round((passingAttempts / totalAttempts) * 100) : 0;
-
-    // Mock aggregates if database contains 0 entries
-    const displayQuizzes = totalQuizzes || 8;
-    const displayAttempts = totalAttempts || 142;
-    const displayStudents = totalStudents || 24;
-    const displayAvgScore = totalQuizzes > 0 ? avgScore : 78;
-    const displayPassRate = totalAttempts > 0 ? passRate : 82;
-
-    // Charts Data
-    // 1. Category distribution data
-    const getCategoryData = () => {
-        const counts = {};
-        quizzes.forEach(q => {
-            const catName = q.category?.name || "General";
-            counts[catName] = (counts[catName] || 0) + 1;
-        });
-
-        const data = Object.keys(counts).map(name => ({
-            name,
-            value: counts[name]
-        }));
-
-        return data.length > 0 ? data : [
-            { name: "Programming", value: 4 },
-            { name: "Mathematics", value: 2 },
-            { name: "Science", value: 1 },
-            { name: "General", value: 1 }
-        ];
-    };
-
-    // 2. Attempts over time data (last 30 days)
-    const attemptsOverTimeData = [
-        { day: "06/05", attempts: 5 }, { day: "06/10", attempts: 12 }, 
-        { day: "06/15", attempts: 8 }, { day: "06/20", attempts: 24 }, 
-        { day: "06/25", attempts: 18 }, { day: "06/30", attempts: 35 }, 
-        { day: "07/04", attempts: 40 }
-    ];
 
     // Colors for donut chart
     const COLORS = ["var(--blue-500)", "var(--violet-500)", "var(--teal-500)", "var(--amber-500)", "var(--red-500)"];
 
-    // Top students list (Fallback mock)
-    const topStudents = students.slice(0, 5).map(s => ({
-        id: s.student_uid,
-        name: s.profile?.full_name || "Student",
-        email: s.profile?.email || "",
-        avgScore: 88,
-        attempts: 12
-    })).length > 0 ? students.slice(0, 5).map((s, idx) => ({
-        id: s.student_uid,
-        name: s.profile?.full_name || "Student",
-        avgScore: 94 - idx * 3,
-        attempts: 15 - idx
-    })) : [
-        { id: "1", name: "Ahmed Samir", avgScore: 96, attempts: 14 },
-        { id: "2", name: "Sara Mohamed", avgScore: 92, attempts: 10 },
-        { id: "3", name: "Youssef Ali", avgScore: 89, attempts: 18 },
-        { id: "4", name: "Fatma Hassan", avgScore: 87, attempts: 8 },
-        { id: "5", name: "Kareem Ibrahim", avgScore: 85, attempts: 11 }
-    ];
-
-    // Activity Feed list
-    const activityFeed = [
-        { id: 1, type: "complete", text: "Ahmed Samir completed JavaScript Fundamentals", time: "2 hours ago", icon: <FiAward style={{color: "var(--color-success)"}} /> },
-        { id: 2, type: "student", text: "New student Sara Mohamed added by you", time: "5 hours ago", icon: <FiUserPlus style={{color: "var(--color-accent)"}} /> },
-        { id: 3, type: "publish", text: "Quiz 'HTML5 & CSS3 Masterclass' was published", time: "1 day ago", icon: <FiClipboard style={{color: "var(--color-warning)"}} /> },
-        { id: 4, type: "complete", text: "Youssef Ali scored 90% in Math Level 1", time: "2 days ago", icon: <FiAward style={{color: "var(--color-success)"}} /> },
-        { id: 5, type: "room", text: "Room 'CS 101' created successfully", time: "3 days ago", icon: <FiFolderPlus style={{color: "var(--color-xp)"}} /> }
-    ];
-
-    // Upcoming Deadlines
+    // Upcoming Deadlines (Mocked for dashboard layout)
     const upcomingDeadlines = [
         { id: 1, quiz: "Advanced Algebra", room: "Mathematics", date: "Jul 10, 2026", completion: 65 },
         { id: 2, quiz: "Database Design II", room: "Computer Science", date: "Jul 14, 2026", completion: 24 }
     ];
 
-    // In-Progress Alerts
+    // In-Progress Alerts (Mocked for dashboard layout)
     const inProgressAlerts = [
         { id: 1, student: "Kareem Ibrahim", quiz: "OS Fundamentals", started: "26 hours ago" }
     ];
+
+    if (loading) {
+        return <div style={{ color: "var(--text-secondary)", padding: "var(--space-6)" }}>Loading dashboard insights...</div>;
+    }
 
     return (
         <div ref={containerRef} className={styles.dashboardContainer}>
@@ -253,10 +110,10 @@ const Dashboard = () => {
                 breadcrumbs={["Dashboard"]}
                 actions={
                     <div className={styles.headerActions}>
-                        {liveAttemptCount > 0 && (
+                        {stats.liveAttempts > 0 && (
                             <div className={styles.liveBadge} title="Students currently taking quizzes">
                                 <span className={styles.livePulse} />
-                                <span className={styles.liveText}>{liveAttemptCount} Student{liveAttemptCount > 1 ? "s" : ""} Online</span>
+                                <span className={styles.liveText}>{stats.liveAttempts} Student{stats.liveAttempts > 1 ? "s" : ""} Online</span>
                             </div>
                         )}
                     </div>
@@ -267,37 +124,37 @@ const Dashboard = () => {
             <div className={styles.statsGrid}>
                 <StatCard 
                     icon={<FiClipboard />} 
-                    value={displayQuizzes} 
+                    value={stats.quizzesCount} 
                     label="Total Quizzes" 
-                    trend={{ amount: "+2 this week", isPositive: true }} 
+                    trend={{ amount: "Real-time", isPositive: true }} 
                     color="blue"
                 />
                 <StatCard 
                     icon={<FiActivity />} 
-                    value={displayAttempts} 
+                    value={stats.attemptsCount} 
                     label="Total Attempts" 
-                    trend={{ amount: "+14% MoM", isPositive: true }} 
+                    trend={{ amount: "Real-time", isPositive: true }} 
                     color="violet"
                 />
                 <StatCard 
                     icon={<FiUsers />} 
-                    value={displayStudents} 
+                    value={stats.studentsCount} 
                     label="Total Students" 
-                    trend={{ amount: "+4 new", isPositive: true }} 
+                    trend={{ amount: "Real-time", isPositive: true }} 
                     color="green"
                 />
                 <StatCard 
                     icon={<FiAward />} 
-                    value={`${displayAvgScore}%`} 
+                    value={`${stats.avgScore}%`} 
                     label="Average Score" 
-                    trend={{ amount: "+1.2%", isPositive: true }} 
+                    trend={{ amount: "Real-time", isPositive: true }} 
                     color="amber"
                 />
                 <StatCard 
                     icon={<FiTrendingUp />} 
-                    value={`${displayPassRate}%`} 
+                    value={`${stats.passRate}%`} 
                     label="Pass Rate" 
-                    trend={{ amount: "+0.5%", isPositive: true }} 
+                    trend={{ amount: "Real-time", isPositive: true }} 
                     color="red"
                 />
             </div>
@@ -370,7 +227,7 @@ const Dashboard = () => {
                         <h3 className={styles.cardTitle}>Attempts Over Time (Last 30 Days)</h3>
                         <div className={styles.chartWrapper}>
                             <ResponsiveContainer width="100%" height={240}>
-                                <AreaChart data={attemptsOverTimeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <AreaChart data={attemptsOverTime} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorAttempts" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="var(--blue-500)" stopOpacity={0.4}/>

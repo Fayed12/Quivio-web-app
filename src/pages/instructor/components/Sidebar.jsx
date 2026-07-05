@@ -21,6 +21,7 @@ import {
 // redux
 import { logoutThunk, selectProfile } from "../../../redux/slices/authSlice";
 import { selectUnreadCount } from "../../../redux/slices/notificationsSlice";
+import { selectTheme } from "../../../redux/slices/themeSLice";
 
 // local
 import styles from "./Sidebar.module.css";
@@ -30,6 +31,9 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
     const navigate = useNavigate();
     const profile = useSelector(selectProfile);
     const unreadCount = useSelector(selectUnreadCount);
+    const theme = useSelector(selectTheme) || "light";
+
+    const logoSrc = theme === "dark" ? "/dark-logo.png" : "/light-logo.png";
 
     const handleLogout = () => {
         dispatch(logoutThunk());
@@ -99,14 +103,12 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
             <aside className={sidebarClass}>
                 {/* Logo Section */}
                 <div className={styles.logoSection} onClick={() => navigate("/instructor/dashboard")}>
-                    <div className={styles.logoIcon}>
-                        <span>Q</span>
-                    </div>
-                    {!isCollapsed && (
-                        <div className={styles.logoText}>
-                            Quivio <span className={styles.logoHighlight}>Pro</span>
-                        </div>
-                    )}
+                    <img 
+                        key={logoSrc}
+                        src={logoSrc} 
+                        alt="Quivio Logo" 
+                        className={styles.logoImg} 
+                    />
                 </div>
 
                 {/* Nav Items */}

@@ -4,23 +4,19 @@ import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./QuestionBank.module.css";
 
 // react
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
 // redux
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { 
     fetchMyQuestions, 
-    selectMyQuestions, 
     deleteQuestionThunk, 
-    createQuestionThunk, 
-    updateQuestionThunk,
+    createQuestionThunk,
     duplicateQuestionThunk
 } from "../../../redux/slices/questionsSlice";
-import { fetchCategories, selectCategories } from "../../../redux/slices/categoriesSlice";
-import { fetchMyQuizzes, selectMyQuizzes } from "../../../redux/slices/quizzesSlice";
-
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import ModalPortal from "../components/ModalPortal";
 
 // react-icons
 import { 
@@ -30,15 +26,11 @@ import {
     FiSearch, 
     FiTrash2, 
     FiCopy, 
-    FiEdit2, 
-    FiCheck, 
+    FiEdit2,
     FiX, 
     FiList, 
-    FiToggleLeft, 
-    FiInfo,
-    FiCheckSquare,
-    FiFolderPlus,
-    FiFileText
+    FiToggleLeft,
+    FiCheckSquare
 } from "react-icons/fi";
 
 // react-toastify
@@ -59,14 +51,13 @@ import {
 // supabase client
 import { supabase } from "../../../services/config/supabaseClient";
 
+import { useQuestionBankData } from "../../../hooks/instructor/useQuestionBankData";
+
 const QuestionBank = () => {
     const dispatch = useDispatch();
 
-    // Redux selectors
-    const questions = useSelector(selectMyQuestions);
+    const { questions, categories, quizzes } = useQuestionBankData();
     const totalCount = questions.length;
-    const categories = useSelector(selectCategories);
-    const quizzes = useSelector(selectMyQuizzes);
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState("");
@@ -108,23 +99,8 @@ const QuestionBank = () => {
     const containerRef = useRef(null);
     const fileInputRef = useRef(null);
 
-    // Fetch lists
-    useEffect(() => {
-        dispatch(fetchMyQuestions());
-        dispatch(fetchCategories());
-        dispatch(fetchMyQuizzes());
-    }, [dispatch]);
-
-    // GSAP animations
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, [questions]);
+    // Page entrance animation
+    usePageAnimation(containerRef);
 
     // Filters logic
     const filteredQuestions = questions.filter(q => {
@@ -478,6 +454,7 @@ const QuestionBank = () => {
             setCsvPreview([]);
             dispatch(fetchMyQuestions());
         } catch (err) {
+            console.log(err);
             toast.error("Bulk CSV import encountered database insert issues.");
         }
     };
@@ -705,6 +682,7 @@ const QuestionBank = () => {
 
             {/* CREATE / EDIT QUESTION MODAL */}
             {activeQuestion && (
+                <ModalPortal onClose={() => setActiveQuestion(null)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setActiveQuestion(null)} // Close on outside click
@@ -843,10 +821,12 @@ const QuestionBank = () => {
                         </div>
                     </form>
                 </div>
+                </ModalPortal>
             )}
 
             {/* CSV BULK IMPORT MODAL */}
             {isCsvModalOpen && (
+                <ModalPortal onClose={() => setIsCsvModalOpen(false)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setIsCsvModalOpen(false)} // Close on outside click
@@ -926,6 +906,7 @@ const QuestionBank = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );

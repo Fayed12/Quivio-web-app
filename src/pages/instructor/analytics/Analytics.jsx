@@ -3,30 +3,22 @@ import PageHeader from "../components/PageHeader";
 import StatCard from "../components/StatCard";
 import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./Analytics.module.css";
+import { useAnalyticsData } from "../../../hooks/instructor/useAnalyticsData";
 
 // react
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
-// redux
-import { useDispatch, useSelector } from "react-redux";
-import { fetchMyQuizzes, selectMyQuizzes } from "../../../redux/slices/quizzesSlice";
-import { fetchCategories, selectCategories } from "../../../redux/slices/categoriesSlice";
-import { fetchMyStudents, selectMyStudents } from "../../../redux/slices/instructorStudentsSlice";
-
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
 
 // react-icons
 import { 
     FiCalendar, 
     FiDownload, 
-    FiTrendingUp, 
-    FiTrendingDown,
     FiClock, 
     FiTarget, 
     FiAward, 
-    FiCheckCircle, 
-    FiHelpCircle,
+    FiCheckCircle,
     FiFrown,
     FiSmile,
     FiChevronUp,
@@ -47,75 +39,38 @@ import {
 } from "recharts";
 
 // Material UI
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Avatar } from "@mui/material";
+
 
 const Analytics = () => {
-    const dispatch = useDispatch();
-
-    // Redux selectors
-    const quizzes = useSelector(selectMyQuizzes);
-    const categories = useSelector(selectCategories);
-    const students = useSelector(selectMyStudents);
-
     // Filters
     const [dateRange, setDateRange] = useState("30days");
     const [activeTab, setActiveTab] = useState("quizzes");
 
     const containerRef = useRef(null);
 
-    // Initial fetch
-    useEffect(() => {
-        dispatch(fetchMyQuizzes());
-        dispatch(fetchCategories());
-        dispatch(fetchMyStudents());
-    }, [dispatch]);
+    const {
+        loading,
+        stats,
+        scoreDistribution,
+        passFailRatio,
+        categoryPerformance,
+        studentProgress,
+        questionPerformances,
+        quizPerformanceData
+    } = useAnalyticsData(dateRange);
 
-    // GSAP animations
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, [activeTab]);
+    // Page entrance animation
+    usePageAnimation(containerRef, { ready: !loading });
 
     // Exports triggers
     const handleExport = (type) => {
         toast.success(`Exporting analytics data as ${type.toUpperCase()}...`);
     };
 
-    // Recharts Data mockups
-    const quizScoreData = [
-        { name: "JS Variables", avg: 82, pass: 88 },
-        { name: "React Basics", avg: 74, pass: 80 },
-        { name: "CSS Flexbox", avg: 90, pass: 95 },
-        { name: "HTML Semantic", avg: 88, pass: 92 },
-        { name: "Git Workflow", avg: 68, pass: 75 }
-    ];
-
-    const scoreDistributionData = [
-        { score: "0-50%", students: 2 },
-        { score: "50-60%", students: 5 },
-        { score: "60-70%", students: 12 },
-        { score: "70-80%", students: 28 },
-        { score: "80-90%", students: 35 },
-        { score: "90-100%", students: 18 }
-    ];
-
-    const passFailPieData = [
-        { name: "Passed", value: 85, color: "#10B981" },
-        { name: "Failed", value: 15, color: "#EF4444" }
-    ];
-
-    const categoryRadarData = [
-        { category: "Web Basics", A: 88, B: 110, fullMark: 100 },
-        { category: "React.js", A: 74, B: 130, fullMark: 100 },
-        { category: "Database", A: 82, B: 100, fullMark: 100 },
-        { category: "Node.js", A: 68, B: 90, fullMark: 100 },
-        { category: "Git & Shell", A: 85, B: 120, fullMark: 100 }
-    ];
+    if (loading) {
+        return <div style={{ color: "var(--text-secondary)", padding: "var(--space-6)" }}>Loading analytics...</div>;
+    }
 
     return (
         <div ref={containerRef} className={styles.container}>
@@ -150,10 +105,10 @@ const Analytics = () => {
 
             {/* Performance KPI blocks */}
             <div className={styles.kpiGrid}>
-                <StatCard icon={<FiTarget />} value="81.5%" label="Average score" trend="+3.2% vs last month" color="blue" />
-                <StatCard icon={<FiCheckCircle />} value="85.4%" label="Pass rate" trend="+1.5% vs last month" color="green" />
-                <StatCard icon={<FiClock />} value="14.2 min" label="Avg completion time" color="amber" />
-                <StatCard icon={<FiAward />} value="256" label="Certificates issued" trend="+24 this week" color="violet" />
+                <StatCard icon={<FiTarget />} value={`${stats.avgScore}%`} label="Average score" trend="Real-time" color="blue" />
+                <StatCard icon={<FiCheckCircle />} value={`${stats.passRate}%`} label="Pass rate" trend="Real-time" color="green" />
+                <StatCard icon={<FiClock />} value={`${stats.avgTimeMins} min`} label="Avg completion time" color="amber" />
+                <StatCard icon={<FiAward />} value={stats.totalCompletions} label="Total completions" trend="Real-time" color="violet" />
             </div>
 
             {/* Tabs */}
@@ -180,12 +135,12 @@ const Analytics = () => {
                             <h4 className={styles.chartTitle}>Overall Score Distribution</h4>
                             <div className={styles.chartWrapper}>
                                 <ResponsiveContainer width="100%" height={260}>
-                                    <BarChart data={scoreDistributionData}>
+                                    <BarChart data={scoreDistribution}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-default)" />
-                                        <XAxis dataKey="score" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
+                                        <XAxis dataKey="range" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
                                         <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} />
                                         <Tooltip />
-                                        <Bar dataKey="students" fill="var(--color-accent)" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="count" fill="var(--color-accent)" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
@@ -199,15 +154,15 @@ const Analytics = () => {
                                     <ResponsiveContainer width="100%" height={220}>
                                         <PieChart>
                                             <Pie 
-                                                data={passFailPieData} 
+                                                data={passFailRatio} 
                                                 cx="50%" cy="50%" 
                                                 innerRadius={60} 
                                                 outerRadius={80} 
                                                 paddingAngle={4}
                                                 dataKey="value"
                                             >
-                                                {passFailPieData.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                                {passFailRatio.map((entry, index) => (
+                                                    <Cell key={`cell-${index}`} fill={index === 0 ? "#10B981" : "#EF4444"} />
                                                 ))}
                                             </Pie>
                                             <Tooltip />
@@ -217,11 +172,11 @@ const Analytics = () => {
                                 <div className={styles.pieLegend}>
                                     <div className={styles.legendItem}>
                                         <span className={styles.legendDot} style={{backgroundColor: "#10B981"}} />
-                                        <span>Passed: 85.4%</span>
+                                        <span>Passed: {stats.passRate}%</span>
                                     </div>
                                     <div className={styles.legendItem}>
                                         <span className={styles.legendDot} style={{backgroundColor: "#EF4444"}} />
-                                        <span>Failed: 14.6%</span>
+                                        <span>Failed: {100 - stats.passRate}%</span>
                                     </div>
                                 </div>
                             </div>
@@ -233,7 +188,7 @@ const Analytics = () => {
                         <h4 className={styles.chartTitle}>Quiz Score Progression & Pass Rates</h4>
                         <div className={styles.chartWrapper}>
                             <ResponsiveContainer width="100%" height={260}>
-                                <AreaChart data={quizScoreData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <AreaChart data={quizPerformanceData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorAvg" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.3}/>
@@ -259,30 +214,32 @@ const Analytics = () => {
                     {/* Hardest / Easiest Lists */}
                     <div className={styles.grid2}>
                         <div className={styles.listCard}>
-                            <h4 className={styles.listHeader}><FiFrown className={styles.hardIcon} /> Hardest Questions (Low Accuracy)</h4>
+                            <h4 className={styles.listHeader}><FiFrown className={styles.hardIcon} /> Hardest Quizzes (Low Average Score)</h4>
                             <div className={styles.listBody}>
-                                <div className={styles.listItem}>
-                                    <p>"What is closure variable mapping scope?"</p>
-                                    <span>Accuracy: 32%</span>
-                                </div>
-                                <div className={styles.listItem}>
-                                    <p>"How does useEffect cleanup sync lifecycle?"</p>
-                                    <span>Accuracy: 44%</span>
-                                </div>
+                                {questionPerformances.hardest.map((q) => (
+                                    <div key={q.id} className={styles.listItem}>
+                                        <p>"{q.name}"</p>
+                                        <span>Avg Score: {q.avg}%</span>
+                                    </div>
+                                ))}
+                                {questionPerformances.hardest.length === 0 && (
+                                    <div className={styles.listItem}>No data available yet.</div>
+                                )}
                             </div>
                         </div>
 
                         <div className={styles.listCard}>
-                            <h4 className={styles.listHeader}><FiSmile className={styles.easyIcon} /> Easiest Questions (High Accuracy)</h4>
+                            <h4 className={styles.listHeader}><FiSmile className={styles.easyIcon} /> Easiest Quizzes (High Average Score)</h4>
                             <div className={styles.listBody}>
-                                <div className={styles.listItem}>
-                                    <p>"What HTML tags are used for lists?"</p>
-                                    <span>Accuracy: 95%</span>
-                                </div>
-                                <div className={styles.listItem}>
-                                    <p>"Identify the variable declaration keyword."</p>
-                                    <span>Accuracy: 90%</span>
-                                </div>
+                                {questionPerformances.easiest.map((q) => (
+                                    <div key={q.id} className={styles.listItem}>
+                                        <p>"{q.name}"</p>
+                                        <span>Avg Score: {q.avg}%</span>
+                                    </div>
+                                ))}
+                                {questionPerformances.easiest.length === 0 && (
+                                    <div className={styles.listItem}>No data available yet.</div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -305,31 +262,40 @@ const Analytics = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {students.map((s) => (
-                                    <TableRow key={s.student_uid} className={styles.tableRow}>
+                                {studentProgress.map((s) => (
+                                    <TableRow key={s.id} className={styles.tableRow}>
                                         <TableCell className={styles.tdCell}>
                                             <div className={styles.studentNameCol}>
-                                                <Avatar src={s.profile?.avatar_url} sx={{ width: 28, height: 28 }}>
-                                                    {s.profile?.full_name?.charAt(0)}
+                                                <Avatar sx={{ width: 28, height: 28 }}>
+                                                    {s.name.charAt(0)}
                                                 </Avatar>
-                                                <span>{s.profile?.full_name}</span>
+                                                <span>{s.name}</span>
                                             </div>
                                         </TableCell>
-                                        <TableCell align="center" className={styles.tdCell}>12</TableCell>
-                                        <TableCell align="center" className={styles.tdCell} style={{fontWeight: 700}}>82%</TableCell>
+                                        <TableCell align="center" className={styles.tdCell}>{s.attempts}</TableCell>
+                                        <TableCell align="center" className={styles.tdCell} style={{fontWeight: 700}}>{s.avgScore}%</TableCell>
                                         <TableCell align="center" className={styles.tdCell}>
-                                            <div className={styles.trendRow} data-trend="up">
-                                                <FiChevronUp /> +4.5%
+                                            <div className={styles.trendRow} data-trend={s.avgScore >= 80 ? "up" : "down"}>
+                                                {s.avgScore >= 80 ? <FiChevronUp /> : <FiChevronDown />} {s.trend}
                                             </div>
                                         </TableCell>
-                                        <TableCell align="center" className={styles.tdCell}>3 issued</TableCell>
                                         <TableCell align="center" className={styles.tdCell}>
-                                            <span className={`${styles.statusBadge} ${s.profile?.is_active ? styles.badgeActive : styles.badgeInactive}`}>
-                                                {s.profile?.is_active ? "Active" : "Inactive"}
+                                            {s.status === "certified" ? "1 issued" : "0 issued"}
+                                        </TableCell>
+                                        <TableCell align="center" className={styles.tdCell}>
+                                            <span className={`${styles.statusBadge} ${styles.badgeActive}`}>
+                                                Active
                                             </span>
                                         </TableCell>
                                     </TableRow>
                                 ))}
+                                {studentProgress.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={6} align="center" className={styles.emptyCell}>
+                                            No student attempts recorded in this timeframe.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </TableContainer>
@@ -345,9 +311,9 @@ const Analytics = () => {
                             <h4 className={styles.chartTitle}>Category Score Distribution</h4>
                             <div className={styles.chartWrapper} style={{display: "flex", justifyContent: "center"}}>
                                 <ResponsiveContainer width="100%" height={260}>
-                                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={categoryRadarData}>
+                                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={categoryPerformance}>
                                         <PolarGrid stroke="var(--border-default)" />
-                                        <PolarAngleAxis dataKey="category" stroke="var(--text-muted)" fontSize={11} />
+                                        <PolarAngleAxis dataKey="subject" stroke="var(--text-muted)" fontSize={11} />
                                         <PolarRadiusAxis stroke="var(--text-muted)" fontSize={9} />
                                         <Radar name="Performance" dataKey="A" stroke="var(--color-accent)" fill="var(--color-accent)" fillOpacity={0.3} />
                                     </RadarChart>
@@ -363,20 +329,25 @@ const Analytics = () => {
                                     <thead>
                                         <tr>
                                             <th>Category Name</th>
-                                            <th align="center">Quizzes count</th>
                                             <th align="center">Avg. Score</th>
-                                            <th align="center">Participation</th>
+                                            <th align="center">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {categories.map((c) => (
-                                            <tr key={c.id}>
-                                                <td>{c.name}</td>
-                                                <td align="center">3</td>
-                                                <td align="center" style={{fontWeight: 600}}>84%</td>
-                                                <td align="center">92%</td>
+                                        {categoryPerformance.map((c, idx) => (
+                                            <tr key={idx}>
+                                                <td>{c.subject}</td>
+                                                <td align="center" style={{fontWeight: 600}}>{c.A}%</td>
+                                                <td align="center">Active</td>
                                             </tr>
                                         ))}
+                                        {categoryPerformance.length === 0 && (
+                                            <tr>
+                                                <td colSpan={3} align="center" style={{ padding: "var(--space-6)", color: "var(--text-muted)" }}>
+                                                    No category data available yet.
+                                                </td>
+                                            </tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>

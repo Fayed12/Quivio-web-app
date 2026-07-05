@@ -33,8 +33,11 @@
 
 .searchIcon {
     position: absolute;
-    left: var(--space-3);
+    left: 12px !important;
+    right: auto !important;
     color: var(--text-muted);
+    pointer-events: none;
+    z-index: 2;
 }
 
 .clearIcon {

@@ -7,10 +7,13 @@ import { toggleTheme } from "../../redux/slices/themeSLice";
 import { useEffect, useRef, useState } from "react";
 
 // react-redux
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 
 // react-router
 import { useNavigate } from "react-router";
+
+// auth selectors
+import { selectIsAuthenticated, selectRole } from "../../redux/slices/authSlice";
 
 // gsap
 import { gsap } from "gsap";
@@ -45,6 +48,8 @@ if (typeof window !== "undefined") {
 const LandingPage = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const isAuth = useSelector(selectIsAuthenticated);
+    const role = useSelector(selectRole);
     const mainRef = useRef(null);
     const heroRef = useRef(null);
 
@@ -239,12 +244,24 @@ const LandingPage = () => {
                     >
                         {isDark ? <FiSun /> : <FiMoon />}
                     </button>
-                    <MainButton variant="ghost" onClick={handleNavLogin} size="sm">
-                        Sign In
-                    </MainButton>
-                    <MainButton variant="primary" onClick={handleNavRegister} size="sm">
-                        Get Started
-                    </MainButton>
+                    {isAuth ? (
+                        <MainButton 
+                            variant="primary" 
+                            onClick={() => navigate(role === "instructor" ? "/instructor/dashboard" : "/student/dashboard")} 
+                            size="sm"
+                        >
+                            Go to Dashboard
+                        </MainButton>
+                    ) : (
+                        <>
+                            <MainButton variant="ghost" onClick={handleNavLogin} size="sm">
+                                Sign In
+                            </MainButton>
+                            <MainButton variant="primary" onClick={handleNavRegister} size="sm">
+                                Get Started
+                            </MainButton>
+                        </>
+                    )}
                 </div>
             </header>
 
@@ -264,12 +281,24 @@ const LandingPage = () => {
                     </p>
 
                     <div className={styles.heroActions}>
-                        <MainButton variant="primary" size="lg" onClick={handleNavRegister}>
-                            Get Started as Instructor <FiArrowRight className={styles.btnIconRight} />
-                        </MainButton>
-                        <a href="/login" className={styles.heroSecondaryLink}>
-                            Already have an account? Sign in
-                        </a>
+                        {isAuth ? (
+                            <MainButton 
+                                variant="primary" 
+                                size="lg" 
+                                onClick={() => navigate(role === "instructor" ? "/instructor/dashboard" : "/student/dashboard")}
+                            >
+                                Go to Dashboard <FiArrowRight className={styles.btnIconRight} />
+                            </MainButton>
+                        ) : (
+                            <>
+                                <MainButton variant="primary" size="lg" onClick={handleNavRegister}>
+                                    Get Started as Instructor <FiArrowRight className={styles.btnIconRight} />
+                                </MainButton>
+                                <a href="/login" className={styles.heroSecondaryLink}>
+                                    Already have an account? Sign in
+                                </a>
+                            </>
+                        )}
                     </div>
                 </div>
 

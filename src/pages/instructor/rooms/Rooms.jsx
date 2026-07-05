@@ -10,22 +10,19 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 
 // redux
-import { useDispatch, useSelector } from "react-redux";
-import { 
-    fetchMyRooms, 
-    selectMyRooms, 
-    createRoomThunk, 
-    updateRoomThunk, 
-    deleteRoomThunk,
-    fetchRoomMembers,
-    selectRoomMembers
+import { useDispatch } from "react-redux";
+import {
+    createRoomThunk,
+    updateRoomThunk,
+    deleteRoomThunk
 } from "../../../redux/slices/roomsSlice";
 
 // hooks
 import { useRealtimeRooms } from "../../../hooks/useRealtimeRooms";
 
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import ModalPortal from "../components/ModalPortal";
 
 // react-icons
 import * as Icons from "react-icons/fi";
@@ -35,8 +32,7 @@ import {
     FiEdit2, 
     FiTrash2, 
     FiInbox, 
-    FiBook, 
-    FiUsers, 
+    FiBook,
     FiX 
 } from "react-icons/fi";
 
@@ -74,12 +70,14 @@ const ICON_OPTIONS = [
     { name: "FiServer", comp: <Icons.FiServer /> }
 ];
 
+import { useRoomsData } from "../../../hooks/instructor/useRoomsData";
+import { supabase } from "../../../services/config/supabaseClient";
+
 const Rooms = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    // Redux selectors
-    const rooms = useSelector(selectMyRooms);
+    const { rooms } = useRoomsData();
 
     // Real-time synchronization
     useRealtimeRooms();
@@ -107,11 +105,6 @@ const Rooms = () => {
     const modalRef = useRef(null);
     const deleteModalRef = useRef(null);
 
-    // Initial load
-    useEffect(() => {
-        dispatch(fetchMyRooms());
-    }, [dispatch]);
-
     // Fetch student avatars for each room once list loads
     useEffect(() => {
         if (rooms.length > 0) {
@@ -131,21 +124,10 @@ const Rooms = () => {
         }
     }, [rooms]);
 
-    // GSAP animations
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-            );
-
-            gsap.fromTo(`.${styles.roomCard}`,
-                { opacity: 0, y: 20 },
-                { opacity: 1, y: 0, duration: 0.4, stagger: 0.08, ease: "power2.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, [rooms]);
+    // Page entrance animation
+    usePageAnimation(containerRef, {
+        staggerSelector: `.${styles.roomCard}`,
+    });
 
     // Dropdown close listener
     useEffect(() => {
@@ -351,6 +333,7 @@ const Rooms = () => {
 
             {/* CREATE / EDIT ROOM MODAL */}
             {(isCreateModalOpen || editingRoom) && (
+                <ModalPortal onClose={() => { setIsCreateModalOpen(false); setEditingRoom(null); }}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => { setIsCreateModalOpen(false); setEditingRoom(null); }} // Close on outside click
@@ -438,10 +421,12 @@ const Rooms = () => {
                         </div>
                     </form>
                 </div>
+                </ModalPortal>
             )}
 
             {/* DELETE ROOM MODAL */}
             {deletingRoom && (
+                <ModalPortal onClose={() => { setDeletingRoom(null); setDeleteConfirmText(""); }}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => { setDeletingRoom(null); setDeleteConfirmText(""); }} // Close on outside click
@@ -484,6 +469,7 @@ const Rooms = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );

@@ -4,25 +4,23 @@ import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./Assignments.module.css";
 
 // react
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
 // react-router
 import { useNavigate } from "react-router";
 
 // redux
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { 
     fetchMyAssignments, 
-    selectMyAssignments, 
     createAssignmentThunk, 
     deleteAssignmentThunk,
     sendReminderThunk
 } from "../../../redux/slices/assignmentsSlice";
-import { fetchMyQuizzes, selectMyQuizzes } from "../../../redux/slices/quizzesSlice";
-import { fetchMyRooms, selectMyRooms } from "../../../redux/slices/roomsSlice";
 
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import ModalPortal from "../components/ModalPortal";
 
 // react-icons
 import { 
@@ -30,11 +28,7 @@ import {
     FiSearch, 
     FiTrash2, 
     FiBell, 
-    FiX, 
-    FiCalendar, 
-    FiAlertCircle,
-    FiCheckCircle,
-    FiClock,
+    FiX,
     FiEye
 } from "react-icons/fi";
 
@@ -44,14 +38,14 @@ import { toast } from "react-toastify";
 // Material UI
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
 
+import { useAssignmentsData } from "../../../hooks/instructor/useAssignmentsData";
+
 const Assignments = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    // Redux selectors
-    const assignments = useSelector(selectMyAssignments);
-    const quizzes = useSelector(selectMyQuizzes);
-    const rooms = useSelector(selectMyRooms);
+    // Custom hook loader
+    const { assignments, quizzes, rooms } = useAssignmentsData();
 
     // Local States
     const [searchQuery, setSearchQuery] = useState("");
@@ -68,23 +62,8 @@ const Assignments = () => {
     const containerRef = useRef(null);
     const assignModalRef = useRef(null);
 
-    // Initial Fetch
-    useEffect(() => {
-        dispatch(fetchMyAssignments());
-        dispatch(fetchMyQuizzes());
-        dispatch(fetchMyRooms());
-    }, [dispatch]);
-
-    // GSAP animations
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, [assignments]);
+    // Page entrance animation
+    usePageAnimation(containerRef);
 
     // Operations Handlers
     const handleAssignQuiz = async (e) => {
@@ -259,6 +238,7 @@ const Assignments = () => {
 
             {/* ASSIGN QUIZ MODAL */}
             {isAssignOpen && (
+                <ModalPortal onClose={() => setIsAssignOpen(false)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setIsAssignOpen(false)} // Close on outside click
@@ -357,10 +337,12 @@ const Assignments = () => {
                         </div>
                     </form>
                 </div>
+                </ModalPortal>
             )}
 
             {/* DELETE ASSIGNMENT CONFIRMATION */}
             {deletingAssignment && (
+                <ModalPortal onClose={() => setDeletingAssignment(null)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setDeletingAssignment(null)} // Close on outside click
@@ -386,6 +368,7 @@ const Assignments = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );

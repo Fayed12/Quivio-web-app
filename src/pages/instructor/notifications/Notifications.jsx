@@ -2,31 +2,28 @@
 import PageHeader from "../components/PageHeader";
 import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./Notifications.module.css";
+import { useNotificationsData } from "../../../hooks/instructor/useNotificationsData";
 
 // react
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
 // redux
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { 
-    fetchMyAnnouncements, 
-    selectAnnouncements, 
+    fetchMyAnnouncements,
     createAnnouncementThunk, 
     deleteAnnouncementThunk 
 } from "../../../redux/slices/announcementsSlice";
-import { fetchMyRooms, selectMyRooms } from "../../../redux/slices/roomsSlice";
 
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import ModalPortal from "../components/ModalPortal";
 
 // react-icons
 import { 
     FiPlus, 
     FiX, 
-    FiVolume2, 
-    FiBell, 
-    FiCalendar, 
-    FiSend, 
+    FiVolume2,
     FiInfo, 
     FiTrash2,
     FiCheckCircle,
@@ -38,15 +35,12 @@ import {
 // react-toastify
 import { toast } from "react-toastify";
 
-// supabase client
-import { supabase } from "../../../services/config/supabaseClient";
 
 const Notifications = () => {
     const dispatch = useDispatch();
 
-    // Redux selectors
-    const announcements = useSelector(selectAnnouncements);
-    const rooms = useSelector(selectMyRooms);
+    // Use custom hook
+    const { announcements, rooms } = useNotificationsData();
 
     // Tab states
     const [activeTab, setActiveTab] = useState("announcements");
@@ -73,22 +67,8 @@ const Notifications = () => {
     const containerRef = useRef(null);
     const modalRef = useRef(null);
 
-    // Initial load
-    useEffect(() => {
-        dispatch(fetchMyAnnouncements());
-        dispatch(fetchMyRooms());
-    }, [dispatch]);
-
-    // GSAP animations
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, [activeTab]);
+    // Page entrance animation
+    usePageAnimation(containerRef);
 
     const handleCreateAnnouncement = async (e) => {
         e.preventDefault();
@@ -257,6 +237,7 @@ const Notifications = () => {
 
             {/* BROADCAST ANNOUNCEMENT MODAL */}
             {isCreateOpen && (
+                <ModalPortal onClose={() => setIsCreateOpen(false)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setIsCreateOpen(false)} // Close on outside click
@@ -369,6 +350,7 @@ const Notifications = () => {
                         </div>
                     </form>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );

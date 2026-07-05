@@ -10,11 +10,8 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 
 // redux
-import { useDispatch, useSelector } from "react-redux";
-import { 
-    fetchMyQuizzes, 
-    selectMyQuizzes, 
-    selectQuizLoading, 
+import { useDispatch } from "react-redux";
+import {
     deleteQuizThunk, 
     duplicateQuizThunk, 
     updateQuizThunk,
@@ -22,15 +19,14 @@ import {
     unpublishQuizThunk,
     archiveQuizThunk
 } from "../../../redux/slices/quizzesSlice";
-import { fetchCategories, selectCategories } from "../../../redux/slices/categoriesSlice";
-import { fetchMyRooms, selectMyRooms } from "../../../redux/slices/roomsSlice";
 import { createAssignmentThunk } from "../../../redux/slices/assignmentsSlice";
 
 // hooks
 import { useRealtimeQuizzes } from "../../../hooks/useRealtimeQuizzes";
 
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import ModalPortal from "../components/ModalPortal";
 
 // react-icons
 import { 
@@ -43,8 +39,7 @@ import {
     FiEye, 
     FiSend, 
     FiArchive, 
-    FiInbox, 
-    FiClock, 
+    FiInbox,
     FiCheckSquare,
     FiX
 } from "react-icons/fi";
@@ -52,15 +47,13 @@ import {
 // react-toastify
 import { toast } from "react-toastify";
 
+import { useQuizzesData } from "../../../hooks/instructor/useQuizzesData";
+
 const MyQuizzes = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    // Selectors
-    const quizzes = useSelector(selectMyQuizzes);
-    const categories = useSelector(selectCategories);
-    const rooms = useSelector(selectMyRooms);
-    const loading = useSelector(selectQuizLoading);
+    const { quizzes, categories, rooms } = useQuizzesData();
 
     // Realtime changes listener
     useRealtimeQuizzes();
@@ -84,13 +77,6 @@ const MyQuizzes = () => {
     const deleteModalRef = useRef(null);
     const assignModalRef = useRef(null);
 
-    // Initial Fetching
-    useEffect(() => {
-        dispatch(fetchMyQuizzes());
-        dispatch(fetchCategories());
-        dispatch(fetchMyRooms());
-    }, [dispatch]);
-
     // Handle clicks outside of dropdowns to close them
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -102,26 +88,14 @@ const MyQuizzes = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [activeDropdown]);
 
-    // GSAP page enter animations
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-            );
-
-            gsap.fromTo(`.${styles.quizCard}`,
-                { opacity: 0, scale: 0.96, y: 15 },
-                { opacity: 1, scale: 1, y: 0, duration: 0.4, stagger: 0.05, ease: "power2.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, [quizzes, statusFilter, categoryFilter, searchQuery, sortOption]);
+    // Page entrance animation
+    usePageAnimation(containerRef, {
+        staggerSelector: `.${styles.quizCard}`,
+    });
 
     // Delete Modal Timer logic (0.5s delay to prevent accidental click)
     useEffect(() => {
         if (quizToDelete) {
-            setIsDeleteBtnEnabled(false);
             const timer = setTimeout(() => {
                 setIsDeleteBtnEnabled(true);
             }, 500);
@@ -394,7 +368,7 @@ const MyQuizzes = () => {
                                                         <FiCheckSquare /> Assign to Room
                                                     </button>
                                                     <div className={styles.dropdownDivider} />
-                                                    <button onClick={() => setQuizToDelete(quiz)} className={`${styles.dropdownItem} ${styles.danger}`}>
+                                                    <button onClick={() => { setQuizToDelete(quiz); setIsDeleteBtnEnabled(false); }} className={`${styles.dropdownItem} ${styles.danger}`}>
                                                         <FiTrash2 /> Delete Quiz
                                                     </button>
                                                 </div>
@@ -422,6 +396,7 @@ const MyQuizzes = () => {
 
             {/* DELETE CONFIRMATION MODAL */}
             {quizToDelete && (
+                <ModalPortal onClose={() => setQuizToDelete(null)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setQuizToDelete(null)} // Close on outside click
@@ -452,10 +427,12 @@ const MyQuizzes = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {/* ASSIGN TO ROOM QUICK MODAL */}
             {quizToAssign && (
+                <ModalPortal onClose={() => setQuizToAssign(null)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setQuizToAssign(null)} // Close on outside click
@@ -514,6 +491,7 @@ const MyQuizzes = () => {
                         </div>
                     </form>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );

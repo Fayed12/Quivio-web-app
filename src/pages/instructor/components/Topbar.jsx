@@ -32,11 +32,24 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar }) => {
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const searchInputRef = useRef(null);
 
     // Fetch unread notification counts
     useEffect(() => {
         dispatch(fetchUnreadCount());
     }, [dispatch]);
+
+    // Handle Ctrl + K global keyboard shortcut to focus search input
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     // Handle clicks outside the dropdown to close it
     useEffect(() => {
@@ -88,6 +101,7 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar }) => {
                     <FiSearch className={styles.searchIcon} />
                     <input 
                         type="text" 
+                        ref={searchInputRef}
                         placeholder="Search quizzes, students, rooms..." 
                         className={styles.searchInput}
                     />

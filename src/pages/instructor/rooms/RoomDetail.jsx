@@ -5,32 +5,26 @@ import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./RoomDetail.module.css";
 
 // react
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // react-router
 import { useParams, useNavigate } from "react-router";
 
 // redux
-import { useDispatch, useSelector } from "react-redux";
-import { 
-    fetchRoomById, 
-    selectCurrentRoom, 
-    fetchRoomMembers, 
-    selectRoomMembers, 
-    fetchNonMembers, 
-    selectNonMembers,
+import { useDispatch } from "react-redux";
+import {
     addMembersThunk,
     removeMemberThunk,
     deleteRoomThunk
 } from "../../../redux/slices/roomsSlice";
-import { fetchMyQuizzes, selectMyQuizzes } from "../../../redux/slices/quizzesSlice";
 import { createAssignmentThunk } from "../../../redux/slices/assignmentsSlice";
 
 // hooks
 import { useRealtimeRooms } from "../../../hooks/useRealtimeRooms";
 
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import ModalPortal from "../components/ModalPortal";
 
 // react-icons
 import { 
@@ -38,14 +32,11 @@ import {
     FiClipboard, 
     FiAward, 
     FiPercent, 
-    FiPlus, 
     FiTrash2, 
     FiSearch, 
-    FiClock, 
     FiUserPlus, 
     FiUserMinus,
-    FiX,
-    FiInbox
+    FiX
 } from "react-icons/fi";
 
 // react-toastify
@@ -60,16 +51,14 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianG
 // supabase client
 import { supabase } from "../../../services/config/supabaseClient";
 
+import { useRoomDetailData } from "../../../hooks/instructor/useRoomDetailData";
+
 const RoomDetail = () => {
     const { id } = useParams();
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    // Redux selectors
-    const room = useSelector(selectCurrentRoom);
-    const members = useSelector(selectRoomMembers(id));
-    const nonMembers = useSelector(selectNonMembers);
-    const quizzes = useSelector(selectMyQuizzes);
+    const { room, members, nonMembers, quizzes, refreshMembers } = useRoomDetailData(id);
 
     // Realtime changes listener for this specific room
     useRealtimeRooms(id);
@@ -100,18 +89,7 @@ const RoomDetail = () => {
     const removeModalRef = useRef(null);
     const deleteModalRef = useRef(null);
 
-    // Fetch Room Data
-    useEffect(() => {
-        if (id) {
-            dispatch(fetchRoomById(id));
-            dispatch(fetchRoomMembers({ roomId: id }));
-            dispatch(fetchNonMembers(id));
-            dispatch(fetchMyQuizzes());
-            fetchRoomAssignments();
-        }
-    }, [id, dispatch]);
-
-    const fetchRoomAssignments = async () => {
+    const fetchRoomAssignments = useCallback(async () => {
         const { data, error } = await supabase
             .from("assignments")
             .select(`
@@ -122,18 +100,20 @@ const RoomDetail = () => {
         if (!error && data) {
             setRoomAssignments(data);
         }
-    };
+    }, [id]);
 
-    // GSAP animation
+    // Fetch Room Data
     useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, [activeTab]);
+        const timer = setTimeout(() => {
+            if (id) {
+                fetchRoomAssignments();
+            }
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [id, fetchRoomAssignments]);
+
+    // Page entrance animation
+    usePageAnimation(containerRef);
 
     // Operations handlers
     const handleAddStudents = async (e) => {
@@ -152,8 +132,7 @@ const RoomDetail = () => {
             toast.success(`Successfully added ${selectedStudentUids.length} student(s) to Room!`);
             setIsAddStudentOpen(false);
             setSelectedStudentUids([]);
-            dispatch(fetchRoomMembers({ roomId: id }));
-            dispatch(fetchNonMembers(id));
+            refreshMembers();
         } catch (err) {
             toast.error(err || "Failed to add students");
         }
@@ -169,8 +148,7 @@ const RoomDetail = () => {
 
             toast.success(`Removed ${studentToRemove.full_name} from classroom!`);
             setStudentToRemove(null);
-            dispatch(fetchRoomMembers({ roomId: id }));
-            dispatch(fetchNonMembers(id));
+            refreshMembers();
         } catch (err) {
             toast.error(err || "Failed to remove member");
         }
@@ -506,6 +484,7 @@ const RoomDetail = () => {
 
             {/* ADD MEMBERS TO ROOM MODAL */}
             {isAddStudentOpen && (
+                <ModalPortal onClose={() => setIsAddStudentOpen(false)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setIsAddStudentOpen(false)} // Close on outside click
@@ -580,10 +559,12 @@ const RoomDetail = () => {
                         </div>
                     </form>
                 </div>
+                </ModalPortal>
             )}
 
             {/* REMOVE MEMBER CONFIRMATION MODAL */}
             {studentToRemove && (
+                <ModalPortal onClose={() => setStudentToRemove(null)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setStudentToRemove(null)} // Close on outside click
@@ -610,10 +591,12 @@ const RoomDetail = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {/* ASSIGN QUIZ MODAL */}
             {isAssignQuizOpen && (
+                <ModalPortal onClose={() => setIsAssignQuizOpen(false)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setIsAssignQuizOpen(false)} // Close on outside click
@@ -695,10 +678,12 @@ const RoomDetail = () => {
                         </div>
                     </form>
                 </div>
+                </ModalPortal>
             )}
 
             {/* DELETE ROOM CONFIRMATION */}
             {isDeleteOpen && (
+                <ModalPortal onClose={() => { setIsDeleteOpen(false); setDeleteRoomNameInput(""); }}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => { setIsDeleteOpen(false); setDeleteRoomNameInput(""); }} // Close on outside click
@@ -741,6 +726,7 @@ const RoomDetail = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );

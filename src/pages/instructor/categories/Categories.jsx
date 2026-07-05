@@ -4,34 +4,26 @@ import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./Categories.module.css";
 
 // react
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
 // redux
 import { useDispatch, useSelector } from "react-redux";
+import { selectProfile } from "../../../redux/slices/authSlice";
 import { 
-    fetchMyCategories, 
-    selectCategories, 
+    fetchMyCategories,
     createCategoryThunk, 
     updateCategoryThunk, 
     deleteCategoryThunk,
     toggleCategoryThunk
 } from "../../../redux/slices/categoriesSlice";
 
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import ModalPortal from "../components/ModalPortal";
 
 // react-icons
 import * as Icons from "react-icons/fi";
-import { 
-    FiPlus, 
-    FiEdit2, 
-    FiTrash2, 
-    FiX, 
-    FiFolder,
-    FiFolderPlus,
-    FiCheck,
-    FiInfo
-} from "react-icons/fi";
+import { FiTrash2, FiFolder, FiInfo } from "react-icons/fi";
 
 // react-toastify
 import { toast } from "react-toastify";
@@ -69,11 +61,15 @@ const ICON_OPTIONS = [
     { name: "FiShield", comp: <Icons.FiShield /> }
 ];
 
+import { useCategoriesData } from "../../../hooks/instructor/useCategoriesData";
+
 const Categories = () => {
     const dispatch = useDispatch();
+    const currentUser = useSelector(selectProfile);
+    const currentUserId = currentUser?.uid || currentUser?.id;
 
-    // Redux selectors
-    const categories = useSelector(selectCategories);
+    // Use custom data hook
+    const { categories } = useCategoriesData();
 
     // Editing state (null for Add Mode, category object for Edit Mode)
     const [editingCategory, setEditingCategory] = useState(null);
@@ -91,26 +87,10 @@ const Categories = () => {
     const containerRef = useRef(null);
     const reassignModalRef = useRef(null);
 
-    // Initial load
-    useEffect(() => {
-        dispatch(fetchMyCategories());
-    }, [dispatch]);
-
-    // GSAP animations
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-            );
-
-            gsap.fromTo(`.${styles.categoryItem}`,
-                { opacity: 0, x: -15 },
-                { opacity: 1, x: 0, duration: 0.4, stagger: 0.05, ease: "power2.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, [categories]);
+    // Page entrance animation
+    usePageAnimation(containerRef, {
+        staggerSelector: `.${styles.categoryItem}`,
+    });
 
     const handleSelectCategoryForEdit = (cat) => {
         setEditingCategory(cat);
@@ -132,6 +112,11 @@ const Categories = () => {
         e.preventDefault();
         if (!name.trim() || name.length < 3) {
             toast.error("Category name must be at least 3 characters");
+            return;
+        }
+
+        if (editingCategory && editingCategory.created_by !== currentUserId) {
+            toast.error("System or default categories cannot be modified.");
             return;
         }
 
@@ -159,6 +144,12 @@ const Categories = () => {
 
     // Toggle active state
     const handleToggleActive = async (id, currentStatus) => {
+        const cat = categories.find(c => c.id === id);
+        if (cat && cat.created_by !== currentUserId) {
+            toast.error("System or default categories cannot be modified.");
+            return;
+        }
+
         try {
             await dispatch(toggleCategoryThunk({ id, isActive: !currentStatus })).unwrap();
             toast.success(`Category status updated successfully!`);
@@ -170,6 +161,11 @@ const Categories = () => {
 
     // Safe Deletion checks
     const handleDeleteClick = (cat) => {
+        if (cat.created_by !== currentUserId) {
+            toast.error("System or default categories cannot be deleted.");
+            return;
+        }
+
         if ((cat.quiz_count || 0) > 0) {
             setCategoryToDelete(cat);
             setReassignTargetId("");
@@ -358,6 +354,7 @@ const Categories = () => {
 
             {/* SAFE DELETION REASSIGN QUIZZES MODAL */}
             {categoryToDelete && (
+                <ModalPortal onClose={() => setCategoryToDelete(null)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setCategoryToDelete(null)} // Close on outside click
@@ -404,6 +401,7 @@ const Categories = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );

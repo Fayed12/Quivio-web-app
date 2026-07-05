@@ -43,7 +43,7 @@ const slice = createSlice({
     name: "bookmarks",
     initialState: {
         items: [],
-        bookmarkedIds: new Set(),
+        bookmarkedIds: {},
         count: 0,
         loading: false,
         error: null,
@@ -61,19 +61,20 @@ const slice = createSlice({
                 s.loading = false;
                 s.items = payload.data ?? [];
                 s.count = payload.count;
-                s.bookmarkedIds = new Set(
-                    (payload.data ?? []).map((b) => b.quiz?.id).filter(Boolean),
-                );
+                s.bookmarkedIds = (payload.data ?? []).reduce((acc, curr) => {
+                    if (curr.quiz?.id) acc[curr.quiz.id] = true;
+                    return acc;
+                }, {});
             })
             .addCase(addBookmarkThunk.fulfilled, (s, { payload }) => {
                 if (payload.data) {
                     s.items.unshift(payload.data);
-                    s.bookmarkedIds.add(payload.quizId);
+                    s.bookmarkedIds[payload.quizId] = true;
                 }
             })
             .addCase(removeBookmarkThunk.fulfilled, (s, { payload }) => {
                 s.items = s.items.filter((b) => b.quiz?.id !== payload);
-                s.bookmarkedIds.delete(payload);
+                delete s.bookmarkedIds[payload];
             });
     },
 });
@@ -81,5 +82,5 @@ const slice = createSlice({
 export const { clearBookmarkError } = slice.actions;
 export const selectBookmarks = (s) => s.bookmarks.items;
 export const selectIsBookmarked = (quizId) => (s) =>
-    s.bookmarks.bookmarkedIds.has(quizId);
+    !!s.bookmarks.bookmarkedIds[quizId];
 export default slice.reducer;

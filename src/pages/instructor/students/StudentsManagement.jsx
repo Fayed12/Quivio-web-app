@@ -9,9 +9,7 @@ import { useState, useEffect, useRef } from "react";
 // redux
 import { useDispatch, useSelector } from "react-redux";
 import { 
-    fetchMyStudents, 
-    selectMyStudents, 
-    selectStudentCount, 
+    fetchMyStudents,
     createStudentThunk,
     bulkCreateThunk,
     resendCredentialsThunk,
@@ -19,8 +17,9 @@ import {
 } from "../../../redux/slices/instructorStudentsSlice";
 import { fetchMyRooms, selectMyRooms } from "../../../redux/slices/roomsSlice";
 
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import ModalPortal from "../components/ModalPortal";
 
 // react-icons
 import { 
@@ -33,14 +32,10 @@ import {
     FiKey, 
     FiUserX, 
     FiUserCheck,
-    FiTrash2, 
-    FiCalendar, 
-    FiBriefcase, 
+    FiTrash2,
     FiAward, 
-    FiActivity, 
-    FiFileText,
-    FiDownload,
-    FiInfo
+    FiActivity,
+    FiDownload
 } from "react-icons/fi";
 
 // react-toastify
@@ -52,11 +47,16 @@ import { Avatar, Table, TableBody, TableCell, TableContainer, TableHead, TableRo
 // supabase client
 import { supabase } from "../../../services/config/supabaseClient";
 
+import { useStudentsData } from "../../../hooks/instructor/useStudentsData";
+
+// gsap
+import gsap from "gsap";
+
 const StudentsManagement = () => {
     const dispatch = useDispatch();
 
-    // Redux selectors
-    const students = useSelector(selectMyStudents);
+    // Redux selectors using custom data hook
+    const { students } = useStudentsData();
     const rooms = useSelector(selectMyRooms);
 
     // Filter states
@@ -94,12 +94,10 @@ const StudentsManagement = () => {
     const sidePanelRef = useRef(null);
     const dropdownRef = useRef(null);
     const createModalRef = useRef(null);
-    const importModalRef = useRef(null);
     const fileInputRef = useRef(null);
 
-    // Initial load
+    // Fetch rooms (students are fetched inside hook)
     useEffect(() => {
-        dispatch(fetchMyStudents());
         dispatch(fetchMyRooms());
     }, [dispatch]);
 
@@ -114,24 +112,19 @@ const StudentsManagement = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [activeDropdown]);
 
-    // GSAP animations for page
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, [students]);
+    // Page entrance animation
+    usePageAnimation(containerRef);
 
     // GSAP animation for slide-in side panel
     useEffect(() => {
-        if (selectedStudent) {
-            gsap.fromTo(sidePanelRef.current,
-                { x: "100%", opacity: 0 },
-                { x: "0%", opacity: 1, duration: 0.4, ease: "power3.out" }
-            );
+        if (selectedStudent && sidePanelRef.current) {
+            const rafId = requestAnimationFrame(() => {
+                gsap.fromTo(sidePanelRef.current,
+                    { x: "100%", opacity: 0 },
+                    { x: "0%", opacity: 1, duration: 0.4, ease: "power3.out" }
+                );
+            });
+            return () => cancelAnimationFrame(rafId);
         }
     }, [selectedStudent]);
 
@@ -559,6 +552,7 @@ const StudentsManagement = () => {
 
             {/* CREATE STUDENT MODAL */}
             {isCreateOpen && (
+                <ModalPortal onClose={() => setIsCreateOpen(false)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setIsCreateOpen(false)} // Close on outside click
@@ -656,10 +650,12 @@ const StudentsManagement = () => {
                         </div>
                     </form>
                 </div>
+                </ModalPortal>
             )}
 
             {/* BULK IMPORT STUDENTS */}
             {isImportOpen && (
+                <ModalPortal onClose={() => setIsImportOpen(false)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setIsImportOpen(false)} // Close on outside click
@@ -740,10 +736,12 @@ const StudentsManagement = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {/* CREDENTIALS RESEND MODAL */}
             {resendCredsStudent && (
+                <ModalPortal onClose={() => setResendCredsStudent(null)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setResendCredsStudent(null)} // Close on outside click
@@ -769,10 +767,12 @@ const StudentsManagement = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {/* DEACTIVATE CONFIRM MODAL */}
             {toggleActiveStudent && (
+                <ModalPortal onClose={() => setToggleActiveStudent(null)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setToggleActiveStudent(null)} // Close on outside click
@@ -802,10 +802,12 @@ const StudentsManagement = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
 
             {/* DELETE STUDENT CONFIRM MODAL */}
             {deleteStudent && (
+                <ModalPortal onClose={() => { setDeleteStudent(null); setDeleteVerifyName(""); }}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => { setDeleteStudent(null); setDeleteVerifyName(""); }} // Close on outside click
@@ -847,6 +849,7 @@ const StudentsManagement = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );

@@ -7,19 +7,15 @@ import styles from "./Profile.module.css";
 import { useState, useEffect, useRef } from "react";
 
 // redux
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { 
-    fetchMyProfile, 
-    selectMyProfile, 
+    fetchMyProfile,
     updateProfileThunk,
     updateAvatarThunk
 } from "../../../redux/slices/profilesSlice";
-import { selectMyRooms, fetchMyRooms } from "../../../redux/slices/roomsSlice";
-import { selectMyQuizzes, fetchMyQuizzes } from "../../../redux/slices/quizzesSlice";
-import { selectMyQuestions, fetchMyQuestions } from "../../../redux/slices/questionsSlice";
 
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
 
 // react-icons
 import { 
@@ -27,10 +23,7 @@ import {
     FiLock, 
     FiSliders, 
     FiCamera, 
-    FiBook, 
-    FiHelpCircle,
-    FiKey,
-    FiCheck,
+    FiBook,
     FiEye,
     FiEyeOff
 } from "react-icons/fi";
@@ -38,17 +31,19 @@ import {
 // react-toastify
 import { toast } from "react-toastify";
 
+// Material UI
+import { Avatar } from "@mui/material";
+
 // supabase client
 import { supabase } from "../../../services/config/supabaseClient";
+
+import { useProfileData } from "../../../hooks/instructor/useProfileData";
 
 const Profile = () => {
     const dispatch = useDispatch();
 
-    // Redux selectors
-    const profile = useSelector(selectMyProfile);
-    const rooms = useSelector(selectMyRooms) || [];
-    const quizzes = useSelector(selectMyQuizzes) || [];
-    const questions = useSelector(selectMyQuestions) || [];
+    // Use custom data hook
+    const { profile, rooms, quizzes, questions } = useProfileData();
 
     const roomCount = rooms.length;
     const quizCount = quizzes.length;
@@ -76,13 +71,8 @@ const Profile = () => {
     const containerRef = useRef(null);
     const fileInputRef = useRef(null);
 
-    // Initial Fetch
+    // Initial Load preferences
     useEffect(() => {
-        dispatch(fetchMyProfile());
-        dispatch(fetchMyRooms());
-        dispatch(fetchMyQuizzes());
-        dispatch(fetchMyQuestions());
-        
         // Load preferences from localstorage
         const mailPref = localStorage.getItem("pref_email_on_pass");
         const reportPref = localStorage.getItem("pref_weekly_reports");
@@ -91,7 +81,7 @@ const Profile = () => {
         if (mailPref !== null) setEmailOnPass(mailPref === "true");
         if (reportPref !== null) setWeeklyReports(reportPref === "true");
         setDarkModePref(isDark);
-    }, [dispatch]);
+    }, []);
 
     // Populate personal details on profile load
     useEffect(() => {
@@ -128,16 +118,8 @@ const Profile = () => {
         setPassStrength({ score, text, color });
     }, [newPassword]);
 
-    // GSAP animations
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, [activeTab]);
+    // Page entrance animation
+    usePageAnimation(containerRef);
 
     // Save Personal Settings
     const handleSavePersonal = async (e) => {
@@ -182,6 +164,7 @@ const Profile = () => {
             dispatch(fetchMyProfile());
         } catch (err) {
             // Mock fallback
+            console.log(err);
             const fallbackUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=${fullName}`;
             await supabase.from("profiles").update({ avatar_url: fallbackUrl }).eq("uid", profile.uid);
             toast.success("Avatar set with Dicebear placeholder!");

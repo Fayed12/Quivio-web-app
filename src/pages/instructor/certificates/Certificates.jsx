@@ -4,26 +4,23 @@ import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./Certificates.module.css";
 
 // react
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 
 // redux
-import { useDispatch, useSelector } from "react-redux";
-import { fetchMyCertificates, selectMyCertificates } from "../../../redux/slices/certificatesSlice";
+import { useDispatch } from "react-redux";
+import { fetchMyCertificates } from "../../../redux/slices/certificatesSlice";
 
-// gsap
-import { gsap } from "gsap";
+// animation
+import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import ModalPortal from "../components/ModalPortal";
 
 // react-icons
-import { 
-    FiAward, 
-    FiCheck, 
-    FiDownload, 
-    FiTrash2, 
-    FiSettings, 
-    FiFileText, 
-    FiPenTool, 
-    FiUnlock, 
-    FiX 
+import {
+    FiAward,
+    FiDownload,
+    FiTrash2,
+    FiSettings,
+    FiPenTool
 } from "react-icons/fi";
 
 // react-toastify
@@ -35,52 +32,40 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper
 // supabase client
 import { supabase } from "../../../services/config/supabaseClient";
 
+import { useCertificatesData } from "../../../hooks/instructor/useCertificatesData";
+
 const Certificates = () => {
     const dispatch = useDispatch();
 
-    // Redux selectors
-    const issuedCerts = useSelector(selectMyCertificates);
+    // Use custom hook
+    const { issuedCerts } = useCertificatesData();
 
     // Settings state (Persisted in LocalStorage)
-    const [enabled, setEnabled] = useState(true);
-    const [passingThreshold, setPassingThreshold] = useState(70);
-    const [certTitle, setCertTitle] = useState("Certificate of Completion");
-    const [signatureName, setSignatureName] = useState("Dr. Sarah Adams");
-    const [bodyText, setBodyText] = useState("For outstanding performance in demonstrating mastery of the quiz syllabus.");
+    const [enabled, setEnabled] = useState(() => {
+        const stored = localStorage.getItem("cert_enabled");
+        return stored !== null ? stored === "true" : true;
+    });
+    const [passingThreshold, setPassingThreshold] = useState(() => {
+        const stored = localStorage.getItem("cert_threshold");
+        return stored !== null ? Number(stored) : 70;
+    });
+    const [certTitle, setCertTitle] = useState(() => {
+        return localStorage.getItem("cert_title") || "Certificate of Completion";
+    });
+    const [signatureName, setSignatureName] = useState(() => {
+        return localStorage.getItem("cert_sig") || "Dr. Sarah Adams";
+    });
+    const [bodyText, setBodyText] = useState(() => {
+        return localStorage.getItem("cert_body") || "For outstanding performance in demonstrating mastery of the quiz syllabus.";
+    });
 
     // Revocation state
     const [revokingCert, setRevokingCert] = useState(null);
 
     const containerRef = useRef(null);
 
-    // Initial Load
-    useEffect(() => {
-        // Load settings from localStorage
-        const storedEnabled = localStorage.getItem("cert_enabled");
-        const storedThreshold = localStorage.getItem("cert_threshold");
-        const storedTitle = localStorage.getItem("cert_title");
-        const storedSig = localStorage.getItem("cert_sig");
-        const storedBody = localStorage.getItem("cert_body");
-
-        if (storedEnabled !== null) setEnabled(storedEnabled === "true");
-        if (storedThreshold !== null) setPassingThreshold(Number(storedThreshold));
-        if (storedTitle !== null) setCertTitle(storedTitle);
-        if (storedSig !== null) setSignatureName(storedSig);
-        if (storedBody !== null) setBodyText(storedBody);
-
-        dispatch(fetchMyCertificates());
-    }, [dispatch]);
-
-    // GSAP Entrance
-    useEffect(() => {
-        const ctx = gsap.context(() => {
-            gsap.fromTo(containerRef.current,
-                { opacity: 0, y: 15 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }
-            );
-        }, containerRef);
-        return () => ctx.revert();
-    }, []);
+    // Page entrance animation
+    usePageAnimation(containerRef);
 
     // Save Certificate Settings to LocalStorage
     const handleSaveSettings = (e) => {
@@ -332,6 +317,7 @@ const Certificates = () => {
 
             {/* REVOKE CERTIFICATE MODAL */}
             {revokingCert && (
+                <ModalPortal onClose={() => setRevokingCert(null)}>
                 <div 
                     className={styles.modalOverlay}
                     onClick={() => setRevokingCert(null)} // Close on outside click
@@ -357,6 +343,7 @@ const Certificates = () => {
                         </div>
                     </div>
                 </div>
+                </ModalPortal>
             )}
         </div>
     );

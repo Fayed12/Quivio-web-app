@@ -1,8 +1,7 @@
 .topbar {
-    position: fixed;
+    position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
+    width: 100%;
     height: var(--topbar-height);
     background-color: var(--bg-surface);
     border-bottom: 1px solid var(--border-default);
@@ -51,7 +50,7 @@
 
 .searchIcon {
     position: absolute;
-    left: var(--space-3);
+    right: var(--space-3);
     color: var(--text-muted);
     font-size: 16px;
     pointer-events: none;

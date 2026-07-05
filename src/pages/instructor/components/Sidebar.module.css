@@ -20,34 +20,27 @@
     height: var(--topbar-height);
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    justify-content: flex-start;
     padding: 0 var(--space-4);
     border-bottom: 1px solid var(--border-default);
     cursor: pointer;
     flex-shrink: 0;
 }
 
-.logoIcon {
-    width: 32px;
-    height: 32px;
-    background-color: var(--blue-600);
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
+.collapsed .logoSection {
     justify-content: center;
-    color: white;
-    font-weight: var(--fw-bold);
-    font-size: var(--text-lg);
+    padding: 0;
 }
 
-.logoText {
-    font-size: var(--text-lg);
-    font-weight: var(--fw-bold);
-    color: var(--text-primary);
+.logoImg {
+    max-height: 32px;
+    max-width: 100%;
+    object-fit: contain;
+    transition: transform var(--transition-base);
 }
 
-.logoHighlight {
-    color: var(--blue-500);
+.collapsed .logoImg {
+    max-height: 24px;
 }
 
 .nav {
