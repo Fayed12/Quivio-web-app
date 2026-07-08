@@ -111,7 +111,7 @@ const Rooms = () => {
             rooms.forEach(async (r) => {
                 const { data } = await supabase
                     .from("room_members")
-                    .select("joined_at, profile:profiles!uid(uid, full_name, avatar_url)")
+                    .select("joined_at, profile:profiles!room_members_uid_fkey(uid, full_name, avatar_url)")
                     .eq("room_id", r.id)
                     .limit(5);
                 if (data) {

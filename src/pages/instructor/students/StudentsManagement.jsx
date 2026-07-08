@@ -89,6 +89,11 @@ const StudentsManagement = () => {
     const [csvFile, setCsvFile] = useState(null);
     const [csvValidCount, setCsvValidCount] = useState(0);
     const [csvErrorsCount, setCsvErrorsCount] = useState(0);
+    const [isImporting, setIsImporting] = useState(false);
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     const containerRef = useRef(null);
     const sidePanelRef = useRef(null);
@@ -138,10 +143,10 @@ const StudentsManagement = () => {
 
         try {
             await dispatch(createStudentThunk({
-                fullName,
-                studentCode: studentId,
+                full_name: fullName,
+                student_code: studentId,
                 email,
-                roomId: assignRoomId || null
+                room_id: assignRoomId || null
             })).unwrap();
 
             toast.success(`Student "${fullName}" account created successfully! Credentials sent to email.`);
@@ -260,11 +265,12 @@ const StudentsManagement = () => {
         const validRows = csvPreview.filter(r => r.isValid);
         if (validRows.length === 0) return;
 
+        setIsImporting(true);
         try {
             // Bulk insert thunk
             const payload = validRows.map(r => ({
-                fullName: r.full_name,
-                studentCode: r.student_id,
+                full_name: r.full_name,
+                student_code: r.student_id,
                 email: r.email
             }));
 
@@ -276,6 +282,8 @@ const StudentsManagement = () => {
             dispatch(fetchMyStudents());
         } catch (err) {
             toast.error(err || "Failed to bulk import students");
+        } finally {
+            setIsImporting(false);
         }
     };
 
@@ -295,17 +303,17 @@ const StudentsManagement = () => {
         const emailAddr = s.profile?.email || "";
         const code = s.student_code || "";
 
-        const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             emailAddr.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             code.toLowerCase().includes(searchQuery.toLowerCase());
-        
-        const matchesStatus = statusFilter === "all" || 
-                              (statusFilter === "active" && s.profile?.is_active) || 
-                              (statusFilter === "inactive" && !s.profile?.is_active);
+        const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            emailAddr.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            code.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesStatus = statusFilter === "all" ||
+                            (statusFilter === "active" && s.profile?.is_active) ||
+                            (statusFilter === "inactive" && !s.profile?.is_active);
 
         // Filter by Room requires querying database membership or checking local memberships
         // (Mock or let matchesRoom be true if room filter is "all")
-        const matchesRoom = roomFilter === "all"; 
+        const matchesRoom = roomFilter === "all";
 
         return matchesSearch && matchesStatus && matchesRoom;
     });
@@ -316,6 +324,24 @@ const StudentsManagement = () => {
         if (sortOption === "date_newest") return new Date(b.created_at) - new Date(a.created_at);
         return 0;
     });
+
+    // Reset pagination to page 1 on filter changes during render to avoid cascading renders
+    const filterKey = `${searchQuery}_${roomFilter}_${statusFilter}_${sortOption}`;
+    const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+    if (filterKey !== prevFilterKey) {
+        setPrevFilterKey(filterKey);
+        setCurrentPage(1);
+    }
+
+    // Pagination slices
+    const totalRows = sortedStudents.length;
+    const totalPages = Math.ceil(totalRows / pageSize);
+    const paginatedStudents = sortedStudents.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+    );
+    const startRow = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const endRow = Math.min(currentPage * pageSize, totalRows);
 
     // Count states
     const activeCount = students.filter(s => s.profile?.is_active).length;
@@ -335,6 +361,9 @@ const StudentsManagement = () => {
                         </MainButton>
                         <MainButton onClick={() => setIsImportOpen(true)} variant="outline">
                             <FiUpload /> Bulk Import
+                        </MainButton>
+                        <MainButton onClick={handleDownloadTemplate} variant="secondary">
+                            <FiDownload /> Template
                         </MainButton>
                     </div>
                 }
@@ -411,7 +440,7 @@ const StudentsManagement = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {sortedStudents.map((s) => (
+                        {paginatedStudents.map((s) => (
                             <TableRow key={s.student_uid} className={styles.tableRow}>
                                 <TableCell className={styles.tdCell}>
                                     <div className={styles.studentNameCol}>
@@ -435,7 +464,7 @@ const StudentsManagement = () => {
                                 <TableCell align="center" className={styles.tdCell}>
                                     {s.profile?.last_activity_date ? new Date(s.profile.last_activity_date).toLocaleDateString() : "Never"}
                                 </TableCell>
-                                <TableCell align="center" className={styles.tdCell}>
+                                <TableCell align="center" className={styles.tdCell} style={{ position: "relative", zIndex: activeDropdown === s.student_uid ? 100 : 1 }}>
                                     <div className={styles.actions}>
                                         <button className={styles.actionBtn} onClick={() => setSelectedStudent(s)} title="View Profile">
                                             <FiEye />
@@ -479,9 +508,46 @@ const StudentsManagement = () => {
                 </Table>
             </TableContainer>
 
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className={styles.paginationRow}>
+                    <div className={styles.paginationInfo}>
+                        Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> students
+                    </div>
+                    <div className={styles.paginationBtnGroup}>
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className={styles.pageBtn}
+                        >
+                            Previous
+                        </button>
+                        {[...Array(totalPages)].map((_, idx) => {
+                            const pageNum = idx + 1;
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className={styles.pageBtn}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* SIDE DETAIL SLIDE-IN PANEL */}
             {selectedStudent && (
-                <>
+                <ModalPortal onClose={() => setSelectedStudent(null)}>
                     {/* Backdrop */}
                     <div className={styles.panelBackdrop} onClick={() => setSelectedStudent(null)} />
                     
@@ -547,7 +613,7 @@ const StudentsManagement = () => {
                             </div>
                         </div>
                     </div>
-                </>
+                </ModalPortal>
             )}
 
             {/* CREATE STUDENT MODAL */}
@@ -655,10 +721,10 @@ const StudentsManagement = () => {
 
             {/* BULK IMPORT STUDENTS */}
             {isImportOpen && (
-                <ModalPortal onClose={() => setIsImportOpen(false)}>
+                <ModalPortal onClose={() => !isImporting && setIsImportOpen(false)}>
                 <div 
                     className={styles.modalOverlay}
-                    onClick={() => setIsImportOpen(false)} // Close on outside click
+                    onClick={() => !isImporting && setIsImportOpen(false)} // Close on outside click
                 >
                     <div 
                         className={styles.csvModal}
@@ -666,20 +732,25 @@ const StudentsManagement = () => {
                     >
                         <div className={styles.modalHeader}>
                             <h3>Bulk Import Students CSV</h3>
-                            <button type="button" className={styles.closeBtn} onClick={() => setIsImportOpen(false)}>
+                            <button type="button" className={styles.closeBtn} onClick={() => !isImporting && setIsImportOpen(false)} disabled={isImporting}>
                                 <FiX />
                             </button>
                         </div>
 
                         <div className={styles.modalBody}>
                             {/* Upload Zone */}
-                            <div className={styles.csvUploadZone} onClick={() => fileInputRef.current.click()}>
+                            <div 
+                                className={styles.csvUploadZone} 
+                                onClick={() => !isImporting && fileInputRef.current.click()}
+                                style={{ pointerEvents: isImporting ? 'none' : 'auto', opacity: isImporting ? 0.6 : 1 }}
+                            >
                                 <input 
                                     type="file" 
                                     ref={fileInputRef} 
                                     className={styles.fileInput} 
                                     onChange={handleCsvUpload} 
                                     accept=".csv"
+                                    disabled={isImporting}
                                 />
                                 <FiUpload className={styles.csvIcon} />
                                 <p>{csvFile ? csvFile.name : "Select or drag student CSV file here"}</p>
@@ -720,18 +791,16 @@ const StudentsManagement = () => {
                         </div>
 
                         <div className={styles.modalFooter}>
-                            <MainButton onClick={handleDownloadTemplate} variant="secondary" style={{marginRight: "auto"}}>
-                                <FiDownload /> Download Template
-                            </MainButton>
-                            <MainButton onClick={() => setIsImportOpen(false)} variant="secondary">
+                            <MainButton onClick={() => setIsImportOpen(false)} variant="secondary" disabled={isImporting}>
                                 Cancel
                             </MainButton>
                             <MainButton 
                                 onClick={handleImportCSVData} 
                                 variant="primary" 
-                                disabled={csvValidCount === 0}
+                                disabled={csvValidCount === 0 || isImporting}
+                                isLoading={isImporting}
                             >
-                                Import {csvValidCount} Students
+                                {isImporting ? "Importing..." : `Import ${csvValidCount} Students`}
                             </MainButton>
                         </div>
                     </div>

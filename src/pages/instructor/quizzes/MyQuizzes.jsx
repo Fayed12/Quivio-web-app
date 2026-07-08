@@ -167,6 +167,7 @@ const MyQuizzes = () => {
             await dispatch(createAssignmentThunk({
                 quiz_id: quizToAssign.id,
                 room_id: assignRoomId,
+                student_uid: null,
                 due_date: assignDueDate || null
             })).unwrap();
             toast.success(`Successfully assigned "${quizToAssign.title}" to Room!`);

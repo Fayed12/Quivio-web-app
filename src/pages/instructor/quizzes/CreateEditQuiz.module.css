@@ -886,3 +886,91 @@
     justify-content: center;
     font-size: 22px;
 }
+
+/* Modals overlays & common elements */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bg-overlay);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    padding: var(--space-4);
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.modalHeader h3 {
+    font-size: var(--text-md);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.closeBtn {
+    background-color: transparent;
+    border: none;
+    font-size: 18px;
+    color: var(--text-muted);
+    transition: color var(--transition-base);
+    cursor: pointer;
+}
+
+.closeBtn:hover {
+    color: var(--text-primary);
+}
+
+.modalFooter {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+    border-top: 1px solid var(--border-default);
+    background-color: var(--bg-surface-2);
+}
+
+.modalWarningText {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-normal);
+}
+
+.modalButtons {
+    display: flex;
+    gap: var(--space-3);
+    width: 100%;
+}
+
+.modalButtons > button {
+    flex: 1;
+}
+
+/* Status Chips inside modal */
+.statusChip {
+    font-size: var(--text-xs);
+    font-weight: var(--fw-semibold);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    text-transform: capitalize;
+    display: inline-block;
+}
+
+.easy { background-color: var(--bg-success); color: var(--text-success); }
+.medium { background-color: var(--bg-warning); color: var(--text-warning); }
+.hard { background-color: var(--bg-danger); color: var(--text-danger); }
+
+@keyframes scaleUp {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}

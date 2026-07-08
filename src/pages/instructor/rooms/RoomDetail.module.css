@@ -169,7 +169,7 @@
 
 .searchIcon {
     position: absolute;
-    left: var(--space-3);
+    right: var(--space-6);
     color: var(--text-muted);
 }
 

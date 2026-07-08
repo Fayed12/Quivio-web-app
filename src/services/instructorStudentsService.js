@@ -63,6 +63,7 @@ export async function getMyStudents({ page = 1, pageSize = 20, search = '', isAc
     .from('instructor_students')
     .select(`
       id,
+      student_uid,
       student_code,
       credentials_sent_at,
       credentials_resent_at,

@@ -36,7 +36,8 @@ import {
     FiLock,
     FiUnlock,
     FiSettings,
-    FiFileText
+    FiFileText,
+    FiX
 } from "react-icons/fi";
 
 // react-toastify
@@ -78,12 +79,12 @@ const CreateEditQuiz = () => {
     
     // Editor Form States (Active Question)
     const [qText, setQText] = useState("");
-    const [qType, setQType] = useState("MCQ"); // MCQ or TF
+    const [qType, setQType] = useState("mcq"); // mcq or true_false
     const [qOptions, setQOptions] = useState([
+        { option_text: "", option_order: 0, is_correct: false },
         { option_text: "", option_order: 1, is_correct: false },
         { option_text: "", option_order: 2, is_correct: false },
-        { option_text: "", option_order: 3, is_correct: false },
-        { option_text: "", option_order: 4, is_correct: false }
+        { option_text: "", option_order: 3, is_correct: false }
     ]);
     const [qPoints, setQPoints] = useState(1);
     const [qDifficulty, setQDifficulty] = useState("medium");
@@ -95,7 +96,7 @@ const CreateEditQuiz = () => {
     const [hasTimeLimit, setHasTimeLimit] = useState(false);
     const [timeLimitMinutes, setTimeLimitMinutes] = useState(15);
     const [passingScore, setPassingScore] = useState(70);
-    const [maxAttempts, setMaxAttempts] = useState("Unlimited");
+    const [maxAttempts, setMaxAttempts] = useState("");
     const [availableFrom, setAvailableFrom] = useState("");
     const [availableUntil, setAvailableUntil] = useState("");
     const [shuffleQuestions, setShuffleQuestions] = useState(false);
@@ -159,7 +160,7 @@ const CreateEditQuiz = () => {
             setHasTimeLimit(!!currentQuiz.time_limit_minutes);
             setTimeLimitMinutes(currentQuiz.time_limit_minutes || 15);
             setPassingScore(currentQuiz.passing_score || 70);
-            setMaxAttempts(currentQuiz.max_attempts || "Unlimited");
+            setMaxAttempts(currentQuiz.max_attempts != null ? String(currentQuiz.max_attempts) : "");
             setAvailableFrom(currentQuiz.available_from ? currentQuiz.available_from.substring(0, 16) : "");
             setAvailableUntil(currentQuiz.available_until ? currentQuiz.available_until.substring(0, 16) : "");
             setShuffleQuestions(!!currentQuiz.shuffle_questions);
@@ -198,10 +199,10 @@ const CreateEditQuiz = () => {
         } else {
             // Defaults
             setQOptions([
+                { option_text: "", option_order: 0, is_correct: false },
                 { option_text: "", option_order: 1, is_correct: false },
                 { option_text: "", option_order: 2, is_correct: false },
-                { option_text: "", option_order: 3, is_correct: false },
-                { option_text: "", option_order: 4, is_correct: false }
+                { option_text: "", option_order: 3, is_correct: false }
             ]);
         }
     };
@@ -260,7 +261,7 @@ const CreateEditQuiz = () => {
                 tags: tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : [],
                 time_limit_minutes: hasTimeLimit ? Number(timeLimitMinutes) : null,
                 passing_score: Number(passingScore),
-                max_attempts: maxAttempts,
+                max_attempts: maxAttempts && maxAttempts !== "" ? Number(maxAttempts) : null,
                 available_from: availableFrom || null,
                 available_until: availableUntil || null,
                 shuffle_questions: shuffleQuestions,
@@ -324,7 +325,7 @@ const CreateEditQuiz = () => {
         }
 
         const filteredOptions = qOptions.filter(o => o.option_text.trim() !== "");
-        if (qType === "MCQ" && filteredOptions.length < 2) {
+        if (qType === "mcq" && filteredOptions.length < 2) {
             toast.error("MCQ questions require at least 2 options");
             return;
         }
@@ -363,7 +364,7 @@ const CreateEditQuiz = () => {
                 filteredOptions.map((o, idx) => ({
                     question_id: questionId,
                     option_text: o.option_text,
-                    option_order: idx + 1,
+                    option_order: idx,
                     is_correct: o.is_correct
                 }))
             );
@@ -393,11 +394,11 @@ const CreateEditQuiz = () => {
                 .from("questions")
                 .insert({
                     question_text: `New MCQ Question ${questionsList.length + 1}`,
-                    question_type: "MCQ",
+                    question_type: "mcq",
                     points: 1,
                     difficulty: "medium",
                     instructor_uid: currentQuiz.instructor_uid,
-                    category_id: categoryId
+                    category_id: categoryId || null
                 })
                 .select()
                 .single();
@@ -406,10 +407,10 @@ const CreateEditQuiz = () => {
 
             // Create default options
             await supabase.from("question_options").insert([
-                { question_id: newQ.id, option_text: "Option A", option_order: 1, is_correct: true },
-                { question_id: newQ.id, option_text: "Option B", option_order: 2, is_correct: false },
-                { question_id: newQ.id, option_text: "Option C", option_order: 3, is_correct: false },
-                { question_id: newQ.id, option_text: "Option D", option_order: 4, is_correct: false }
+                { question_id: newQ.id, option_text: "Option A", option_order: 0, is_correct: true },
+                { question_id: newQ.id, option_text: "Option B", option_order: 1, is_correct: false },
+                { question_id: newQ.id, option_text: "Option C", option_order: 2, is_correct: false },
+                { question_id: newQ.id, option_text: "Option D", option_order: 3, is_correct: false }
             ]);
 
             // Link to quiz
@@ -435,10 +436,10 @@ const CreateEditQuiz = () => {
                 question: {
                     ...newQ,
                     options: [
-                        { option_text: "Option A", option_order: 1, is_correct: true },
-                        { option_text: "Option B", option_order: 2, is_correct: false },
-                        { option_text: "Option C", option_order: 3, is_correct: false },
-                        { option_text: "Option D", option_order: 4, is_correct: false }
+                        { option_text: "Option A", option_order: 0, is_correct: true },
+                        { option_text: "Option B", option_order: 1, is_correct: false },
+                        { option_text: "Option C", option_order: 2, is_correct: false },
+                        { option_text: "Option D", option_order: 3, is_correct: false }
                     ]
                 }
             };
@@ -614,7 +615,7 @@ const CreateEditQuiz = () => {
             toast.warn("Maximum 6 options allowed");
             return;
         }
-        setQOptions([...qOptions, { option_text: "", option_order: qOptions.length + 1, is_correct: false }]);
+        setQOptions([...qOptions, { option_text: "", option_order: qOptions.length, is_correct: false }]);
     };
 
     const handleRemoveMcqOption = (idx) => {
@@ -624,7 +625,7 @@ const CreateEditQuiz = () => {
         }
         const updated = qOptions.filter((_, i) => i !== idx).map((o, i) => ({
             ...o,
-            option_order: i + 1
+            option_order: i
         }));
         setQOptions(updated);
     };
@@ -874,8 +875,8 @@ const CreateEditQuiz = () => {
                                         onChange={(e) => { setQType(e.target.value); }}
                                         className={styles.select}
                                     >
-                                        <option value="MCQ">Multiple Choice (MCQ)</option>
-                                        <option value="TF">True / False</option>
+                                        <option value="mcq">Multiple Choice (MCQ)</option>
+                                        <option value="true_false">True / False</option>
                                     </select>
                                 </div>
 
@@ -899,7 +900,7 @@ const CreateEditQuiz = () => {
                                 {/* Options Wrapper */}
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Answer Options</label>
-                                    {qType === "MCQ" ? (
+                                    {qType === "mcq" ? (
                                         <div className={styles.optionsList}>
                                             {qOptions.map((opt, oIdx) => (
                                                 <div key={oIdx} className={styles.optionRow} data-correct={opt.is_correct}>
@@ -937,16 +938,16 @@ const CreateEditQuiz = () => {
                                             {/* True / False static choices */}
                                             <div className={`${styles.tfCard} ${qOptions[0]?.is_correct ? styles.tfActive : ""}`} onClick={() => {
                                                 setQOptions([
-                                                    { option_text: "True", option_order: 1, is_correct: true },
-                                                    { option_text: "False", option_order: 2, is_correct: false }
+                                                    { option_text: "True", option_order: 0, is_correct: true },
+                                                    { option_text: "False", option_order: 1, is_correct: false }
                                                 ]);
                                             }}>
                                                 <span>True</span>
                                             </div>
                                             <div className={`${styles.tfCard} ${qOptions[1]?.is_correct ? styles.tfActive : ""}`} onClick={() => {
                                                 setQOptions([
-                                                    { option_text: "True", option_order: 1, is_correct: false },
-                                                    { option_text: "False", option_order: 2, is_correct: true }
+                                                    { option_text: "True", option_order: 0, is_correct: false },
+                                                    { option_text: "False", option_order: 1, is_correct: true }
                                                 ]);
                                             }}>
                                                 <span>False</span>
@@ -1083,7 +1084,7 @@ const CreateEditQuiz = () => {
                                         onChange={(e) => { setMaxAttempts(e.target.value); markDirty(); }}
                                         className={styles.select}
                                     >
-                                        <option value="Unlimited">Unlimited Attempts</option>
+                                        <option value="">Unlimited Attempts</option>
                                         <option value="1">1 Attempt Only</option>
                                         <option value="2">2 Attempts</option>
                                         <option value="3">3 Attempts</option>

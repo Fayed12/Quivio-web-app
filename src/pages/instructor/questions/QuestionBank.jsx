@@ -76,7 +76,7 @@ const QuestionBank = () => {
 
     // Standalone Question Editor form states
     const [qText, setQText] = useState("");
-    const [qType, setQType] = useState("MCQ");
+    const [qType, setQType] = useState("mcq");
     const [qCategoryId, setQCategoryId] = useState("");
     const [qDifficulty, setQDifficulty] = useState("medium");
     const [qPoints, setQPoints] = useState(1);
@@ -84,10 +84,10 @@ const QuestionBank = () => {
     const [qExplanation, setQExplanation] = useState("");
     const [qTags, setQTags] = useState("");
     const [qOptions, setQOptions] = useState([
-        { option_text: "Option A", option_order: 1, is_correct: true },
-        { option_text: "Option B", option_order: 2, is_correct: false },
-        { option_text: "Option C", option_order: 3, is_correct: false },
-        { option_text: "Option D", option_order: 4, is_correct: false }
+        { option_text: "Option A", option_order: 0, is_correct: true },
+        { option_text: "Option B", option_order: 1, is_correct: false },
+        { option_text: "Option C", option_order: 2, is_correct: false },
+        { option_text: "Option D", option_order: 3, is_correct: false }
     ]);
 
     // CSV Bulk Import states
@@ -95,6 +95,11 @@ const QuestionBank = () => {
     const [csvPreview, setCsvPreview] = useState([]); // parsed rows
     const [csvErrors, setCsvErrors] = useState(0);
     const [csvValidCount, setCsvValidCount] = useState(0);
+    const [isImporting, setIsImporting] = useState(false);
+
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     const containerRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -111,10 +116,32 @@ const QuestionBank = () => {
         return matchesSearch && matchesCategory && matchesDifficulty && matchesType;
     });
 
+    const sortedQuestions = [...filteredQuestions].sort((a, b) => {
+        return new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    // Reset pagination to page 1 on filter changes during render to avoid cascading renders
+    const filterKey = `${searchQuery}_${categoryFilter}_${difficultyFilter}_${typeFilter}`;
+    const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+    if (filterKey !== prevFilterKey) {
+        setPrevFilterKey(filterKey);
+        setCurrentPage(1);
+    }
+
+    // Pagination slices
+    const totalRows = sortedQuestions.length;
+    const totalPages = Math.ceil(totalRows / pageSize);
+    const paginatedQuestions = sortedQuestions.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+    );
+    const startRow = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const endRow = Math.min(currentPage * pageSize, totalRows);
+
     // Checkbox selections
     const handleSelectAll = (e) => {
         if (e.target.checked) {
-            setSelectedQIds(filteredQuestions.map(q => q.id));
+            setSelectedQIds(paginatedQuestions.map(q => q.id));
         } else {
             setSelectedQIds([]);
         }
@@ -153,7 +180,7 @@ const QuestionBank = () => {
             // Create mode
             setActiveQuestion({ isNew: true });
             setQText("");
-            setQType("MCQ");
+            setQType("mcq");
             setQCategoryId("");
             setQDifficulty("medium");
             setQPoints(1);
@@ -161,10 +188,10 @@ const QuestionBank = () => {
             setQExplanation("");
             setQTags("");
             setQOptions([
-                { option_text: "", option_order: 1, is_correct: true },
+                { option_text: "", option_order: 0, is_correct: true },
+                { option_text: "", option_order: 1, is_correct: false },
                 { option_text: "", option_order: 2, is_correct: false },
-                { option_text: "", option_order: 3, is_correct: false },
-                { option_text: "", option_order: 4, is_correct: false }
+                { option_text: "", option_order: 3, is_correct: false }
             ]);
         }
     };
@@ -181,7 +208,7 @@ const QuestionBank = () => {
         }
 
         const filteredOpts = qOptions.filter(o => o.option_text.trim() !== "");
-        if (qType === "MCQ" && filteredOpts.length < 2) {
+        if (qType === "mcq" && filteredOpts.length < 2) {
             toast.error("MCQ requires at least 2 options");
             return;
         }
@@ -232,7 +259,7 @@ const QuestionBank = () => {
                     filteredOpts.map((o, idx) => ({
                         question_id: activeQuestion.id,
                         option_text: o.option_text,
-                        option_order: idx + 1,
+                        option_order: idx,
                         is_correct: o.is_correct
                     }))
                 );
@@ -378,7 +405,7 @@ const QuestionBank = () => {
 
             // Basic Validation
             const rowErrors = [];
-            if (!rowData.type || !["MCQ", "TF"].includes(rowData.type.toUpperCase())) {
+            if (!rowData.type || !['mcq', 'true_false', 'MCQ', 'TF'].includes(rowData.type)) {
                 rowErrors.push("Type must be MCQ or TF");
             }
             if (!rowData.question_text) {
@@ -411,6 +438,7 @@ const QuestionBank = () => {
             return;
         }
 
+        setIsImporting(true);
         try {
             for (const row of validRows) {
                 // Find matching category or default to first
@@ -418,7 +446,7 @@ const QuestionBank = () => {
                 
                 const qFields = {
                     question_text: row.question_text,
-                    question_type: row.type.toUpperCase(),
+                    question_type: row.type.toUpperCase() === 'TF' ? 'true_false' : 'mcq',
                     difficulty: row.difficulty?.toLowerCase() || "medium",
                     points: Number(row.points) || 1,
                     hint: row.hint || null,
@@ -428,19 +456,19 @@ const QuestionBank = () => {
 
                 // Map options
                 let opts = [];
-                if (qFields.question_type === "MCQ") {
+                if (qFields.question_type === "mcq") {
                     const letter = row.correct.toUpperCase(); // A, B, C, D
                     opts = [
-                        { option_text: row.option_a || "Choice A", option_order: 1, is_correct: letter === "A" },
-                        { option_text: row.option_b || "Choice B", option_order: 2, is_correct: letter === "B" },
-                        { option_text: row.option_c || "Choice C", option_order: 3, is_correct: letter === "C" },
-                        { option_text: row.option_d || "Choice D", option_order: 4, is_correct: letter === "D" }
+                        { option_text: row.option_a || "Choice A", option_order: 0, is_correct: letter === "A" },
+                        { option_text: row.option_b || "Choice B", option_order: 1, is_correct: letter === "B" },
+                        { option_text: row.option_c || "Choice C", option_order: 2, is_correct: letter === "C" },
+                        { option_text: row.option_d || "Choice D", option_order: 3, is_correct: letter === "D" }
                     ].filter(o => o.option_text !== "");
                 } else {
                     const val = row.correct.toLowerCase(); // true, false
                     opts = [
-                        { option_text: "True", option_order: 1, is_correct: val === "true" },
-                        { option_text: "False", option_order: 2, is_correct: val === "false" }
+                        { option_text: "True", option_order: 0, is_correct: val === "true" },
+                        { option_text: "False", option_order: 1, is_correct: val === "false" }
                     ];
                 }
 
@@ -456,6 +484,8 @@ const QuestionBank = () => {
         } catch (err) {
             console.log(err);
             toast.error("Bulk CSV import encountered database insert issues.");
+        } finally {
+            setIsImporting(false);
         }
     };
 
@@ -538,8 +568,8 @@ const QuestionBank = () => {
 
                     <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={styles.select}>
                         <option value="all">All Types</option>
-                        <option value="MCQ">Multiple Choice</option>
-                        <option value="TF">True / False</option>
+                        <option value="mcq">Multiple Choice</option>
+                        <option value="true_false">True / False</option>
                     </select>
                 </div>
             </div>
@@ -601,8 +631,8 @@ const QuestionBank = () => {
                         <TableRow>
                             <TableCell className={styles.thCell} padding="checkbox">
                                 <Checkbox 
-                                    indeterminate={selectedQIds.length > 0 && selectedQIds.length < filteredQuestions.length}
-                                    checked={filteredQuestions.length > 0 && selectedQIds.length === filteredQuestions.length}
+                                    indeterminate={selectedQIds.length > 0 && selectedQIds.length < paginatedQuestions.length}
+                                    checked={paginatedQuestions.length > 0 && selectedQIds.length === paginatedQuestions.length}
                                     onChange={handleSelectAll}
                                     sx={{color: "var(--border-medium)"}}
                                 />
@@ -616,7 +646,7 @@ const QuestionBank = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredQuestions.map((q) => {
+                        {paginatedQuestions.map((q) => {
                             const isRowChecked = selectedQIds.includes(q.id);
                             return (
                                 <TableRow key={q.id} className={styles.tableRow} data-checked={isRowChecked}>
@@ -629,7 +659,7 @@ const QuestionBank = () => {
                                     </TableCell>
                                     <TableCell align="center" className={styles.tdCell}>
                                         <div className={styles.typeIcon} title={q.question_type}>
-                                            {q.question_type === "MCQ" ? <FiList /> : <FiToggleLeft />}
+                                            {q.question_type === "mcq" ? <FiList /> : <FiToggleLeft />}
                                         </div>
                                     </TableCell>
                                     <TableCell className={styles.tdCell} style={{fontWeight: 500}}>
@@ -669,16 +699,53 @@ const QuestionBank = () => {
                                 </TableRow>
                             );
                         })}
-                        {filteredQuestions.length === 0 && (
+                        {sortedQuestions.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={7} align="center" className={styles.emptyCell}>
-                                    No questions matching filters in your bank. Click "+ Create Question" to add!
+                                    No questions registered in Question Bank. Click "+ Create Question" to add!
                                 </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className={styles.paginationRow}>
+                    <div className={styles.paginationInfo}>
+                        Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> questions
+                    </div>
+                    <div className={styles.paginationBtnGroup}>
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className={styles.pageBtn}
+                        >
+                            Previous
+                        </button>
+                        {[...Array(totalPages)].map((_, idx) => {
+                            const pageNum = idx + 1;
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className={styles.pageBtn}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* CREATE / EDIT QUESTION MODAL */}
             {activeQuestion && (
@@ -705,8 +772,8 @@ const QuestionBank = () => {
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Question Type</label>
                                     <select value={qType} onChange={(e) => setQType(e.target.value)} className={styles.select}>
-                                        <option value="MCQ">Multiple Choice (MCQ)</option>
-                                        <option value="TF">True / False</option>
+                                        <option value="mcq">Multiple Choice (MCQ)</option>
+                                        <option value="true_false">True / False</option>
                                     </select>
                                 </div>
                                 <div className={styles.formGroup}>
@@ -736,7 +803,7 @@ const QuestionBank = () => {
                             {/* Options */}
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>Answer Options</label>
-                                {qType === "MCQ" ? (
+                                {qType === "mcq" ? (
                                     <div className={styles.optionsList}>
                                         {qOptions.map((opt, oIdx) => (
                                             <div key={oIdx} className={styles.optionRow} data-correct={opt.is_correct}>
@@ -762,16 +829,16 @@ const QuestionBank = () => {
                                     <div className={styles.tfWrapper}>
                                         <div className={`${styles.tfCard} ${qOptions[0]?.is_correct ? styles.tfActive : ""}`} onClick={() => {
                                             setQOptions([
-                                                { option_text: "True", option_order: 1, is_correct: true },
-                                                { option_text: "False", option_order: 2, is_correct: false }
+                                                { option_text: "True", option_order: 0, is_correct: true },
+                                                { option_text: "False", option_order: 1, is_correct: false }
                                             ]);
                                         }}>
                                             True
                                         </div>
                                         <div className={`${styles.tfCard} ${qOptions[1]?.is_correct ? styles.tfActive : ""}`} onClick={() => {
                                             setQOptions([
-                                                { option_text: "True", option_order: 1, is_correct: false },
-                                                { option_text: "False", option_order: 2, is_correct: true }
+                                                { option_text: "True", option_order: 0, is_correct: false },
+                                                { option_text: "False", option_order: 1, is_correct: true }
                                             ]);
                                         }}>
                                             False
@@ -826,10 +893,10 @@ const QuestionBank = () => {
 
             {/* CSV BULK IMPORT MODAL */}
             {isCsvModalOpen && (
-                <ModalPortal onClose={() => setIsCsvModalOpen(false)}>
+                <ModalPortal onClose={() => !isImporting && setIsCsvModalOpen(false)}>
                 <div 
                     className={styles.modalOverlay}
-                    onClick={() => setIsCsvModalOpen(false)} // Close on outside click
+                    onClick={() => !isImporting && setIsCsvModalOpen(false)} // Close on outside click
                 >
                     <div 
                         className={styles.csvModal}
@@ -837,20 +904,25 @@ const QuestionBank = () => {
                     >
                         <div className={styles.modalHeader}>
                             <h3>Bulk Import Questions from CSV</h3>
-                            <button type="button" className={styles.closeBtn} onClick={() => setIsCsvModalOpen(false)}>
+                            <button type="button" className={styles.closeBtn} onClick={() => !isImporting && setIsCsvModalOpen(false)} disabled={isImporting}>
                                 <FiX />
                             </button>
                         </div>
 
                         <div className={styles.modalBody}>
                             {/* Upload Zone */}
-                            <div className={styles.csvUploadZone} onClick={() => fileInputRef.current.click()}>
+                            <div 
+                                className={styles.csvUploadZone} 
+                                onClick={() => !isImporting && fileInputRef.current.click()}
+                                style={{ pointerEvents: isImporting ? 'none' : 'auto', opacity: isImporting ? 0.6 : 1 }}
+                            >
                                 <input 
                                     type="file" 
                                     ref={fileInputRef} 
                                     className={styles.fileInput} 
                                     onChange={handleCsvUpload} 
                                     accept=".csv"
+                                    disabled={isImporting}
                                 />
                                 <FiUpload className={styles.csvIcon} />
                                 <p>{csvFile ? csvFile.name : "Select or drag CSV file here to upload"}</p>
@@ -893,15 +965,16 @@ const QuestionBank = () => {
                         </div>
 
                         <div className={styles.modalFooter}>
-                            <MainButton onClick={() => setIsCsvModalOpen(false)} variant="secondary">
+                            <MainButton onClick={() => setIsCsvModalOpen(false)} variant="secondary" disabled={isImporting}>
                                 Cancel
                             </MainButton>
                             <MainButton 
                                 onClick={handleImportCSVData} 
                                 variant="primary" 
-                                disabled={csvValidCount === 0}
+                                disabled={csvValidCount === 0 || isImporting}
+                                isLoading={isImporting}
                             >
-                                Import {csvValidCount} Valid Questions
+                                {isImporting ? "Importing..." : `Import ${csvValidCount} Valid Questions`}
                             </MainButton>
                         </div>
                     </div>

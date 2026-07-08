@@ -110,8 +110,8 @@ const Categories = () => {
 
     const handleSaveCategory = async (e) => {
         e.preventDefault();
-        if (!name.trim() || name.length < 3) {
-            toast.error("Category name must be at least 3 characters");
+        if (!name.trim() || name.length < 2) {
+            toast.error("Category name must be at least 2 characters");
             return;
         }
 

@@ -165,6 +165,7 @@ const RoomDetail = () => {
             await dispatch(createAssignmentThunk({
                 quiz_id: assignQuizId,
                 room_id: id,
+                student_uid: null,
                 due_date: assignDueDate || null,
                 attempt_limit_override: assignLimit ? Number(assignLimit) : null,
                 note: assignNote || null

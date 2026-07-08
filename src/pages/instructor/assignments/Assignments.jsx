@@ -59,6 +59,10 @@ const Assignments = () => {
     const [assignLimit, setAssignLimit] = useState("");
     const [assignNote, setAssignNote] = useState("");
 
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+
     const containerRef = useRef(null);
     const assignModalRef = useRef(null);
 
@@ -77,8 +81,9 @@ const Assignments = () => {
             await dispatch(createAssignmentThunk({
                 quiz_id: assignQuizId,
                 room_id: assignRoomId,
+                student_uid: null,
                 due_date: assignDueDate || null,
-                attempt_limit_override: assignLimit ? Number(assignLimit) : null,
+                attempt_limit_override: assignLimit && assignLimit !== "" && assignLimit !== "Unlimited" ? Number(assignLimit) : null,
                 note: assignNote || null
             })).unwrap();
 
@@ -128,6 +133,24 @@ const Assignments = () => {
                roomName.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
+    // Reset pagination to page 1 on search changes during render to avoid cascading renders
+    const filterKey = searchQuery;
+    const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+    if (filterKey !== prevFilterKey) {
+        setPrevFilterKey(filterKey);
+        setCurrentPage(1);
+    }
+
+    // Pagination slices
+    const totalRows = filteredAssignments.length;
+    const totalPages = Math.ceil(totalRows / pageSize);
+    const paginatedAssignments = filteredAssignments.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+    );
+    const startRow = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const endRow = Math.min(currentPage * pageSize, totalRows);
+
     return (
         <div ref={containerRef} className={styles.container}>
             {/* Page Header */}
@@ -172,7 +195,7 @@ const Assignments = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {filteredAssignments.map((ass) => {
+                        {paginatedAssignments.map((ass) => {
                             const isOverdue = ass.due_date && new Date(ass.due_date) < new Date();
                             return (
                                 <TableRow key={ass.id} className={styles.tableRow}>
@@ -235,6 +258,43 @@ const Assignments = () => {
                     </TableBody>
                 </Table>
             </TableContainer>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className={styles.paginationRow}>
+                    <div className={styles.paginationInfo}>
+                        Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> assignments
+                    </div>
+                    <div className={styles.paginationBtnGroup}>
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className={styles.pageBtn}
+                        >
+                            Previous
+                        </button>
+                        {[...Array(totalPages)].map((_, idx) => {
+                            const pageNum = idx + 1;
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className={styles.pageBtn}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* ASSIGN QUIZ MODAL */}
             {isAssignOpen && (
@@ -309,7 +369,6 @@ const Assignments = () => {
                                     <option value="2">2 Attempts</option>
                                     <option value="3">3 Attempts</option>
                                     <option value="5">5 Attempts</option>
-                                    <option value="Unlimited">Unlimited Attempts</option>
                                 </select>
                             </div>
 

@@ -119,7 +119,7 @@ export async function getRoomMembers({ roomId, page = 1, pageSize = 20, search =
     .from('room_members')
     .select(`
       id, joined_at, added_by,
-      profile:profiles!uid(uid, full_name, email, avatar_url, is_active, last_activity_date)
+      profile:profiles!room_members_uid_fkey(uid, full_name, email, avatar_url, is_active, last_activity_date)
     `, { count: 'exact' })
     .eq('room_id', roomId);
 

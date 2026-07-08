@@ -28,7 +28,7 @@
 
 .searchIcon {
     position: absolute;
-    left: var(--space-3);
+    right: var(--space-3);
     color: var(--text-muted);
 }
 
@@ -50,7 +50,7 @@
     background-color: var(--bg-surface-2);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
-    padding: 0 var(--space-8) 0 var(--space-9);
+    padding: 0 var(--space-8) 0 var(--space-5);
     font-size: var(--text-sm);
     color: var(--text-primary);
     transition: border-color var(--transition-base), background-color var(--transition-base);
