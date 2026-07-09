@@ -4,7 +4,7 @@ import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./Assignments.module.css";
 
 // react
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 
 // react-router
 import { useNavigate } from "react-router";
@@ -38,6 +38,12 @@ import { toast } from "react-toastify";
 // Material UI
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
 
+// sweetalert2
+import Swal from "sweetalert2";
+
+// custom select
+import CustomSelect from "../../../components/ui/select/CustomSelect";
+
 import { useAssignmentsData } from "../../../hooks/instructor/useAssignmentsData";
 
 const Assignments = () => {
@@ -50,7 +56,6 @@ const Assignments = () => {
     // Local States
     const [searchQuery, setSearchQuery] = useState("");
     const [isAssignOpen, setIsAssignOpen] = useState(false);
-    const [deletingAssignment, setDeletingAssignment] = useState(null);
 
     // Modal Assign Form inputs
     const [assignQuizId, setAssignQuizId] = useState("");
@@ -69,11 +74,30 @@ const Assignments = () => {
     // Page entrance animation
     usePageAnimation(containerRef);
 
+    // Build a Set of "quizId::roomId" strings for all existing assignments
+    const existingAssignmentCombos = useMemo(() => {
+        return new Set(
+            assignments
+                .filter(a => (a.quiz_id || a.quiz?.id) && (a.room_id || a.room?.id))
+                .map(a => `${a.quiz_id || a.quiz?.id}::${a.room_id || a.room?.id}`)
+        );
+    }, [assignments]);
+
+    // Available rooms filtered by whether the selected quiz is already assigned there
+    const availableRoomsForQuiz = useMemo(() => {
+        if (!assignQuizId) return rooms;
+        return rooms.filter(r => !existingAssignmentCombos.has(`${assignQuizId}::${r.id}`));
+    }, [rooms, assignQuizId, existingAssignmentCombos]);
+
     // Operations Handlers
     const handleAssignQuiz = async (e) => {
         e.preventDefault();
         if (!assignQuizId || !assignRoomId) {
             toast.error("Quiz and Classroom are required");
+            return;
+        }
+        if (existingAssignmentCombos.has(`${assignQuizId}::${assignRoomId}`)) {
+            toast.error("This quiz is already assigned to the selected room");
             return;
         }
 
@@ -100,16 +124,33 @@ const Assignments = () => {
         }
     };
 
-    const handleDeleteAssignment = async () => {
-        if (!deletingAssignment) return;
-        try {
-            await dispatch(deleteAssignmentThunk(deletingAssignment.id)).unwrap();
-            toast.success("Assignment deleted successfully!");
-            setDeletingAssignment(null);
-            dispatch(fetchMyAssignments());
-        } catch (err) {
-            toast.error(err || "Failed to delete assignment");
-        }
+    const handleDeleteAssignment = (ass) => {
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: "Delete Assignment?",
+            text: "Students lose access to this quiz assignment. Past completed attempt details are retained in logs.",
+            icon: "warning",
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Delete Assignment",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-danger, #ef4444)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            customClass: {
+                popup: "premium-swal-popup"
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await dispatch(deleteAssignmentThunk(ass.id)).unwrap();
+                    toast.success("Assignment deleted successfully!");
+                    dispatch(fetchMyAssignments());
+                } catch (err) {
+                    toast.error(err || "Failed to delete assignment");
+                }
+            }
+        });
     };
 
     const handleSendReminder = async (assignmentId, quizTitle) => {
@@ -238,7 +279,7 @@ const Assignments = () => {
                                             </button>
                                             <button 
                                                 className={`${styles.actionBtn} ${styles.danger}`}
-                                                onClick={() => setDeletingAssignment(ass)}
+                                                onClick={() => handleDeleteAssignment(ass)}
                                                 title="Delete assignment"
                                             >
                                                 <FiTrash2 />
@@ -320,33 +361,24 @@ const Assignments = () => {
                             {/* Quiz selector */}
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>Select Quiz <span className={styles.req}>*</span></label>
-                                <select 
-                                    value={assignQuizId} 
-                                    onChange={(e) => setAssignQuizId(e.target.value)}
-                                    className={styles.select}
-                                    required
-                                >
-                                    <option value="">Choose published quiz...</option>
-                                    {quizzes.filter(q => q.status === "published").map(q => (
-                                        <option key={q.id} value={q.id}>{q.title}</option>
-                                    ))}
-                                </select>
+                                <CustomSelect
+                                    options={quizzes.filter(q => q.status === "published").map(q => ({ value: q.id, label: q.title }))}
+                                    value={assignQuizId}
+                                    onChange={setAssignQuizId}
+                                    placeholder="Choose published quiz..."
+                                />
                             </div>
 
                             {/* Room selector */}
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>Select Classroom <span className={styles.req}>*</span></label>
-                                <select 
-                                    value={assignRoomId} 
-                                    onChange={(e) => setAssignRoomId(e.target.value)}
-                                    className={styles.select}
-                                    required
-                                >
-                                    <option value="">Choose classroom...</option>
-                                    {rooms.map(r => (
-                                        <option key={r.id} value={r.id}>{r.name}</option>
-                                    ))}
-                                </select>
+                                <CustomSelect
+                                    options={availableRoomsForQuiz.map(r => ({ value: r.id, label: r.name }))}
+                                    value={assignRoomId}
+                                    onChange={setAssignRoomId}
+                                    placeholder={assignQuizId && availableRoomsForQuiz.length === 0 ? "This quiz is assigned to all rooms" : "Choose classroom..."}
+                                    isDisabled={!assignQuizId || availableRoomsForQuiz.length === 0}
+                                />
                             </div>
 
                             {/* Due date */}
@@ -363,13 +395,17 @@ const Assignments = () => {
                             {/* Attempt overrides */}
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>Attempts Limit Override</label>
-                                <select value={assignLimit} onChange={(e) => setAssignLimit(e.target.value)} className={styles.select}>
-                                    <option value="">Use Quiz Defaults</option>
-                                    <option value="1">1 Attempt Only</option>
-                                    <option value="2">2 Attempts</option>
-                                    <option value="3">3 Attempts</option>
-                                    <option value="5">5 Attempts</option>
-                                </select>
+                                <CustomSelect
+                                    options={[
+                                        { value: "", label: "Use Quiz Defaults" },
+                                        { value: "1", label: "1 Attempt Only" },
+                                        { value: "2", label: "2 Attempts" },
+                                        { value: "3", label: "3 Attempts" },
+                                        { value: "5", label: "5 Attempts" }
+                                    ]}
+                                    value={assignLimit}
+                                    onChange={setAssignLimit}
+                                />
                             </div>
 
                             {/* Instruction Note */}
@@ -399,36 +435,6 @@ const Assignments = () => {
                 </ModalPortal>
             )}
 
-            {/* DELETE ASSIGNMENT CONFIRMATION */}
-            {deletingAssignment && (
-                <ModalPortal onClose={() => setDeletingAssignment(null)}>
-                <div 
-                    className={styles.modalOverlay}
-                    onClick={() => setDeletingAssignment(null)} // Close on outside click
-                >
-                    <div 
-                        className={styles.confirmModal}
-                        onClick={(e) => e.stopPropagation()} // Prevent bubble
-                    >
-                        <div className={styles.deleteIconCircle}>
-                            <FiTrash2 />
-                        </div>
-                        <h3>Delete Assignment?</h3>
-                        <p className={styles.modalWarningText}>
-                            Students lose access to this quiz assignment. Past completed attempt details are retained in logs.
-                        </p>
-                        <div className={styles.modalButtons}>
-                            <MainButton onClick={() => setDeletingAssignment(null)} variant="secondary">
-                                Cancel
-                            </MainButton>
-                            <MainButton onClick={handleDeleteAssignment} variant="danger">
-                                Delete Assignment
-                            </MainButton>
-                        </div>
-                    </div>
-                </div>
-                </ModalPortal>
-            )}
         </div>
     );
 };

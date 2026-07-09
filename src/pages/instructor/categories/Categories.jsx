@@ -28,6 +28,12 @@ import { FiTrash2, FiFolder, FiInfo } from "react-icons/fi";
 // react-toastify
 import { toast } from "react-toastify";
 
+// sweetalert2
+import Swal from "sweetalert2";
+
+// custom select
+import CustomSelect from "../../../components/ui/select/CustomSelect";
+
 // supabase client
 import { supabase } from "../../../services/config/supabaseClient";
 
@@ -170,9 +176,26 @@ const Categories = () => {
             setCategoryToDelete(cat);
             setReassignTargetId("");
         } else {
-            if (confirm(`Are you sure you want to delete category "${cat.name}"?`)) {
-                triggerDelete(cat.id);
-            }
+            const isDark = document.documentElement.classList.contains("dark");
+            Swal.fire({
+                title: "Delete Category?",
+                text: `Are you sure you want to delete category "${cat.name}"?`,
+                icon: "warning",
+                background: isDark ? "#1e293b" : "#ffffff",
+                color: isDark ? "#f8fafc" : "#0f172a",
+                showCancelButton: true,
+                confirmButtonText: "Delete",
+                cancelButtonText: "Cancel",
+                confirmButtonColor: "var(--color-danger, #ef4444)",
+                cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+                customClass: {
+                    popup: "premium-swal-popup"
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    triggerDelete(cat.id);
+                }
+            });
         }
     };
 
@@ -374,17 +397,12 @@ const Categories = () => {
 
                         <div className={styles.formGroup} style={{ width: "100%", textAlign: "left" }}>
                             <label className={styles.label}>Choose Replacement Category</label>
-                            <select 
-                                value={reassignTargetId} 
-                                onChange={(e) => setReassignTargetId(e.target.value)}
-                                className={styles.select}
-                                required
-                            >
-                                <option value="">Select Category...</option>
-                                {otherCategories.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
+                            <CustomSelect
+                                options={otherCategories.map(c => ({ value: c.id, label: c.name }))}
+                                value={reassignTargetId}
+                                onChange={setReassignTargetId}
+                                placeholder="Select Category..."
+                            />
                         </div>
 
                         <div className={styles.modalButtons}>

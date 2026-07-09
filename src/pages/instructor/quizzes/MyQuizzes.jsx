@@ -4,13 +4,13 @@ import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./MyQuizzes.module.css";
 
 // react
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 
 // react-router
 import { useNavigate } from "react-router";
 
 // redux
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
     deleteQuizThunk, 
     duplicateQuizThunk, 
@@ -20,6 +20,7 @@ import {
     archiveQuizThunk
 } from "../../../redux/slices/quizzesSlice";
 import { createAssignmentThunk } from "../../../redux/slices/assignmentsSlice";
+import { fetchMyAssignments, selectMyAssignments } from "../../../redux/slices/assignmentsSlice";
 
 // hooks
 import { useRealtimeQuizzes } from "../../../hooks/useRealtimeQuizzes";
@@ -47,6 +48,12 @@ import {
 // react-toastify
 import { toast } from "react-toastify";
 
+// sweetalert2
+import Swal from "sweetalert2";
+
+// custom select
+import CustomSelect from "../../../components/ui/select/CustomSelect";
+
 import { useQuizzesData } from "../../../hooks/instructor/useQuizzesData";
 
 const MyQuizzes = () => {
@@ -54,6 +61,12 @@ const MyQuizzes = () => {
     const navigate = useNavigate();
 
     const { quizzes, categories, rooms } = useQuizzesData();
+
+    // Load all existing assignments to check for duplicates
+    const allAssignments = useSelector(selectMyAssignments);
+    useEffect(() => {
+        dispatch(fetchMyAssignments());
+    }, [dispatch]);
 
     // Realtime changes listener
     useRealtimeQuizzes();
@@ -66,15 +79,12 @@ const MyQuizzes = () => {
 
     // Dropdown and modal states
     const [activeDropdown, setActiveDropdown] = useState(null);
-    const [quizToDelete, setQuizToDelete] = useState(null);
-    const [isDeleteBtnEnabled, setIsDeleteBtnEnabled] = useState(false);
     const [quizToAssign, setQuizToAssign] = useState(null);
     const [assignRoomId, setAssignRoomId] = useState("");
     const [assignDueDate, setAssignDueDate] = useState("");
 
     const containerRef = useRef(null);
     const dropdownRef = useRef(null);
-    const deleteModalRef = useRef(null);
     const assignModalRef = useRef(null);
 
     // Handle clicks outside of dropdowns to close them
@@ -93,26 +103,33 @@ const MyQuizzes = () => {
         staggerSelector: `.${styles.quizCard}`,
     });
 
-    // Delete Modal Timer logic (0.5s delay to prevent accidental click)
-    useEffect(() => {
-        if (quizToDelete) {
-            const timer = setTimeout(() => {
-                setIsDeleteBtnEnabled(true);
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-    }, [quizToDelete]);
-
     // Operations handlers
-    const handleDeleteQuiz = async () => {
-        if (!quizToDelete) return;
-        try {
-            await dispatch(deleteQuizThunk(quizToDelete.id)).unwrap();
-            toast.success(`Deleted ${quizToDelete.title} successfully!`);
-            setQuizToDelete(null);
-        } catch (err) {
-            toast.error(err || "Failed to delete quiz");
-        }
+    const handleDeleteQuiz = (quiz) => {
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: `Delete "${quiz.title}"?`,
+            text: "This action cannot be undone. All student attempts, scores, certificates, and historical results associated with this quiz will be permanently deleted from the servers.",
+            icon: "warning",
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Delete Quiz",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-danger, #ef4444)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            customClass: {
+                popup: "premium-swal-popup"
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await dispatch(deleteQuizThunk(quiz.id)).unwrap();
+                    toast.success(`Deleted ${quiz.title} successfully!`);
+                } catch (err) {
+                    toast.error(err || "Failed to delete quiz");
+                }
+            }
+        });
     };
 
     const handleDuplicateQuiz = async (quizId) => {
@@ -129,10 +146,31 @@ const MyQuizzes = () => {
         setActiveDropdown(null);
         try {
             if (quiz.status === "published") {
-                if (confirm(`Are you sure you want to unpublish "${quiz.title}"? Students will lose access immediately.`)) {
-                    await dispatch(unpublishQuizThunk(quiz.id)).unwrap();
-                    toast.success(`Unpublished ${quiz.title}`);
-                }
+                const isDark = document.documentElement.classList.contains("dark");
+                Swal.fire({
+                    title: `Unpublish "${quiz.title}"?`,
+                    text: "Students will lose access immediately.",
+                    icon: "warning",
+                    background: isDark ? "#1e293b" : "#ffffff",
+                    color: isDark ? "#f8fafc" : "#0f172a",
+                    showCancelButton: true,
+                    confirmButtonText: "Unpublish",
+                    cancelButtonText: "Cancel",
+                    confirmButtonColor: "var(--color-danger, #ef4444)",
+                    cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+                    customClass: {
+                        popup: "premium-swal-popup"
+                    }
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        try {
+                            await dispatch(unpublishQuizThunk(quiz.id)).unwrap();
+                            toast.success(`Unpublished ${quiz.title}`);
+                        } catch (err) {
+                            toast.error(err || "Failed to update status");
+                        }
+                    }
+                });
             } else {
                 await dispatch(publishQuizThunk(quiz.id)).unwrap();
                 toast.success(`Published ${quiz.title} successfully!`);
@@ -157,10 +195,29 @@ const MyQuizzes = () => {
         }
     };
 
+    // Compute rooms that already have the selected quiz assigned
+    const assignedRoomIdsForQuiz = useMemo(() => {
+        if (!quizToAssign) return new Set();
+        return new Set(
+            allAssignments
+                .filter(a => a.quiz_id === quizToAssign.id || a.quiz?.id === quizToAssign.id)
+                .map(a => a.room_id || a.room?.id)
+                .filter(Boolean)
+        );
+    }, [quizToAssign, allAssignments]);
+
+    const availableRooms = useMemo(() => {
+        return rooms.filter(r => !assignedRoomIdsForQuiz.has(r.id));
+    }, [rooms, assignedRoomIdsForQuiz]);
+
     const handleAssignQuiz = async (e) => {
         e.preventDefault();
         if (!quizToAssign || !assignRoomId) {
             toast.error("Please select a room to assign");
+            return;
+        }
+        if (assignedRoomIdsForQuiz.has(assignRoomId)) {
+            toast.error("This quiz is already assigned to the selected room");
             return;
         }
         try {
@@ -174,6 +231,7 @@ const MyQuizzes = () => {
             setQuizToAssign(null);
             setAssignRoomId("");
             setAssignDueDate("");
+            dispatch(fetchMyAssignments());
         } catch (err) {
             toast.error(err || "Failed to assign quiz");
         }
@@ -238,38 +296,39 @@ const MyQuizzes = () => {
 
                 {/* Filters */}
                 <div className={styles.filtersGrid}>
-                    <select 
-                        value={statusFilter} 
-                        onChange={(e) => setStatusFilter(e.target.value)}
+                    <CustomSelect
+                        options={[
+                            { value: "all", label: "All Statuses" },
+                            { value: "published", label: "Published" },
+                            { value: "draft", label: "Draft" },
+                            { value: "archived", label: "Archived" }
+                        ]}
+                        value={statusFilter}
+                        onChange={setStatusFilter}
                         className={styles.select}
-                    >
-                        <option value="all">All Statuses</option>
-                        <option value="published">Published</option>
-                        <option value="draft">Draft</option>
-                        <option value="archived">Archived</option>
-                    </select>
+                    />
 
-                    <select 
-                        value={categoryFilter} 
-                        onChange={(e) => setCategoryFilter(e.target.value)}
+                    <CustomSelect
+                        options={[
+                            { value: "all", label: "All Categories" },
+                            ...categories.map(c => ({ value: c.id, label: c.name }))
+                        ]}
+                        value={categoryFilter}
+                        onChange={setCategoryFilter}
                         className={styles.select}
-                    >
-                        <option value="all">All Categories</option>
-                        {categories.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
+                    />
 
-                    <select 
-                        value={sortOption} 
-                        onChange={(e) => setSortOption(e.target.value)}
+                    <CustomSelect
+                        options={[
+                            { value: "newest", label: "Sort: Newest" },
+                            { value: "oldest", label: "Sort: Oldest" },
+                            { value: "attempts", label: "Sort: Most Attempts" },
+                            { value: "az", label: "Sort: A-Z" }
+                        ]}
+                        value={sortOption}
+                        onChange={setSortOption}
                         className={styles.select}
-                    >
-                        <option value="newest">Sort: Newest</option>
-                        <option value="oldest">Sort: Oldest</option>
-                        <option value="attempts">Sort: Most Attempts</option>
-                        <option value="az">Sort: A-Z</option>
-                    </select>
+                    />
                 </div>
             </div>
 
@@ -369,7 +428,7 @@ const MyQuizzes = () => {
                                                         <FiCheckSquare /> Assign to Room
                                                     </button>
                                                     <div className={styles.dropdownDivider} />
-                                                    <button onClick={() => { setQuizToDelete(quiz); setIsDeleteBtnEnabled(false); }} className={`${styles.dropdownItem} ${styles.danger}`}>
+                                                    <button onClick={() => { handleDeleteQuiz(quiz); setActiveDropdown(null); }} className={`${styles.dropdownItem} ${styles.danger}`}>
                                                         <FiTrash2 /> Delete Quiz
                                                     </button>
                                                 </div>
@@ -395,41 +454,7 @@ const MyQuizzes = () => {
                 </div>
             )}
 
-            {/* DELETE CONFIRMATION MODAL */}
-            {quizToDelete && (
-                <ModalPortal onClose={() => setQuizToDelete(null)}>
-                <div 
-                    className={styles.modalOverlay}
-                    onClick={() => setQuizToDelete(null)} // Close on outside click
-                >
-                    <div 
-                        className={styles.deleteModal} 
-                        ref={deleteModalRef}
-                        onClick={(e) => e.stopPropagation()} // Prevent bubble to overlay
-                    >
-                        <div className={styles.deleteIconCircle}>
-                            <FiTrash2 />
-                        </div>
-                        <h3>Delete "{quizToDelete.title}"?</h3>
-                        <p className={styles.modalWarningText}>
-                            This action cannot be undone. All student attempts, scores, certificates, and historical results associated with this quiz will be permanently deleted from the servers.
-                        </p>
-                        <div className={styles.modalButtons}>
-                            <MainButton onClick={() => setQuizToDelete(null)} variant="secondary">
-                                Cancel
-                            </MainButton>
-                            <MainButton 
-                                onClick={handleDeleteQuiz} 
-                                variant="danger" 
-                                disabled={!isDeleteBtnEnabled}
-                            >
-                                {!isDeleteBtnEnabled ? "Wait (0.5s)..." : "Delete Quiz"}
-                            </MainButton>
-                        </div>
-                    </div>
-                </div>
-                </ModalPortal>
-            )}
+
 
             {/* ASSIGN TO ROOM QUICK MODAL */}
             {quizToAssign && (
@@ -458,17 +483,13 @@ const MyQuizzes = () => {
                             
                             <div className={styles.formGroup}>
                                 <label className={styles.modalLabel}>Target Room</label>
-                                <select 
-                                    value={assignRoomId} 
-                                    onChange={(e) => setAssignRoomId(e.target.value)}
-                                    className={styles.modalSelect}
-                                    required
-                                >
-                                    <option value="">Select a Classroom...</option>
-                                    {rooms.map(r => (
-                                        <option key={r.id} value={r.id}>{r.name}</option>
-                                    ))}
-                                </select>
+                                <CustomSelect
+                                    options={availableRooms.map(r => ({ value: r.id, label: r.name }))}
+                                    value={assignRoomId}
+                                    onChange={setAssignRoomId}
+                                    placeholder={availableRooms.length === 0 ? "This quiz is assigned to all rooms" : "Select a Classroom..."}
+                                    isDisabled={availableRooms.length === 0}
+                                />
                             </div>
 
                             <div className={styles.formGroup}>

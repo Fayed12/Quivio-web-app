@@ -35,6 +35,12 @@ import {
 // react-toastify
 import { toast } from "react-toastify";
 
+// sweetalert2
+import Swal from "sweetalert2";
+
+// custom select
+import CustomSelect from "../../../components/ui/select/CustomSelect";
+
 
 const Notifications = () => {
     const dispatch = useDispatch();
@@ -110,16 +116,33 @@ const Notifications = () => {
         }
     };
 
-    const handleDeleteAnnouncement = async (annId) => {
-        if (!confirm("Are you sure you want to delete this scheduled announcement?")) return;
-
-        try {
-            await dispatch(deleteAnnouncementThunk(annId)).unwrap();
-            toast.success("Scheduled announcement deleted!");
-            dispatch(fetchMyAnnouncements());
-        } catch (err) {
-            toast.error(err || "Cannot delete already-sent announcements");
-        }
+    const handleDeleteAnnouncement = (annId) => {
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: "Delete Scheduled Announcement?",
+            text: "Are you sure you want to delete this scheduled announcement?",
+            icon: "warning",
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-danger, #ef4444)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            customClass: {
+                popup: "premium-swal-popup"
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await dispatch(deleteAnnouncementThunk(annId)).unwrap();
+                    toast.success("Scheduled announcement deleted!");
+                    dispatch(fetchMyAnnouncements());
+                } catch (err) {
+                    toast.error(err || "Cannot delete already-sent announcements");
+                }
+            }
+        });
     };
 
     const handleMarkAllRead = () => {
@@ -273,27 +296,26 @@ const Notifications = () => {
                             {/* Recipient scope */}
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>Audience Scope</label>
-                                <select value={scope} onChange={(e) => setScope(e.target.value)} className={styles.select}>
-                                    <option value="all">Broadcast to All Students</option>
-                                    <option value="room">Limit to Specific Classroom</option>
-                                </select>
+                                <CustomSelect
+                                    options={[
+                                        { value: "all", label: "Broadcast to All Students" },
+                                        { value: "room", label: "Limit to Specific Classroom" }
+                                    ]}
+                                    value={scope}
+                                    onChange={setScope}
+                                />
                             </div>
 
                             {/* Classroom list dropdown (only if scope is room) */}
                             {scope === "room" && (
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Select Target Classroom <span className={styles.req}>*</span></label>
-                                    <select 
-                                        value={roomId} 
-                                        onChange={(e) => setRoomId(e.target.value)}
-                                        className={styles.select}
-                                        required
-                                    >
-                                        <option value="">Choose classroom...</option>
-                                        {rooms.map(r => (
-                                            <option key={r.id} value={r.id}>{r.name}</option>
-                                        ))}
-                                    </select>
+                                    <CustomSelect
+                                        options={rooms.map(r => ({ value: r.id, label: r.name }))}
+                                        value={roomId}
+                                        onChange={setRoomId}
+                                        placeholder="Choose classroom..."
+                                    />
                                 </div>
                             )}
 

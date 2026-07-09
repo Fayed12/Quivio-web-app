@@ -25,7 +25,7 @@ const PageHeader = ({
     };
 
     return (
-        <div className={styles.header}>
+        <div className={styles.header} data-tour="page-header">
             {/* Breadcrumbs Row */}
             {breadcrumbs.length > 0 && (
                 <div className={styles.breadcrumbs}>

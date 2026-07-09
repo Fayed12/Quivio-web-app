@@ -118,22 +118,26 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                             {!isCollapsed && <span className={styles.sectionLabel}>{section.label}</span>}
                             {sIdx > 0 && isCollapsed && <div className={styles.sectionDivider} />}
                             <div className={styles.sectionList}>
-                                {section.items.map((item) => (
-                                    <NavLink
-                                        key={item.path}
-                                        to={item.path}
-                                        onClick={onClose}
-                                        className={({ isActive }) => 
-                                            `${styles.navItem} ${isActive ? styles.navItemActive : ""}`
-                                        }
-                                    >
-                                        <span className={styles.navItemIcon}>{item.icon}</span>
-                                        {!isCollapsed && <span className={styles.navItemLabel}>{item.label}</span>}
-                                        {item.badge && !isCollapsed && (
-                                            <span className={styles.badge}>{item.badge}</span>
-                                        )}
-                                    </NavLink>
-                                ))}
+                                {section.items.map((item) => {
+                                    const tourKey = item.path.split("/").pop();
+                                    return (
+                                        <NavLink
+                                            key={item.path}
+                                            to={item.path}
+                                            onClick={onClose}
+                                            data-tour={`sidebar-${tourKey}`}
+                                            className={({ isActive }) => 
+                                                `${styles.navItem} ${isActive ? styles.navItemActive : ""}`
+                                            }
+                                        >
+                                            <span className={styles.navItemIcon}>{item.icon}</span>
+                                            {!isCollapsed && <span className={styles.navItemLabel}>{item.label}</span>}
+                                            {item.badge && !isCollapsed && (
+                                                <span className={styles.badge}>{item.badge}</span>
+                                            )}
+                                        </NavLink>
+                                    );
+                                })}
                             </div>
                         </div>
                     ))}

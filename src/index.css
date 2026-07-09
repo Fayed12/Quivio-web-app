@@ -3008,3 +3008,8 @@ code {
 @media (min-width: 1280px) {
   .grid-4 { grid-template-columns: repeat(4, 1fr); }
 }
+
+.react-joyride__floater{
+  z-index: 20000 !important;
+}
+  

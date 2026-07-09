@@ -36,6 +36,12 @@ import {
 // react-toastify
 import { toast } from "react-toastify";
 
+// sweetalert2
+import Swal from "sweetalert2";
+
+// custom select
+import CustomSelect from "../../../components/ui/select/CustomSelect";
+
 // Material UI
 import { 
     Table, 
@@ -82,7 +88,7 @@ const QuestionBank = () => {
     const [qPoints, setQPoints] = useState(1);
     const [qHint, setQHint] = useState("");
     const [qExplanation, setQExplanation] = useState("");
-    const [qTags, setQTags] = useState("");
+    const [qTags, setQTags] = useState([]);
     const [qOptions, setQOptions] = useState([
         { option_text: "Option A", option_order: 0, is_correct: true },
         { option_text: "Option B", option_order: 1, is_correct: false },
@@ -167,7 +173,7 @@ const QuestionBank = () => {
             setQPoints(q.points || 1);
             setQHint(q.hint || "");
             setQExplanation(q.explanation || "");
-            setQTags(q.tags?.join(", ") || "");
+            setQTags(q.tags || []);
             if (q.question_options) {
                 setQOptions(q.question_options.map(o => ({
                     id: o.id,
@@ -186,7 +192,7 @@ const QuestionBank = () => {
             setQPoints(1);
             setQHint("");
             setQExplanation("");
-            setQTags("");
+            setQTags([]);
             setQOptions([
                 { option_text: "", option_order: 0, is_correct: true },
                 { option_text: "", option_order: 1, is_correct: false },
@@ -227,7 +233,7 @@ const QuestionBank = () => {
             points: Number(qPoints),
             hint: qHint || null,
             explanation: qExplanation || null,
-            tags: qTags ? qTags.split(",").map(t => t.trim()).filter(Boolean) : [],
+            tags: qTags,
             options: filteredOpts
         };
 
@@ -247,7 +253,7 @@ const QuestionBank = () => {
                         points: Number(qPoints),
                         hint: qHint || null,
                         explanation: qExplanation || null,
-                        tags: qTags ? qTags.split(",").map(t => t.trim()).filter(Boolean) : []
+                        tags: qTags
                     })
                     .eq("id", activeQuestion.id);
 
@@ -274,19 +280,36 @@ const QuestionBank = () => {
     };
 
     // Standalone Operations
-    const handleDeleteQuestion = async (qId, usageCount) => {
+    const handleDeleteQuestion = (qId, usageCount) => {
         if (usageCount > 0) {
             toast.error("Cannot delete a question currently in use by quizzes. Remove it from quizzes first.");
             return;
         }
-        if (!confirm("Are you sure you want to delete this question?")) return;
-
-        try {
-            await dispatch(deleteQuestionThunk(qId)).unwrap();
-            toast.success("Question deleted successfully!");
-        } catch (err) {
-            toast.error(err || "Failed to delete question");
-        }
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: "Delete Question?",
+            text: "Are you sure you want to delete this question?",
+            icon: "warning",
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Delete",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-danger, #ef4444)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            customClass: {
+                popup: "premium-swal-popup"
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await dispatch(deleteQuestionThunk(qId)).unwrap();
+                    toast.success("Question deleted successfully!");
+                } catch (err) {
+                    toast.error(err || "Failed to delete question");
+                }
+            }
+        });
     };
 
     const handleDuplicateQuestion = async (qId) => {
@@ -346,7 +369,7 @@ const QuestionBank = () => {
         }
     };
 
-    const handleBulkDelete = async () => {
+    const handleBulkDelete = () => {
         // Filter out questions currently in use
         const inUseList = questions.filter(q => selectedQIds.includes(q.id) && (q.usage_count || 0) > 0);
         if (inUseList.length > 0) {
@@ -354,19 +377,36 @@ const QuestionBank = () => {
             return;
         }
 
-        if (confirm(`Are you sure you want to permanently delete all ${selectedQIds.length} selected questions?`)) {
-            try {
-                // Delete from DB
-                const { error } = await supabase.from("questions").delete().in("id", selectedQIds);
-                if (error) throw error;
-
-                toast.success(`Permanently deleted ${selectedQIds.length} questions!`);
-                setSelectedQIds([]);
-                dispatch(fetchMyQuestions());
-            } catch (err) {
-                toast.error(err.message || "Failed to delete questions");
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: "Delete Selected Questions?",
+            text: `Are you sure you want to permanently delete all ${selectedQIds.length} selected questions?`,
+            icon: "warning",
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Delete All",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-danger, #ef4444)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            customClass: {
+                popup: "premium-swal-popup"
             }
-        }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    // Delete from DB
+                    const { error } = await supabase.from("questions").delete().in("id", selectedQIds);
+                    if (error) throw error;
+
+                    toast.success(`Permanently deleted ${selectedQIds.length} questions!`);
+                    setSelectedQIds([]);
+                    dispatch(fetchMyQuestions());
+                } catch (err) {
+                    toast.error(err.message || "Failed to delete questions");
+                }
+            }
+        });
     };
 
     // CSV Parse Logic
@@ -552,25 +592,38 @@ const QuestionBank = () => {
                 </div>
 
                 <div className={styles.filtersGrid}>
-                    <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className={styles.select}>
-                        <option value="all">All Categories</option>
-                        {categories.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
+                    <CustomSelect
+                        options={[
+                            { value: "all", label: "All Categories" },
+                            ...categories.map(c => ({ value: c.id, label: c.name }))
+                        ]}
+                        value={categoryFilter}
+                        onChange={setCategoryFilter}
+                        className={styles.select}
+                    />
 
-                    <select value={difficultyFilter} onChange={(e) => setDifficultyFilter(e.target.value)} className={styles.select}>
-                        <option value="all">All Difficulties</option>
-                        <option value="easy">Easy</option>
-                        <option value="medium">Medium</option>
-                        <option value="hard">Hard</option>
-                    </select>
+                    <CustomSelect
+                        options={[
+                            { value: "all", label: "All Difficulties" },
+                            { value: "easy", label: "Easy" },
+                            { value: "medium", label: "Medium" },
+                            { value: "hard", label: "Hard" }
+                        ]}
+                        value={difficultyFilter}
+                        onChange={setDifficultyFilter}
+                        className={styles.select}
+                    />
 
-                    <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className={styles.select}>
-                        <option value="all">All Types</option>
-                        <option value="mcq">Multiple Choice</option>
-                        <option value="true_false">True / False</option>
-                    </select>
+                    <CustomSelect
+                        options={[
+                            { value: "all", label: "All Types" },
+                            { value: "mcq", label: "Multiple Choice" },
+                            { value: "true_false", label: "True / False" }
+                        ]}
+                        value={typeFilter}
+                        onChange={setTypeFilter}
+                        className={styles.select}
+                    />
                 </div>
             </div>
 
@@ -584,16 +637,15 @@ const QuestionBank = () => {
 
                     <div className={styles.bulkRight}>
                         {/* Add to Quiz Selector */}
-                        <select 
-                            value={bulkQuizId} 
-                            onChange={(e) => setBulkQuizId(e.target.value)}
+                        <CustomSelect
+                            options={[
+                                { value: "", label: "Add to Quiz..." },
+                                ...quizzes.map(q => ({ value: q.id, label: q.title }))
+                            ]}
+                            value={bulkQuizId}
+                            onChange={setBulkQuizId}
                             className={styles.bulkSelect}
-                        >
-                            <option value="">Add to Quiz...</option>
-                            {quizzes.map(q => (
-                                <option key={q.id} value={q.id}>{q.title}</option>
-                            ))}
-                        </select>
+                        />
                         <MainButton onClick={handleBulkAddToQuiz} variant="secondary" size="sm" disabled={!bulkQuizId}>
                             Add
                         </MainButton>
@@ -601,16 +653,15 @@ const QuestionBank = () => {
                         <div className={styles.bulkDivider} />
 
                         {/* Change Category Selector */}
-                        <select 
-                            value={bulkCatId} 
-                            onChange={(e) => setBulkCatId(e.target.value)}
+                        <CustomSelect
+                            options={[
+                                { value: "", label: "Change Category..." },
+                                ...categories.map(c => ({ value: c.id, label: c.name }))
+                            ]}
+                            value={bulkCatId}
+                            onChange={setBulkCatId}
                             className={styles.bulkSelect}
-                        >
-                            <option value="">Change Category...</option>
-                            {categories.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
+                        />
                         <MainButton onClick={handleBulkChangeCategory} variant="secondary" size="sm" disabled={!bulkCatId}>
                             Update
                         </MainButton>
@@ -771,19 +822,23 @@ const QuestionBank = () => {
                             <div className={styles.grid2}>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Question Type</label>
-                                    <select value={qType} onChange={(e) => setQType(e.target.value)} className={styles.select}>
-                                        <option value="mcq">Multiple Choice (MCQ)</option>
-                                        <option value="true_false">True / False</option>
-                                    </select>
+                                    <CustomSelect
+                                        options={[
+                                            { value: "mcq", label: "Multiple Choice (MCQ)" },
+                                            { value: "true_false", label: "True / False" }
+                                        ]}
+                                        value={qType}
+                                        onChange={setQType}
+                                    />
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Category <span className={styles.req}>*</span></label>
-                                    <select value={qCategoryId} onChange={(e) => setQCategoryId(e.target.value)} className={styles.select} required>
-                                        <option value="">Select Category...</option>
-                                        {categories.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                        ))}
-                                    </select>
+                                    <CustomSelect
+                                        options={categories.map(c => ({ value: c.id, label: c.name }))}
+                                        value={qCategoryId}
+                                        onChange={setQCategoryId}
+                                        placeholder="Select Category..."
+                                    />
                                 </div>
                             </div>
 
@@ -855,15 +910,25 @@ const QuestionBank = () => {
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>Difficulty</label>
-                                    <select value={qDifficulty} onChange={(e) => setQDifficulty(e.target.value)} className={styles.select}>
-                                        <option value="easy">Easy</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="hard">Hard</option>
-                                    </select>
+                                    <CustomSelect
+                                        options={[
+                                            { value: "easy", label: "Easy" },
+                                            { value: "medium", label: "Medium" },
+                                            { value: "hard", label: "Hard" }
+                                        ]}
+                                        value={qDifficulty}
+                                        onChange={setQDifficulty}
+                                    />
                                 </div>
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>Tags (Comma separated)</label>
-                                    <input type="text" value={qTags} onChange={(e) => setQTags(e.target.value)} placeholder="e.g. tag1, tag2" className={styles.input} />
+                                    <label className={styles.label}>Tags</label>
+                                    <CustomSelect
+                                        isCreatable={true}
+                                        isMulti={true}
+                                        value={qTags}
+                                        onChange={setQTags}
+                                        placeholder="Add tags..."
+                                    />
                                 </div>
                             </div>
 

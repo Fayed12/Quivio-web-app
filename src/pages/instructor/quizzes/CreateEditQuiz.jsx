@@ -5,7 +5,7 @@ import styles from "./CreateEditQuiz.module.css";
 import ModalPortal from "../components/ModalPortal";
 
 // react
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // react-router
 import { useNavigate, useParams, useLocation } from "react-router";
@@ -16,19 +16,19 @@ import {
     createQuizThunk,
     updateQuizThunk,
     publishQuizThunk,
-    unpublishQuizThunk
+    unpublishQuizThunk,
 } from "../../../redux/slices/quizzesSlice";
 import { removeFromQuizThunk } from "../../../redux/slices/questionsSlice";
 
 // react-icons
-import { 
-    FiArrowLeft, 
-    FiArrowRight, 
-    FiCheck, 
-    FiInfo, 
-    FiPlus, 
-    FiTrash2, 
-    FiUploadCloud, 
+import {
+    FiArrowLeft,
+    FiArrowRight,
+    FiCheck,
+    FiInfo,
+    FiPlus,
+    FiTrash2,
+    FiUploadCloud,
     FiHelpCircle,
     FiMenu,
     FiSearch,
@@ -37,11 +37,17 @@ import {
     FiUnlock,
     FiSettings,
     FiFileText,
-    FiX
+    FiX,
 } from "react-icons/fi";
 
 // react-toastify
 import { toast } from "react-toastify";
+
+// sweetalert2
+import Swal from "sweetalert2";
+
+// custom select
+import CustomSelect from "../../../components/ui/select/CustomSelect";
 
 // supabase Client
 import { supabase } from "../../../services/config/supabaseClient";
@@ -55,7 +61,8 @@ const CreateEditQuiz = () => {
     const { state } = useLocation();
 
     // Custom hook loaders
-    const { categories, bankQuestions, currentQuiz } = useCreateEditQuizData(id);
+    const { categories, bankQuestions, currentQuiz } =
+        useCreateEditQuizData(id);
 
     // Wizard active step: 1, 2, 3
     const [activeStep, setActiveStep] = useState(state?.step || 1);
@@ -70,13 +77,13 @@ const CreateEditQuiz = () => {
     const [categoryId, setCategoryId] = useState("");
     const [difficulty, setDifficulty] = useState("medium");
     const [coverImageUrl, setCoverImageUrl] = useState("");
-    const [tags, setTags] = useState("");
+    const [tags, setTags] = useState([]);
     const [dragActive, setDragActive] = useState(false);
 
     // Step 2 Question Editor States
     const [questionsList, setQuestionsList] = useState([]); // links
     const [selectedQuestionId, setSelectedQuestionId] = useState(null); // active question ID
-    
+
     // Editor Form States (Active Question)
     const [qText, setQText] = useState("");
     const [qType, setQType] = useState("mcq"); // mcq or true_false
@@ -84,11 +91,11 @@ const CreateEditQuiz = () => {
         { option_text: "", option_order: 0, is_correct: false },
         { option_text: "", option_order: 1, is_correct: false },
         { option_text: "", option_order: 2, is_correct: false },
-        { option_text: "", option_order: 3, is_correct: false }
+        { option_text: "", option_order: 3, is_correct: false },
     ]);
     const [qPoints, setQPoints] = useState(1);
     const [qDifficulty, setQDifficulty] = useState("medium");
-    const [qTags, setQTags] = useState("");
+    const [qTags, setQTags] = useState([]);
     const [qHint, setQHint] = useState("");
     const [qExplanation, setQExplanation] = useState("");
 
@@ -118,34 +125,133 @@ const CreateEditQuiz = () => {
     const saveTimeoutRef = useRef(null);
     const fileInputRef = useRef(null);
 
-    // 1. Initial Load & Fetch details if edit mode
-    useEffect(() => {
-        if (id) {
-            loadQuizQuestions(id);
+    // Load active question into editor form
+    const loadActiveQuestion = useCallback((linkItem) => {
+        const q = linkItem.question;
+        setSelectedQuestionId(linkItem.id); // links ID
+        setQText(q.question_text || "");
+        setQType(q.question_type || "MCQ");
+        setQPoints(linkItem.points_override || q.points || 1);
+        setQDifficulty(q.difficulty || "medium");
+        setQTags(q.tags || []);
+        setQHint(q.hint || "");
+        setQExplanation(q.explanation || "");
+
+        // Map options
+        if (q.options && q.options.length > 0) {
+            setQOptions(
+                q.options
+                    .map((o) => ({
+                        id: o.id,
+                        option_text: o.option_text || "",
+                        option_order: o.option_order || 1,
+                        is_correct: !!o.is_correct,
+                    }))
+                    .sort((a, b) => a.option_order - b.option_order),
+            );
+        } else {
+            // Defaults
+            setQOptions([
+                { option_text: "", option_order: 0, is_correct: false },
+                { option_text: "", option_order: 1, is_correct: false },
+                { option_text: "", option_order: 2, is_correct: false },
+                { option_text: "", option_order: 3, is_correct: false },
+            ]);
         }
-    }, [id]);
+    }, []);
 
     // Load Quiz Questions
-    const loadQuizQuestions = async (quizId) => {
-        const { data, error } = await supabase
-            .from("quiz_questions")
-            .select(`
+    const loadQuizQuestions = useCallback(
+        async (quizId) => {
+            const { data, error } = await supabase
+                .from("quiz_questions")
+                .select(
+                    `
                 id, display_order, points_override,
                 question:questions(
                     id, question_text, question_type, image_url, hint, explanation, points, difficulty, tags,
                     options:question_options(id, option_text, option_order, is_correct)
                 )
-            `)
-            .eq("quiz_id", quizId)
-            .order("display_order", { ascending: true });
+            `,
+                )
+                .eq("quiz_id", quizId)
+                .order("display_order", { ascending: true });
 
-        if (!error && data) {
-            setQuestionsList(data);
-            if (data.length > 0 && !selectedQuestionId) {
-                loadActiveQuestion(data[0]);
+            if (!error && data) {
+                setQuestionsList(data);
+                if (data.length > 0 && !selectedQuestionId) {
+                    loadActiveQuestion(data[0]);
+                }
             }
+        },
+        [selectedQuestionId, loadActiveQuestion],
+    );
+
+    // Autosave Handler
+    const handleAutosave = useCallback(async () => {
+        if (!id) return;
+        setSaveStatus("saving");
+        try {
+            await dispatch(
+                updateQuizThunk({
+                    id,
+                    title,
+                    description,
+                    category_id: categoryId || null,
+                    difficulty,
+                    cover_image_url: coverImageUrl || null,
+                    tags,
+                    time_limit_minutes: hasTimeLimit
+                        ? Number(timeLimitMinutes)
+                        : null,
+                    passing_score: Number(passingScore),
+                    max_attempts:
+                        maxAttempts && maxAttempts !== ""
+                            ? Number(maxAttempts)
+                            : null,
+                    available_from: availableFrom || null,
+                    available_until: availableUntil || null,
+                    shuffle_questions: shuffleQuestions,
+                    shuffle_answers: shuffleAnswers,
+                    visibility,
+                    show_results: showResults,
+                    certificates_enabled: certificatesEnabled,
+                }),
+            ).unwrap();
+            setSaveStatus("saved");
+            setIsDirty(false);
+        } catch (err) {
+            setSaveStatus("unsaved");
+            console.error("Autosave failed:", err);
         }
-    };
+    }, [
+        id,
+        title,
+        description,
+        categoryId,
+        difficulty,
+        coverImageUrl,
+        tags,
+        hasTimeLimit,
+        timeLimitMinutes,
+        passingScore,
+        maxAttempts,
+        availableFrom,
+        availableUntil,
+        shuffleQuestions,
+        shuffleAnswers,
+        visibility,
+        showResults,
+        certificatesEnabled,
+        dispatch,
+    ]);
+
+    // 1. Initial Load & Fetch details if edit mode
+    useEffect(() => {
+        if (id) {
+            loadQuizQuestions(id);
+        }
+    }, [id, loadQuizQuestions]);
 
     // 2. Populate states when currentQuiz details are loaded
     useEffect(() => {
@@ -155,14 +261,26 @@ const CreateEditQuiz = () => {
             setCategoryId(currentQuiz.category_id || "");
             setDifficulty(currentQuiz.difficulty || "medium");
             setCoverImageUrl(currentQuiz.cover_image_url || "");
-            setTags(currentQuiz.tags?.join(", ") || "");
+            setTags(currentQuiz.tags || []);
 
             setHasTimeLimit(!!currentQuiz.time_limit_minutes);
             setTimeLimitMinutes(currentQuiz.time_limit_minutes || 15);
             setPassingScore(currentQuiz.passing_score || 70);
-            setMaxAttempts(currentQuiz.max_attempts != null ? String(currentQuiz.max_attempts) : "");
-            setAvailableFrom(currentQuiz.available_from ? currentQuiz.available_from.substring(0, 16) : "");
-            setAvailableUntil(currentQuiz.available_until ? currentQuiz.available_until.substring(0, 16) : "");
+            setMaxAttempts(
+                currentQuiz.max_attempts != null
+                    ? String(currentQuiz.max_attempts)
+                    : "",
+            );
+            setAvailableFrom(
+                currentQuiz.available_from
+                    ? currentQuiz.available_from.substring(0, 16)
+                    : "",
+            );
+            setAvailableUntil(
+                currentQuiz.available_until
+                    ? currentQuiz.available_until.substring(0, 16)
+                    : "",
+            );
             setShuffleQuestions(!!currentQuiz.shuffle_questions);
             setShuffleAnswers(!!currentQuiz.shuffle_answers);
             setVisibility(currentQuiz.visibility || "public");
@@ -170,48 +288,19 @@ const CreateEditQuiz = () => {
             setCertificatesEnabled(!!currentQuiz.certificates_enabled);
 
             // If quiz is published and we just loaded, warn if attempting edit
-            if (currentQuiz.status === "published" && state?.warning !== false) {
+            if (
+                currentQuiz.status === "published" &&
+                state?.warning !== false
+            ) {
                 setIsEditWarningOpen(true);
             }
         }
     }, [currentQuiz, id, state]);
 
-    // Load active question into editor form
-    const loadActiveQuestion = (linkItem) => {
-        const q = linkItem.question;
-        setSelectedQuestionId(linkItem.id); // links ID
-        setQText(q.question_text || "");
-        setQType(q.question_type || "MCQ");
-        setQPoints(linkItem.points_override || q.points || 1);
-        setQDifficulty(q.difficulty || "medium");
-        setQTags(q.tags?.join(", ") || "");
-        setQHint(q.hint || "");
-        setQExplanation(q.explanation || "");
-
-        // Map options
-        if (q.options && q.options.length > 0) {
-            setQOptions(q.options.map(o => ({
-                id: o.id,
-                option_text: o.option_text || "",
-                option_order: o.option_order || 1,
-                is_correct: !!o.is_correct
-            })).sort((a, b) => a.option_order - b.option_order));
-        } else {
-            // Defaults
-            setQOptions([
-                { option_text: "", option_order: 0, is_correct: false },
-                { option_text: "", option_order: 1, is_correct: false },
-                { option_text: "", option_order: 2, is_correct: false },
-                { option_text: "", option_order: 3, is_correct: false }
-            ]);
-        }
-    };
-
     // 3. Debounced Autosave Trigger
     useEffect(() => {
         if (!isDirty || !id) return;
 
-        setSaveStatus("unsaved");
         if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
 
         saveTimeoutRef.current = setTimeout(() => {
@@ -221,61 +310,26 @@ const CreateEditQuiz = () => {
         return () => {
             if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
         };
-    }, [
-        title, description, categoryId, difficulty, coverImageUrl, tags,
-        hasTimeLimit, timeLimitMinutes, passingScore, maxAttempts,
-        availableFrom, availableUntil, shuffleQuestions, shuffleAnswers,
-        visibility, showResults, certificatesEnabled, isDirty
-    ]);
+    }, [isDirty, id, handleAutosave]);
 
     // Warning on browser navigate-away when dirty
     useEffect(() => {
         const handleBeforeUnload = (e) => {
             if (saveStatus !== "saved") {
-                const message = "You have unsaved changes. Are you sure you want to leave?";
+                const message =
+                    "You have unsaved changes. Are you sure you want to leave?";
                 e.returnValue = message;
                 return message;
             }
         };
         window.addEventListener("beforeunload", handleBeforeUnload);
-        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+        return () =>
+            window.removeEventListener("beforeunload", handleBeforeUnload);
     }, [saveStatus]);
 
     const markDirty = () => {
         setIsDirty(true);
         setSaveStatus("unsaved");
-    };
-
-    // Autosave Handler
-    const handleAutosave = async () => {
-        if (!id) return;
-        setSaveStatus("saving");
-        try {
-            await dispatch(updateQuizThunk({
-                id,
-                title,
-                description,
-                category_id: categoryId || null,
-                difficulty,
-                cover_image_url: coverImageUrl || null,
-                tags: tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : [],
-                time_limit_minutes: hasTimeLimit ? Number(timeLimitMinutes) : null,
-                passing_score: Number(passingScore),
-                max_attempts: maxAttempts && maxAttempts !== "" ? Number(maxAttempts) : null,
-                available_from: availableFrom || null,
-                available_until: availableUntil || null,
-                shuffle_questions: shuffleQuestions,
-                shuffle_answers: shuffleAnswers,
-                visibility,
-                show_results: showResults,
-                certificates_enabled: certificatesEnabled
-            })).unwrap();
-            setSaveStatus("saved");
-            setIsDirty(false);
-        } catch (err) {
-            setSaveStatus("unsaved");
-            console.error("Autosave failed:", err);
-        }
     };
 
     // Step 1 Validation & Navigation
@@ -292,17 +346,21 @@ const CreateEditQuiz = () => {
         try {
             if (!id) {
                 // Create draft quiz first to obtain an ID
-                const result = await dispatch(createQuizThunk({
-                    title,
-                    description,
-                    category_id: categoryId,
-                    difficulty,
-                    cover_image_url: coverImageUrl || null,
-                    tags: tags ? tags.split(",").map(t => t.trim()).filter(Boolean) : []
-                })).unwrap();
+                const result = await dispatch(
+                    createQuizThunk({
+                        title,
+                        description,
+                        category_id: categoryId,
+                        difficulty,
+                        cover_image_url: coverImageUrl || null,
+                        tags: tags,
+                    }),
+                ).unwrap();
 
                 toast.success("Draft quiz created successfully!");
-                navigate(`/instructor/quizzes/${result.id}/edit`, { state: { step: 2, warning: false } });
+                navigate(`/instructor/quizzes/${result.id}/edit`, {
+                    state: { step: 2, warning: false },
+                });
                 setActiveStep(2);
             } else {
                 // Update quiz info and proceed
@@ -324,13 +382,15 @@ const CreateEditQuiz = () => {
             return;
         }
 
-        const filteredOptions = qOptions.filter(o => o.option_text.trim() !== "");
+        const filteredOptions = qOptions.filter(
+            (o) => o.option_text.trim() !== "",
+        );
         if (qType === "mcq" && filteredOptions.length < 2) {
             toast.error("MCQ questions require at least 2 options");
             return;
         }
 
-        const correctCount = filteredOptions.filter(o => o.is_correct).length;
+        const correctCount = filteredOptions.filter((o) => o.is_correct).length;
         if (correctCount !== 1) {
             toast.error("Please select exactly one correct answer option");
             return;
@@ -339,7 +399,9 @@ const CreateEditQuiz = () => {
         setSaveStatus("saving");
         try {
             // Find active question object
-            const activeLink = questionsList.find(ql => ql.id === selectedQuestionId);
+            const activeLink = questionsList.find(
+                (ql) => ql.id === selectedQuestionId,
+            );
             const questionId = activeLink.question.id;
 
             // 1. Update question fields
@@ -352,21 +414,24 @@ const CreateEditQuiz = () => {
                     points: Number(qPoints),
                     hint: qHint || null,
                     explanation: qExplanation || null,
-                    tags: qTags ? qTags.split(",").map(t => t.trim()).filter(Boolean) : []
+                    tags: qTags,
                 })
                 .eq("id", questionId);
 
             // 2. Update options (Upsert/Delete)
             // Delete existing options
-            await supabase.from("question_options").delete().eq("question_id", questionId);
+            await supabase
+                .from("question_options")
+                .delete()
+                .eq("question_id", questionId);
             // Insert updated options
             await supabase.from("question_options").insert(
                 filteredOptions.map((o, idx) => ({
                     question_id: questionId,
                     option_text: o.option_text,
                     option_order: idx,
-                    is_correct: o.is_correct
-                }))
+                    is_correct: o.is_correct,
+                })),
             );
 
             // 3. Update points override on link row
@@ -380,6 +445,7 @@ const CreateEditQuiz = () => {
             setSaveStatus("saved");
             toast.success("Question saved successfully!");
         } catch (err) {
+            console.error("Error updating question", err);
             setSaveStatus("unsaved");
             toast.error("Failed to save question edits");
         }
@@ -398,7 +464,7 @@ const CreateEditQuiz = () => {
                     points: 1,
                     difficulty: "medium",
                     instructor_uid: currentQuiz.instructor_uid,
-                    category_id: categoryId || null
+                    category_id: categoryId || null,
                 })
                 .select()
                 .single();
@@ -407,10 +473,30 @@ const CreateEditQuiz = () => {
 
             // Create default options
             await supabase.from("question_options").insert([
-                { question_id: newQ.id, option_text: "Option A", option_order: 0, is_correct: true },
-                { question_id: newQ.id, option_text: "Option B", option_order: 1, is_correct: false },
-                { question_id: newQ.id, option_text: "Option C", option_order: 2, is_correct: false },
-                { question_id: newQ.id, option_text: "Option D", option_order: 3, is_correct: false }
+                {
+                    question_id: newQ.id,
+                    option_text: "Option A",
+                    option_order: 0,
+                    is_correct: true,
+                },
+                {
+                    question_id: newQ.id,
+                    option_text: "Option B",
+                    option_order: 1,
+                    is_correct: false,
+                },
+                {
+                    question_id: newQ.id,
+                    option_text: "Option C",
+                    option_order: 2,
+                    is_correct: false,
+                },
+                {
+                    question_id: newQ.id,
+                    option_text: "Option D",
+                    option_order: 3,
+                    is_correct: false,
+                },
             ]);
 
             // Link to quiz
@@ -419,7 +505,7 @@ const CreateEditQuiz = () => {
                 .insert({
                     quiz_id: id,
                     question_id: newQ.id,
-                    display_order: questionsList.length + 1
+                    display_order: questionsList.length + 1,
                 })
                 .select()
                 .single();
@@ -436,12 +522,28 @@ const CreateEditQuiz = () => {
                 question: {
                     ...newQ,
                     options: [
-                        { option_text: "Option A", option_order: 0, is_correct: true },
-                        { option_text: "Option B", option_order: 1, is_correct: false },
-                        { option_text: "Option C", option_order: 2, is_correct: false },
-                        { option_text: "Option D", option_order: 3, is_correct: false }
-                    ]
-                }
+                        {
+                            option_text: "Option A",
+                            option_order: 0,
+                            is_correct: true,
+                        },
+                        {
+                            option_text: "Option B",
+                            option_order: 1,
+                            is_correct: false,
+                        },
+                        {
+                            option_text: "Option C",
+                            option_order: 2,
+                            is_correct: false,
+                        },
+                        {
+                            option_text: "Option D",
+                            option_order: 3,
+                            is_correct: false,
+                        },
+                    ],
+                },
             };
             loadActiveQuestion(fullLink);
         } catch (err) {
@@ -450,23 +552,40 @@ const CreateEditQuiz = () => {
     };
 
     // Remove Question from quiz
-    const handleRemoveQuestion = async (linkId, e) => {
+    const handleRemoveQuestion = (linkId, e) => {
         e.stopPropagation();
-        if (!confirm("Are you sure you want to remove this question from the quiz?")) return;
-        
-        try {
-            await dispatch(removeFromQuizThunk(linkId)).unwrap();
-            toast.success("Question removed from quiz!");
-            
-            // If we deleted the currently active question, clear active selection
-            if (selectedQuestionId === linkId) {
-                setSelectedQuestionId(null);
-                setQText("");
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: "Remove question?",
+            text: "Are you sure you want to remove this question from the quiz?",
+            icon: "warning",
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Remove",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-danger, #ef4444)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            customClass: {
+                popup: "premium-swal-popup",
+            },
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await dispatch(removeFromQuizThunk(linkId)).unwrap();
+                    toast.success("Question removed from quiz!");
+
+                    // If we deleted the currently active question, clear active selection
+                    if (selectedQuestionId === linkId) {
+                        setSelectedQuestionId(null);
+                        setQText("");
+                    }
+                    loadQuizQuestions(id);
+                } catch (err) {
+                    toast.error(err || "Failed to remove question");
+                }
             }
-            loadQuizQuestions(id);
-        } catch (err) {
-            toast.error(err || "Failed to remove question");
-        }
+        });
     };
 
     // Import questions from Question Bank modal handler
@@ -481,13 +600,17 @@ const CreateEditQuiz = () => {
             const links = selectedBankQIds.map((qId, idx) => ({
                 quiz_id: id,
                 question_id: qId,
-                display_order: questionsList.length + idx + 1
+                display_order: questionsList.length + idx + 1,
             }));
 
-            const { error } = await supabase.from("quiz_questions").insert(links);
+            const { error } = await supabase
+                .from("quiz_questions")
+                .insert(links);
             if (error) throw error;
 
-            toast.success(`Successfully imported ${selectedBankQIds.length} question(s)!`);
+            toast.success(
+                `Successfully imported ${selectedBankQIds.length} question(s)!`,
+            );
             setSelectedBankQIds([]);
             setIsBankModalOpen(false);
             loadQuizQuestions(id);
@@ -528,7 +651,9 @@ const CreateEditQuiz = () => {
 
         // Mock upload or Supabase Storage upload
         const isDark = document.documentElement.classList.contains("dark");
-        toast.info("Uploading cover image...", { theme: isDark ? "dark" : "light" });
+        toast.info("Uploading cover image...", {
+            theme: isDark ? "dark" : "light",
+        });
 
         try {
             const fileExt = file.name.split(".").pop();
@@ -541,14 +666,15 @@ const CreateEditQuiz = () => {
 
             if (uploadError) throw uploadError;
 
-            const { data: { publicUrl } } = supabase.storage
-                .from("assets")
-                .getPublicUrl(filePath);
+            const {
+                data: { publicUrl },
+            } = supabase.storage.from("assets").getPublicUrl(filePath);
 
             setCoverImageUrl(publicUrl);
             markDirty();
             toast.success("Cover image uploaded successfully!");
         } catch (err) {
+            console.error("Error uploading cover image", err);
             // Fallback mock url if bucket doesn't exist
             const mockUrl = `https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&auto=format&fit=crop`;
             setCoverImageUrl(mockUrl);
@@ -560,7 +686,9 @@ const CreateEditQuiz = () => {
     // Final Settings & Publish Validation
     const handlePublishQuiz = async () => {
         if (questionsList.length < 2) {
-            toast.error("Quizzes must contain at least 2 questions to be published.");
+            toast.error(
+                "Quizzes must contain at least 2 questions to be published.",
+            );
             return;
         }
 
@@ -589,7 +717,9 @@ const CreateEditQuiz = () => {
         // Unpublish back to draft
         try {
             await dispatch(unpublishQuizThunk(id)).unwrap();
-            toast.info("Quiz unpublished to draft. You can publish again when ready.");
+            toast.info(
+                "Quiz unpublished to draft. You can publish again when ready.",
+            );
         } catch (err) {
             toast.error(err || "Failed to unpublish quiz");
         }
@@ -605,7 +735,7 @@ const CreateEditQuiz = () => {
     const handleSetCorrectOption = (idx) => {
         const updated = qOptions.map((o, i) => ({
             ...o,
-            is_correct: i === idx
+            is_correct: i === idx,
         }));
         setQOptions(updated);
     };
@@ -615,7 +745,14 @@ const CreateEditQuiz = () => {
             toast.warn("Maximum 6 options allowed");
             return;
         }
-        setQOptions([...qOptions, { option_text: "", option_order: qOptions.length, is_correct: false }]);
+        setQOptions([
+            ...qOptions,
+            {
+                option_text: "",
+                option_order: qOptions.length,
+                is_correct: false,
+            },
+        ]);
     };
 
     const handleRemoveMcqOption = (idx) => {
@@ -623,26 +760,35 @@ const CreateEditQuiz = () => {
             toast.warn("Minimum 2 options required");
             return;
         }
-        const updated = qOptions.filter((_, i) => i !== idx).map((o, i) => ({
-            ...o,
-            option_order: i
-        }));
+        const updated = qOptions
+            .filter((_, i) => i !== idx)
+            .map((o, i) => ({
+                ...o,
+                option_order: i,
+            }));
         setQOptions(updated);
     };
 
     // Filter bank questions for Bank Modal
-    const filteredBankQuestions = bankQuestions.filter(q => {
-        const matchesSearch = q.question_text.toLowerCase().includes(bankSearch.toLowerCase());
-        const matchesCategory = bankCategory === "all" || q.category?.id === bankCategory;
+    const filteredBankQuestions = bankQuestions.filter((q) => {
+        const matchesSearch = q.question_text
+            .toLowerCase()
+            .includes(bankSearch.toLowerCase());
+        const matchesCategory =
+            bankCategory === "all" || q.category?.id === bankCategory;
         const matchesType = bankType === "all" || q.question_type === bankType;
         // Don't show questions already in this quiz
-        const alreadyLinked = questionsList.some(ql => ql.question.id === q.id);
-        return matchesSearch && matchesCategory && matchesType && !alreadyLinked;
+        const alreadyLinked = questionsList.some(
+            (ql) => ql.question.id === q.id,
+        );
+        return (
+            matchesSearch && matchesCategory && matchesType && !alreadyLinked
+        );
     });
 
     const handleToggleBankSelection = (qId) => {
         if (selectedBankQIds.includes(qId)) {
-            setSelectedBankQIds(selectedBankQIds.filter(id => id !== qId));
+            setSelectedBankQIds(selectedBankQIds.filter((id) => id !== qId));
         } else {
             setSelectedBankQIds([...selectedBankQIds, qId]);
         }
@@ -651,23 +797,32 @@ const CreateEditQuiz = () => {
     return (
         <div className={styles.container}>
             {/* Header with Breadcrumb and Autosave status */}
-            <PageHeader 
-                title={id ? `Edit Quiz: ${title || "Draft"}` : "Create New Quiz"}
+            <PageHeader
+                title={
+                    id ? `Edit Quiz: ${title || "Draft"}` : "Create New Quiz"
+                }
                 subtitle="Build rich, responsive tests by configuring steps in order."
                 breadcrumbs={["Quizzes", id ? "Edit" : "Create"]}
                 actions={
                     <div className={styles.headerRight}>
                         {id && (
-                            <div className={styles.autosaveStatus} data-status={saveStatus}>
+                            <div
+                                className={styles.autosaveStatus}
+                                data-status={saveStatus}
+                            >
                                 <span className={styles.statusDot} />
                                 <span className={styles.statusText}>
                                     {saveStatus === "saved" && "Saved ✓"}
                                     {saveStatus === "saving" && "Saving..."}
-                                    {saveStatus === "unsaved" && "Unsaved changes ●"}
+                                    {saveStatus === "unsaved" &&
+                                        "Unsaved changes ●"}
                                 </span>
                             </div>
                         )}
-                        <MainButton onClick={() => navigate("/instructor/quizzes")} variant="secondary">
+                        <MainButton
+                            onClick={() => navigate("/instructor/quizzes")}
+                            variant="secondary"
+                        >
                             <FiArrowLeft /> Back to Quizzes
                         </MainButton>
                     </div>
@@ -676,17 +831,30 @@ const CreateEditQuiz = () => {
 
             {/* Horizontal Step Indicator */}
             <div className={styles.stepsBar}>
-                <div className={`${styles.stepItem} ${activeStep >= 1 ? styles.active : ""} ${activeStep > 1 ? styles.completed : ""}`} onClick={() => id && setActiveStep(1)}>
-                    <div className={styles.stepCircle}>{activeStep > 1 ? <FiCheck /> : "1"}</div>
+                <div
+                    className={`${styles.stepItem} ${activeStep >= 1 ? styles.active : ""} ${activeStep > 1 ? styles.completed : ""}`}
+                    onClick={() => id && setActiveStep(1)}
+                >
+                    <div className={styles.stepCircle}>
+                        {activeStep > 1 ? <FiCheck /> : "1"}
+                    </div>
                     <span>Basic Info</span>
                 </div>
                 <div className={styles.stepLine} />
-                <div className={`${styles.stepItem} ${activeStep >= 2 ? styles.active : ""} ${activeStep > 2 ? styles.completed : ""}`} onClick={() => id && setActiveStep(2)}>
-                    <div className={styles.stepCircle}>{activeStep > 2 ? <FiCheck /> : "2"}</div>
+                <div
+                    className={`${styles.stepItem} ${activeStep >= 2 ? styles.active : ""} ${activeStep > 2 ? styles.completed : ""}`}
+                    onClick={() => id && setActiveStep(2)}
+                >
+                    <div className={styles.stepCircle}>
+                        {activeStep > 2 ? <FiCheck /> : "2"}
+                    </div>
                     <span>Questions</span>
                 </div>
                 <div className={styles.stepLine} />
-                <div className={`${styles.stepItem} ${activeStep >= 3 ? styles.active : ""}`} onClick={() => id && setActiveStep(3)}>
+                <div
+                    className={`${styles.stepItem} ${activeStep >= 3 ? styles.active : ""}`}
+                    onClick={() => id && setActiveStep(3)}
+                >
                     <div className={styles.stepCircle}>3</div>
                     <span>Settings & Publish</span>
                 </div>
@@ -695,54 +863,80 @@ const CreateEditQuiz = () => {
             {/* STEP 1: BASIC INFO */}
             {activeStep === 1 && (
                 <div className={styles.stepContentCard}>
-                    <h3 className={styles.stepTitle}><FiFileText /> Step 1: Basic Quiz Specifications</h3>
-                    
+                    <h3 className={styles.stepTitle}>
+                        <FiFileText /> Step 1: Basic Quiz Specifications
+                    </h3>
+
                     <div className={styles.formGrid}>
                         {/* Title */}
                         <div className={styles.formGroup}>
-                            <label className={styles.label}>Quiz Title <span className={styles.req}>*</span></label>
-                            <input 
+                            <label className={styles.label}>
+                                Quiz Title <span className={styles.req}>*</span>
+                            </label>
+                            <input
                                 type="text"
                                 value={title}
-                                onChange={(e) => { setTitle(e.target.value); markDirty(); }}
+                                onChange={(e) => {
+                                    setTitle(e.target.value);
+                                    markDirty();
+                                }}
                                 placeholder="e.g. JavaScript Variables & Scopes"
                                 className={styles.input}
                                 required
                             />
-                            <p className={styles.helperText}>Between 3 and 200 characters.</p>
+                            <p className={styles.helperText}>
+                                Between 3 and 200 characters.
+                            </p>
                         </div>
 
                         {/* Category & Difficulty */}
                         <div className={styles.grid2}>
                             <div className={styles.formGroup}>
-                                <label className={styles.label}>Category <span className={styles.req}>*</span></label>
-                                <select
+                                <label className={styles.label}>
+                                    Category{" "}
+                                    <span className={styles.req}>*</span>
+                                </label>
+                                <CustomSelect
+                                    options={categories.map((c) => ({
+                                        value: c.id,
+                                        label: c.name,
+                                    }))}
                                     value={categoryId}
-                                    onChange={(e) => { setCategoryId(e.target.value); markDirty(); }}
-                                    className={styles.select}
-                                    required
-                                >
-                                    <option value="">Select Category...</option>
-                                    {categories.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => {
+                                        setCategoryId(val);
+                                        markDirty();
+                                    }}
+                                    placeholder="Select Category..."
+                                />
                             </div>
 
                             <div className={styles.formGroup}>
-                                <label className={styles.label}>Difficulty Level <span className={styles.req}>*</span></label>
+                                <label className={styles.label}>
+                                    Difficulty Level{" "}
+                                    <span className={styles.req}>*</span>
+                                </label>
                                 <div className={styles.radioCards}>
-                                    {["easy", "medium", "hard"].map(diff => (
-                                        <label key={diff} className={`${styles.radioCard} ${difficulty === diff ? styles.radioCardActive : ""}`}>
-                                            <input 
-                                                type="radio" 
-                                                name="difficulty" 
-                                                value={diff} 
+                                    {["easy", "medium", "hard"].map((diff) => (
+                                        <label
+                                            key={diff}
+                                            className={`${styles.radioCard} ${difficulty === diff ? styles.radioCardActive : ""}`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="difficulty"
+                                                value={diff}
                                                 checked={difficulty === diff}
-                                                onChange={(e) => { setDifficulty(e.target.value); markDirty(); }}
+                                                onChange={(e) => {
+                                                    setDifficulty(
+                                                        e.target.value,
+                                                    );
+                                                    markDirty();
+                                                }}
                                                 className={styles.radioInput}
                                             />
-                                            <span className={styles.radioLabel}>{diff}</span>
+                                            <span className={styles.radioLabel}>
+                                                {diff}
+                                            </span>
                                         </label>
                                     ))}
                                 </div>
@@ -754,7 +948,10 @@ const CreateEditQuiz = () => {
                             <label className={styles.label}>Description</label>
                             <textarea
                                 value={description}
-                                onChange={(e) => { setDescription(e.target.value); markDirty(); }}
+                                onChange={(e) => {
+                                    setDescription(e.target.value);
+                                    markDirty();
+                                }}
                                 placeholder="Describe what subjects are covered in this quiz..."
                                 rows={4}
                                 className={styles.textarea}
@@ -764,7 +961,7 @@ const CreateEditQuiz = () => {
                         {/* Image Upload Zone */}
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Cover Image</label>
-                            <div 
+                            <div
                                 className={`${styles.uploadZone} ${dragActive ? styles.dragActive : ""}`}
                                 onDragEnter={handleDrag}
                                 onDragOver={handleDrag}
@@ -772,22 +969,35 @@ const CreateEditQuiz = () => {
                                 onDrop={handleDrop}
                                 onClick={() => fileInputRef.current.click()}
                             >
-                                <input 
-                                    type="file" 
-                                    ref={fileInputRef} 
-                                    className={styles.fileInput} 
-                                    onChange={(e) => e.target.files[0] && handleFileUpload(e.target.files[0])}
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className={styles.fileInput}
+                                    onChange={(e) =>
+                                        e.target.files[0] &&
+                                        handleFileUpload(e.target.files[0])
+                                    }
                                     accept="image/*"
                                 />
                                 {coverImageUrl ? (
                                     <div className={styles.coverPreview}>
-                                        <img src={coverImageUrl} alt="Quiz Cover Preview" />
-                                        <div className={styles.changeOverlay}>Click to Change Image</div>
+                                        <img
+                                            src={coverImageUrl}
+                                            alt="Quiz Cover Preview"
+                                        />
+                                        <div className={styles.changeOverlay}>
+                                            Click to Change Image
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className={styles.uploadPrompt}>
-                                        <FiUploadCloud className={styles.uploadIcon} />
-                                        <p>Drag and drop JPG/PNG file here, or <span>browse files</span></p>
+                                        <FiUploadCloud
+                                            className={styles.uploadIcon}
+                                        />
+                                        <p>
+                                            Drag and drop JPG/PNG file here, or{" "}
+                                            <span>browse files</span>
+                                        </p>
                                         <span>Max size: 5MB</span>
                                     </div>
                                 )}
@@ -796,13 +1006,16 @@ const CreateEditQuiz = () => {
 
                         {/* Tags */}
                         <div className={styles.formGroup}>
-                            <label className={styles.label}>Tags (Comma Separated)</label>
-                            <input 
-                                type="text"
+                            <label className={styles.label}>Tags</label>
+                            <CustomSelect
+                                isCreatable={true}
+                                isMulti={true}
                                 value={tags}
-                                onChange={(e) => { setTags(e.target.value); markDirty(); }}
-                                placeholder="e.g. javascript, coding, basics"
-                                className={styles.input}
+                                onChange={(val) => {
+                                    setTags(val);
+                                    markDirty();
+                                }}
+                                placeholder="Add tags..."
                             />
                         </div>
                     </div>
@@ -822,36 +1035,51 @@ const CreateEditQuiz = () => {
                     <div className={styles.questionsSidebar}>
                         <div className={styles.sidebarHeader}>
                             <h4>Questions ({questionsList.length})</h4>
-                            <button className={styles.addQBtn} onClick={handleAddNewQuestion}>
+                            <button
+                                className={styles.addQBtn}
+                                onClick={handleAddNewQuestion}
+                            >
                                 <FiPlus /> Add
                             </button>
                         </div>
 
                         <div className={styles.questionsScrollList}>
                             {questionsList.map((ql, idx) => (
-                                <div 
-                                    key={ql.id} 
+                                <div
+                                    key={ql.id}
                                     className={`${styles.qListItem} ${selectedQuestionId === ql.id ? styles.qListActive : ""}`}
                                     onClick={() => loadActiveQuestion(ql)}
                                 >
                                     <FiMenu className={styles.dragHandle} />
-                                    <span className={styles.qIndex}>Q{idx + 1}</span>
-                                    <span className={styles.qTextTrunc}>
-                                        {ql.question.question_text || "(No question text)"}
+                                    <span className={styles.qIndex}>
+                                        Q{idx + 1}
                                     </span>
-                                    <button className={styles.deleteQBtn} onClick={(e) => handleRemoveQuestion(ql.id, e)}>
+                                    <span className={styles.qTextTrunc}>
+                                        {ql.question.question_text ||
+                                            "(No question text)"}
+                                    </span>
+                                    <button
+                                        className={styles.deleteQBtn}
+                                        onClick={(e) =>
+                                            handleRemoveQuestion(ql.id, e)
+                                        }
+                                    >
                                         <FiTrash2 />
                                     </button>
                                 </div>
                             ))}
                             {questionsList.length === 0 && (
                                 <div className={styles.emptySidebar}>
-                                    No questions yet. Click "+ Add" or import from bank.
+                                    No questions yet. Click "+ Add" or import
+                                    from bank.
                                 </div>
                             )}
                         </div>
 
-                        <button className={styles.bankImportBtn} onClick={() => setIsBankModalOpen(true)}>
+                        <button
+                            className={styles.bankImportBtn}
+                            onClick={() => setIsBankModalOpen(true)}
+                        >
                             <FiDatabase /> Import from Bank
                         </button>
                     </div>
@@ -862,73 +1090,149 @@ const CreateEditQuiz = () => {
                             <div className={styles.editorBody}>
                                 <div className={styles.editorRow}>
                                     <h4>Edit Question details</h4>
-                                    <MainButton onClick={handleSaveActiveQuestion} variant="success" size="sm">
+                                    <MainButton
+                                        onClick={handleSaveActiveQuestion}
+                                        variant="success"
+                                        size="sm"
+                                    >
                                         Save Question
                                     </MainButton>
                                 </div>
 
                                 {/* Question Type */}
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>Question Type</label>
-                                    <select
+                                    <label className={styles.label}>
+                                        Question Type
+                                    </label>
+                                    <CustomSelect
+                                        options={[
+                                            {
+                                                value: "mcq",
+                                                label: "Multiple Choice (MCQ)",
+                                            },
+                                            {
+                                                value: "true_false",
+                                                label: "True / False",
+                                            },
+                                        ]}
                                         value={qType}
-                                        onChange={(e) => { setQType(e.target.value); }}
-                                        className={styles.select}
-                                    >
-                                        <option value="mcq">Multiple Choice (MCQ)</option>
-                                        <option value="true_false">True / False</option>
-                                    </select>
+                                        onChange={setQType}
+                                    />
                                 </div>
 
                                 {/* Question text */}
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>Question Text</label>
+                                    <label className={styles.label}>
+                                        Question Text
+                                    </label>
                                     <textarea
                                         value={qText}
-                                        onChange={(e) => { setQText(e.target.value); }}
+                                        onChange={(e) => {
+                                            setQText(e.target.value);
+                                        }}
                                         placeholder="Type the question query..."
                                         rows={3}
                                         className={styles.textarea}
                                     />
                                     <div className={styles.textToolbar}>
-                                        <button type="button" onClick={() => setQText(prev => prev + " **bold**")}>B</button>
-                                        <button type="button" onClick={() => setQText(prev => prev + " *italic*")}>I</button>
-                                        <button type="button" onClick={() => setQText(prev => prev + " `code` ")}>&lt;/&gt;</button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setQText(
+                                                    (prev) =>
+                                                        prev + " **bold**",
+                                                )
+                                            }
+                                        >
+                                            B
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setQText(
+                                                    (prev) =>
+                                                        prev + " *italic*",
+                                                )
+                                            }
+                                        >
+                                            I
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setQText(
+                                                    (prev) => prev + " `code` ",
+                                                )
+                                            }
+                                        >
+                                            &lt;/&gt;
+                                        </button>
                                     </div>
                                 </div>
 
                                 {/* Options Wrapper */}
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>Answer Options</label>
+                                    <label className={styles.label}>
+                                        Answer Options
+                                    </label>
                                     {qType === "mcq" ? (
                                         <div className={styles.optionsList}>
                                             {qOptions.map((opt, oIdx) => (
-                                                <div key={oIdx} className={styles.optionRow} data-correct={opt.is_correct}>
-                                                    <input 
-                                                        type="radio" 
+                                                <div
+                                                    key={oIdx}
+                                                    className={styles.optionRow}
+                                                    data-correct={
+                                                        opt.is_correct
+                                                    }
+                                                >
+                                                    <input
+                                                        type="radio"
                                                         name="correct-option"
                                                         checked={opt.is_correct}
-                                                        onChange={() => handleSetCorrectOption(oIdx)}
-                                                        className={styles.optRadio}
+                                                        onChange={() =>
+                                                            handleSetCorrectOption(
+                                                                oIdx,
+                                                            )
+                                                        }
+                                                        className={
+                                                            styles.optRadio
+                                                        }
                                                     />
-                                                    <input 
-                                                        type="text" 
+                                                    <input
+                                                        type="text"
                                                         value={opt.option_text}
-                                                        onChange={(e) => handleOptionTextChange(oIdx, e.target.value)}
+                                                        onChange={(e) =>
+                                                            handleOptionTextChange(
+                                                                oIdx,
+                                                                e.target.value,
+                                                            )
+                                                        }
                                                         placeholder={`Option ${oIdx + 1}`}
-                                                        className={styles.optInput}
+                                                        className={
+                                                            styles.optInput
+                                                        }
                                                     />
-                                                    <button 
-                                                        type="button" 
-                                                        className={styles.optDelete} 
-                                                        onClick={() => handleRemoveMcqOption(oIdx)}
+                                                    <button
+                                                        type="button"
+                                                        className={
+                                                            styles.optDelete
+                                                        }
+                                                        onClick={() =>
+                                                            handleRemoveMcqOption(
+                                                                oIdx,
+                                                            )
+                                                        }
                                                     >
                                                         <FiTrash2 />
                                                     </button>
                                                 </div>
                                             ))}
                                             {qOptions.length < 6 && (
-                                                <button type="button" className={styles.addOptBtn} onClick={handleAddMcqOption}>
+                                                <button
+                                                    type="button"
+                                                    className={styles.addOptBtn}
+                                                    onClick={handleAddMcqOption}
+                                                >
                                                     + Add Option
                                                 </button>
                                             )}
@@ -936,20 +1240,44 @@ const CreateEditQuiz = () => {
                                     ) : (
                                         <div className={styles.tfWrapper}>
                                             {/* True / False static choices */}
-                                            <div className={`${styles.tfCard} ${qOptions[0]?.is_correct ? styles.tfActive : ""}`} onClick={() => {
-                                                setQOptions([
-                                                    { option_text: "True", option_order: 0, is_correct: true },
-                                                    { option_text: "False", option_order: 1, is_correct: false }
-                                                ]);
-                                            }}>
+                                            <div
+                                                className={`${styles.tfCard} ${qOptions[0]?.is_correct ? styles.tfActive : ""}`}
+                                                onClick={() => {
+                                                    setQOptions([
+                                                        {
+                                                            option_text: "True",
+                                                            option_order: 0,
+                                                            is_correct: true,
+                                                        },
+                                                        {
+                                                            option_text:
+                                                                "False",
+                                                            option_order: 1,
+                                                            is_correct: false,
+                                                        },
+                                                    ]);
+                                                }}
+                                            >
                                                 <span>True</span>
                                             </div>
-                                            <div className={`${styles.tfCard} ${qOptions[1]?.is_correct ? styles.tfActive : ""}`} onClick={() => {
-                                                setQOptions([
-                                                    { option_text: "True", option_order: 0, is_correct: false },
-                                                    { option_text: "False", option_order: 1, is_correct: true }
-                                                ]);
-                                            }}>
+                                            <div
+                                                className={`${styles.tfCard} ${qOptions[1]?.is_correct ? styles.tfActive : ""}`}
+                                                onClick={() => {
+                                                    setQOptions([
+                                                        {
+                                                            option_text: "True",
+                                                            option_order: 0,
+                                                            is_correct: false,
+                                                        },
+                                                        {
+                                                            option_text:
+                                                                "False",
+                                                            option_order: 1,
+                                                            is_correct: true,
+                                                        },
+                                                    ]);
+                                                }}
+                                            >
                                                 <span>False</span>
                                             </div>
                                         </div>
@@ -959,31 +1287,53 @@ const CreateEditQuiz = () => {
                                 {/* Custom overrides */}
                                 <div className={styles.grid3}>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>Points</label>
-                                        <input 
-                                            type="number" 
+                                        <label className={styles.label}>
+                                            Points
+                                        </label>
+                                        <input
+                                            type="number"
                                             value={qPoints}
-                                            onChange={(e) => setQPoints(e.target.value)}
-                                            min={1} max={100}
+                                            onChange={(e) =>
+                                                setQPoints(e.target.value)
+                                            }
+                                            min={1}
+                                            max={100}
                                             className={styles.input}
                                         />
                                     </div>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>Difficulty</label>
-                                        <select value={qDifficulty} onChange={(e) => setQDifficulty(e.target.value)} className={styles.select}>
-                                            <option value="easy">Easy</option>
-                                            <option value="medium">Medium</option>
-                                            <option value="hard">Hard</option>
-                                        </select>
+                                        <label className={styles.label}>
+                                            Difficulty
+                                        </label>
+                                        <CustomSelect
+                                            options={[
+                                                {
+                                                    value: "easy",
+                                                    label: "Easy",
+                                                },
+                                                {
+                                                    value: "medium",
+                                                    label: "Medium",
+                                                },
+                                                {
+                                                    value: "hard",
+                                                    label: "Hard",
+                                                },
+                                            ]}
+                                            value={qDifficulty}
+                                            onChange={setQDifficulty}
+                                        />
                                     </div>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>Tags</label>
-                                        <input 
-                                            type="text" 
+                                        <label className={styles.label}>
+                                            Tags
+                                        </label>
+                                        <CustomSelect
+                                            isCreatable={true}
+                                            isMulti={true}
                                             value={qTags}
-                                            onChange={(e) => setQTags(e.target.value)}
-                                            placeholder="tags..."
-                                            className={styles.input}
+                                            onChange={setQTags}
+                                            placeholder="Add tags..."
                                         />
                                     </div>
                                 </div>
@@ -991,34 +1341,71 @@ const CreateEditQuiz = () => {
                                 {/* Hint & Explanation */}
                                 <div className={styles.grid2}>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>Hint (Optional)</label>
-                                        <textarea value={qHint} onChange={(e) => setQHint(e.target.value)} placeholder="Type a hint..." rows={2} className={styles.textarea} />
+                                        <label className={styles.label}>
+                                            Hint (Optional)
+                                        </label>
+                                        <textarea
+                                            value={qHint}
+                                            onChange={(e) =>
+                                                setQHint(e.target.value)
+                                            }
+                                            placeholder="Type a hint..."
+                                            rows={2}
+                                            className={styles.textarea}
+                                        />
                                     </div>
                                     <div className={styles.formGroup}>
-                                        <label className={styles.label}>Explanation (Optional)</label>
-                                        <textarea value={qExplanation} onChange={(e) => setQExplanation(e.target.value)} placeholder="Explain the solution..." rows={2} className={styles.textarea} />
+                                        <label className={styles.label}>
+                                            Explanation (Optional)
+                                        </label>
+                                        <textarea
+                                            value={qExplanation}
+                                            onChange={(e) =>
+                                                setQExplanation(e.target.value)
+                                            }
+                                            placeholder="Explain the solution..."
+                                            rows={2}
+                                            className={styles.textarea}
+                                        />
                                     </div>
                                 </div>
                             </div>
                         ) : (
                             <div className={styles.emptyEditor}>
-                                <FiHelpCircle className={styles.largeHelpIcon} />
+                                <FiHelpCircle
+                                    className={styles.largeHelpIcon}
+                                />
                                 <h3>No Question Selected</h3>
-                                <p>Select an existing question from the sidebar list, or click "+ Add" to draft a new question from scratch.</p>
+                                <p>
+                                    Select an existing question from the sidebar
+                                    list, or click "+ Add" to draft a new
+                                    question from scratch.
+                                </p>
                             </div>
                         )}
 
-                        <div className={styles.stepFooter} style={{marginTop: "auto"}}>
-                            <MainButton onClick={() => setActiveStep(1)} variant="secondary">
+                        <div
+                            className={styles.stepFooter}
+                            style={{ marginTop: "auto" }}
+                        >
+                            <MainButton
+                                onClick={() => setActiveStep(1)}
+                                variant="secondary"
+                            >
                                 Back: Basic Info
                             </MainButton>
-                            <MainButton onClick={() => {
-                                if (questionsList.length === 0) {
-                                    toast.error("Please add at least 1 question before proceeding");
-                                } else {
-                                    setActiveStep(3);
-                                }
-                            }} variant="primary">
+                            <MainButton
+                                onClick={() => {
+                                    if (questionsList.length === 0) {
+                                        toast.error(
+                                            "Please add at least 1 question before proceeding",
+                                        );
+                                    } else {
+                                        setActiveStep(3);
+                                    }
+                                }}
+                                variant="primary"
+                            >
                                 Next: Settings & Publish <FiArrowRight />
                             </MainButton>
                         </div>
@@ -1031,30 +1418,45 @@ const CreateEditQuiz = () => {
                 <div className={styles.settingsGrid}>
                     {/* Settings Form */}
                     <div className={styles.settingsCard}>
-                        <h3 className={styles.stepTitle}><FiSettings /> Advanced Quiz Settings</h3>
-                        
+                        <h3 className={styles.stepTitle}>
+                            <FiSettings /> Advanced Quiz Settings
+                        </h3>
+
                         <div className={styles.formGrid}>
                             {/* Time Limit */}
                             <div className={styles.toggleRow}>
                                 <div>
-                                    <label className={styles.toggleLabel}>Enable Time Limit</label>
-                                    <p className={styles.toggleDesc}>Limit the amount of time students have to submit answers.</p>
+                                    <label className={styles.toggleLabel}>
+                                        Enable Time Limit
+                                    </label>
+                                    <p className={styles.toggleDesc}>
+                                        Limit the amount of time students have
+                                        to submit answers.
+                                    </p>
                                 </div>
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={hasTimeLimit}
-                                    onChange={(e) => { setHasTimeLimit(e.target.checked); markDirty(); }}
+                                    onChange={(e) => {
+                                        setHasTimeLimit(e.target.checked);
+                                        markDirty();
+                                    }}
                                     className={styles.toggleSwitch}
                                 />
                             </div>
 
                             {hasTimeLimit && (
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>Time Limit (Minutes)</label>
-                                    <input 
+                                    <label className={styles.label}>
+                                        Time Limit (Minutes)
+                                    </label>
+                                    <input
                                         type="number"
                                         value={timeLimitMinutes}
-                                        onChange={(e) => { setTimeLimitMinutes(e.target.value); markDirty(); }}
+                                        onChange={(e) => {
+                                            setTimeLimitMinutes(e.target.value);
+                                            markDirty();
+                                        }}
                                         min={1}
                                         className={styles.input}
                                     />
@@ -1066,30 +1468,48 @@ const CreateEditQuiz = () => {
                             {/* Passing Score & Attempts */}
                             <div className={styles.grid2}>
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>Passing Score (%) <span className={styles.req}>*</span></label>
-                                    <input 
+                                    <label className={styles.label}>
+                                        Passing Score (%){" "}
+                                        <span className={styles.req}>*</span>
+                                    </label>
+                                    <input
                                         type="number"
                                         value={passingScore}
-                                        onChange={(e) => { setPassingScore(e.target.value); markDirty(); }}
-                                        min={1} max={100}
+                                        onChange={(e) => {
+                                            setPassingScore(e.target.value);
+                                            markDirty();
+                                        }}
+                                        min={1}
+                                        max={100}
                                         className={styles.input}
                                         required
                                     />
                                 </div>
 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>Maximum Attempts</label>
-                                    <select 
-                                        value={maxAttempts} 
-                                        onChange={(e) => { setMaxAttempts(e.target.value); markDirty(); }}
-                                        className={styles.select}
-                                    >
-                                        <option value="">Unlimited Attempts</option>
-                                        <option value="1">1 Attempt Only</option>
-                                        <option value="2">2 Attempts</option>
-                                        <option value="3">3 Attempts</option>
-                                        <option value="5">5 Attempts</option>
-                                    </select>
+                                    <label className={styles.label}>
+                                        Maximum Attempts
+                                    </label>
+                                    <CustomSelect
+                                        options={[
+                                            {
+                                                value: "",
+                                                label: "Unlimited Attempts",
+                                            },
+                                            {
+                                                value: "1",
+                                                label: "1 Attempt Only",
+                                            },
+                                            { value: "2", label: "2 Attempts" },
+                                            { value: "3", label: "3 Attempts" },
+                                            { value: "5", label: "5 Attempts" },
+                                        ]}
+                                        value={maxAttempts}
+                                        onChange={(val) => {
+                                            setMaxAttempts(val);
+                                            markDirty();
+                                        }}
+                                    />
                                 </div>
                             </div>
 
@@ -1098,20 +1518,30 @@ const CreateEditQuiz = () => {
                             {/* Availability Picker */}
                             <div className={styles.grid2}>
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>Available From</label>
-                                    <input 
-                                        type="datetime-local" 
+                                    <label className={styles.label}>
+                                        Available From
+                                    </label>
+                                    <input
+                                        type="datetime-local"
                                         value={availableFrom}
-                                        onChange={(e) => { setAvailableFrom(e.target.value); markDirty(); }}
+                                        onChange={(e) => {
+                                            setAvailableFrom(e.target.value);
+                                            markDirty();
+                                        }}
                                         className={styles.input}
                                     />
                                 </div>
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>Available Until</label>
-                                    <input 
-                                        type="datetime-local" 
+                                    <label className={styles.label}>
+                                        Available Until
+                                    </label>
+                                    <input
+                                        type="datetime-local"
                                         value={availableUntil}
-                                        onChange={(e) => { setAvailableUntil(e.target.value); markDirty(); }}
+                                        onChange={(e) => {
+                                            setAvailableUntil(e.target.value);
+                                            markDirty();
+                                        }}
                                         className={styles.input}
                                     />
                                 </div>
@@ -1122,26 +1552,41 @@ const CreateEditQuiz = () => {
                             {/* Shufflers */}
                             <div className={styles.toggleRow}>
                                 <div>
-                                    <label className={styles.toggleLabel}>Shuffle Questions</label>
-                                    <p className={styles.toggleDesc}>Randomize question displays for each student attempt.</p>
+                                    <label className={styles.toggleLabel}>
+                                        Shuffle Questions
+                                    </label>
+                                    <p className={styles.toggleDesc}>
+                                        Randomize question displays for each
+                                        student attempt.
+                                    </p>
                                 </div>
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={shuffleQuestions}
-                                    onChange={(e) => { setShuffleQuestions(e.target.checked); markDirty(); }}
+                                    onChange={(e) => {
+                                        setShuffleQuestions(e.target.checked);
+                                        markDirty();
+                                    }}
                                     className={styles.toggleSwitch}
                                 />
                             </div>
 
                             <div className={styles.toggleRow}>
                                 <div>
-                                    <label className={styles.toggleLabel}>Shuffle Answers</label>
-                                    <p className={styles.toggleDesc}>Randomize MC choices order per question.</p>
+                                    <label className={styles.toggleLabel}>
+                                        Shuffle Answers
+                                    </label>
+                                    <p className={styles.toggleDesc}>
+                                        Randomize MC choices order per question.
+                                    </p>
                                 </div>
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={shuffleAnswers}
-                                    onChange={(e) => { setShuffleAnswers(e.target.checked); markDirty(); }}
+                                    onChange={(e) => {
+                                        setShuffleAnswers(e.target.checked);
+                                        markDirty();
+                                    }}
                                     className={styles.toggleSwitch}
                                 />
                             </div>
@@ -1150,44 +1595,74 @@ const CreateEditQuiz = () => {
 
                             {/* Visibility & Results display */}
                             <div className={styles.formGroup}>
-                                <label className={styles.label}>Visibility Access</label>
+                                <label className={styles.label}>
+                                    Visibility Access
+                                </label>
                                 <div className={styles.radioCards}>
-                                    <label className={`${styles.radioCard} ${visibility === "public" ? styles.radioCardActive : ""}`}>
-                                        <input 
-                                            type="radio" 
-                                            name="visibility" 
-                                            value="public" 
+                                    <label
+                                        className={`${styles.radioCard} ${visibility === "public" ? styles.radioCardActive : ""}`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="visibility"
+                                            value="public"
                                             checked={visibility === "public"}
-                                            onChange={(e) => { setVisibility(e.target.value); markDirty(); }}
+                                            onChange={(e) => {
+                                                setVisibility(e.target.value);
+                                                markDirty();
+                                            }}
                                             className={styles.radioInput}
                                         />
-                                        <span className={styles.radioLabel}><FiUnlock /> Public</span>
+                                        <span className={styles.radioLabel}>
+                                            <FiUnlock /> Public
+                                        </span>
                                     </label>
-                                    <label className={`${styles.radioCard} ${visibility === "private" ? styles.radioCardActive : ""}`}>
-                                        <input 
-                                            type="radio" 
-                                            name="visibility" 
-                                            value="private" 
+                                    <label
+                                        className={`${styles.radioCard} ${visibility === "private" ? styles.radioCardActive : ""}`}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="visibility"
+                                            value="private"
                                             checked={visibility === "private"}
-                                            onChange={(e) => { setVisibility(e.target.value); markDirty(); }}
+                                            onChange={(e) => {
+                                                setVisibility(e.target.value);
+                                                markDirty();
+                                            }}
                                             className={styles.radioInput}
                                         />
-                                        <span className={styles.radioLabel}><FiLock /> Private</span>
+                                        <span className={styles.radioLabel}>
+                                            <FiLock /> Private
+                                        </span>
                                     </label>
                                 </div>
                             </div>
 
                             <div className={styles.formGroup}>
-                                <label className={styles.label}>Reveal Results to Students</label>
-                                <select 
-                                    value={showResults} 
-                                    onChange={(e) => { setShowResults(e.target.value); markDirty(); }}
-                                    className={styles.select}
-                                >
-                                    <option value="immediately">Immediately after attempt submission</option>
-                                    <option value="after_due_date">Only after due dates expire</option>
-                                    <option value="never">Never (Instructor logs only)</option>
-                                </select>
+                                <label className={styles.label}>
+                                    Reveal Results to Students
+                                </label>
+                                <CustomSelect
+                                    options={[
+                                        {
+                                            value: "immediately",
+                                            label: "Immediately after attempt submission",
+                                        },
+                                        {
+                                            value: "after_due_date",
+                                            label: "Only after due dates expire",
+                                        },
+                                        {
+                                            value: "never",
+                                            label: "Never (Instructor logs only)",
+                                        },
+                                    ]}
+                                    value={showResults}
+                                    onChange={(val) => {
+                                        setShowResults(val);
+                                        markDirty();
+                                    }}
+                                />
                             </div>
 
                             <div className={styles.divider} />
@@ -1195,13 +1670,23 @@ const CreateEditQuiz = () => {
                             {/* Certificates */}
                             <div className={styles.toggleRow}>
                                 <div>
-                                    <label className={styles.toggleLabel}>Enable Certificates</label>
-                                    <p className={styles.toggleDesc}>Automatically award verified PDF credentials to passing students.</p>
+                                    <label className={styles.toggleLabel}>
+                                        Enable Certificates
+                                    </label>
+                                    <p className={styles.toggleDesc}>
+                                        Automatically award verified PDF
+                                        credentials to passing students.
+                                    </p>
                                 </div>
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     checked={certificatesEnabled}
-                                    onChange={(e) => { setCertificatesEnabled(e.target.checked); markDirty(); }}
+                                    onChange={(e) => {
+                                        setCertificatesEnabled(
+                                            e.target.checked,
+                                        );
+                                        markDirty();
+                                    }}
                                     className={styles.toggleSwitch}
                                 />
                             </div>
@@ -1219,19 +1704,33 @@ const CreateEditQuiz = () => {
                                 </div>
                                 <div className={styles.summaryItem}>
                                     <span>Category</span>
-                                    <strong>{categories.find(c => c.id === categoryId)?.name || "—"}</strong>
+                                    <strong>
+                                        {categories.find(
+                                            (c) => c.id === categoryId,
+                                        )?.name || "—"}
+                                    </strong>
                                 </div>
                                 <div className={styles.summaryItem}>
                                     <span>Difficulty</span>
-                                    <strong style={{textTransform: "capitalize"}}>{difficulty}</strong>
+                                    <strong
+                                        style={{ textTransform: "capitalize" }}
+                                    >
+                                        {difficulty}
+                                    </strong>
                                 </div>
                                 <div className={styles.summaryItem}>
                                     <span>Questions count</span>
-                                    <strong>{questionsList.length} linked</strong>
+                                    <strong>
+                                        {questionsList.length} linked
+                                    </strong>
                                 </div>
                                 <div className={styles.summaryItem}>
                                     <span>Time Limit</span>
-                                    <strong>{hasTimeLimit ? `${timeLimitMinutes} min` : "No limit"}</strong>
+                                    <strong>
+                                        {hasTimeLimit
+                                            ? `${timeLimitMinutes} min`
+                                            : "No limit"}
+                                    </strong>
                                 </div>
                                 <div className={styles.summaryItem}>
                                     <span>Passing Rate</span>
@@ -1243,19 +1742,35 @@ const CreateEditQuiz = () => {
                                 </div>
                                 <div className={styles.summaryItem}>
                                     <span>Visibility</span>
-                                    <strong style={{textTransform: "capitalize"}}>{visibility}</strong>
+                                    <strong
+                                        style={{ textTransform: "capitalize" }}
+                                    >
+                                        {visibility}
+                                    </strong>
                                 </div>
                             </div>
                         </div>
 
                         <div className={styles.actionsPanel}>
-                            <MainButton onClick={handlePublishQuiz} variant="primary" className={styles.fullBtn}>
+                            <MainButton
+                                onClick={handlePublishQuiz}
+                                variant="primary"
+                                className={styles.fullBtn}
+                            >
                                 Publish Quiz
                             </MainButton>
-                            <MainButton onClick={handleSaveDraft} variant="secondary" className={styles.fullBtn}>
+                            <MainButton
+                                onClick={handleSaveDraft}
+                                variant="secondary"
+                                className={styles.fullBtn}
+                            >
                                 Save as Draft
                             </MainButton>
-                            <MainButton onClick={() => setActiveStep(2)} variant="ghost" className={styles.fullBtn}>
+                            <MainButton
+                                onClick={() => setActiveStep(2)}
+                                variant="ghost"
+                                className={styles.fullBtn}
+                            >
                                 Back to Questions
                             </MainButton>
                         </div>
@@ -1266,127 +1781,215 @@ const CreateEditQuiz = () => {
             {/* QUESTION BANK IMPORT MODAL */}
             {isBankModalOpen && (
                 <ModalPortal onClose={() => setIsBankModalOpen(false)}>
-                <div 
-                    className={styles.modalOverlay}
-                    onClick={() => setIsBankModalOpen(false)} // Close on outside click
-                >
-                    <div 
-                        className={styles.bankModal}
-                        onClick={(e) => e.stopPropagation()} // Prevent bubble
+                    <div
+                        className={styles.modalOverlay}
+                        onClick={() => setIsBankModalOpen(false)} // Close on outside click
                     >
-                        <div className={styles.modalHeader}>
-                            <h3>Import Questions from Bank</h3>
-                            <button type="button" className={styles.closeBtn} onClick={() => setIsBankModalOpen(false)}>
-                                <FiX />
-                            </button>
-                        </div>
-
-                        {/* Search and Filters */}
-                        <div className={styles.bankFilters}>
-                            <div className={styles.searchWrapper} style={{maxWidth: "none"}}>
-                                <FiSearch className={styles.searchIcon} />
-                                <input 
-                                    type="text" 
-                                    placeholder="Search bank questions..."
-                                    value={bankSearch}
-                                    onChange={(e) => setBankSearch(e.target.value)}
-                                    className={styles.searchInput}
-                                />
+                        <div
+                            className={styles.bankModal}
+                            onClick={(e) => e.stopPropagation()} // Prevent bubble
+                        >
+                            <div className={styles.modalHeader}>
+                                <h3>Import Questions from Bank</h3>
+                                <button
+                                    type="button"
+                                    className={styles.closeBtn}
+                                    onClick={() => setIsBankModalOpen(false)}
+                                >
+                                    <FiX />
+                                </button>
                             </div>
 
-                            <div className={styles.grid2} style={{gap: "var(--space-2)", width: "100%"}}>
-                                <select value={bankCategory} onChange={(e) => setBankCategory(e.target.value)} className={styles.select}>
-                                    <option value="all">All Categories</option>
-                                    {categories.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                    ))}
-                                </select>
-                                <select value={bankType} onChange={(e) => setBankType(e.target.value)} className={styles.select}>
-                                    <option value="all">All Types</option>
-                                    <option value="MCQ">Multiple Choice</option>
-                                    <option value="TF">True / False</option>
-                                </select>
-                            </div>
-                        </div>
+                            {/* Search and Filters */}
+                            <div className={styles.bankFilters}>
+                                <div
+                                    className={styles.searchWrapper}
+                                    style={{ maxWidth: "none" }}
+                                >
+                                    <FiSearch className={styles.searchIcon} />
+                                    <input
+                                        type="text"
+                                        placeholder="Search bank questions..."
+                                        value={bankSearch}
+                                        onChange={(e) =>
+                                            setBankSearch(e.target.value)
+                                        }
+                                        className={styles.searchInput}
+                                    />
+                                </div>
 
-                        {/* Question Selector List */}
-                        <div className={styles.bankList}>
-                            {filteredBankQuestions.map(q => {
-                                const isChecked = selectedBankQIds.includes(q.id);
-                                return (
-                                    <div 
-                                        key={q.id} 
-                                        className={`${styles.bankItem} ${isChecked ? styles.bankItemChecked : ""}`}
-                                        onClick={() => handleToggleBankSelection(q.id)}
-                                    >
-                                        <input 
-                                            type="checkbox" 
-                                            checked={isChecked}
-                                            onChange={() => {}} // Controlled via row click
-                                            className={styles.checkbox}
-                                        />
-                                        <div className={styles.bankItemDetails}>
-                                            <p className={styles.bankItemText}>{q.question_text}</p>
-                                            <div className={styles.bankItemMeta}>
-                                                <span className={`${styles.statusChip} ${styles[q.difficulty]}`}>{q.difficulty}</span>
-                                                <span>Type: {q.question_type}</span>
-                                                <span>Points: {q.points}</span>
+                                <div
+                                    className={styles.grid2}
+                                    style={{
+                                        gap: "var(--space-2)",
+                                        width: "100%",
+                                    }}
+                                >
+                                    <CustomSelect
+                                        options={[
+                                            {
+                                                value: "all",
+                                                label: "All Categories",
+                                            },
+                                            ...categories.map((c) => ({
+                                                value: c.id,
+                                                label: c.name,
+                                            })),
+                                        ]}
+                                        value={bankCategory}
+                                        onChange={setBankCategory}
+                                        className={styles.select}
+                                    />
+                                    <CustomSelect
+                                        options={[
+                                            {
+                                                value: "all",
+                                                label: "All Types",
+                                            },
+                                            {
+                                                value: "MCQ",
+                                                label: "Multiple Choice",
+                                            },
+                                            {
+                                                value: "TF",
+                                                label: "True / False",
+                                            },
+                                        ]}
+                                        value={bankType}
+                                        onChange={setBankType}
+                                        className={styles.select}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Question Selector List */}
+                            <div className={styles.bankList}>
+                                {filteredBankQuestions.map((q) => {
+                                    const isChecked = selectedBankQIds.includes(
+                                        q.id,
+                                    );
+                                    return (
+                                        <div
+                                            key={q.id}
+                                            className={`${styles.bankItem} ${isChecked ? styles.bankItemChecked : ""}`}
+                                            onClick={() =>
+                                                handleToggleBankSelection(q.id)
+                                            }
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={isChecked}
+                                                onChange={() => {}} // Controlled via row click
+                                                className={styles.checkbox}
+                                            />
+                                            <div
+                                                className={
+                                                    styles.bankItemDetails
+                                                }
+                                            >
+                                                <p
+                                                    className={
+                                                        styles.bankItemText
+                                                    }
+                                                >
+                                                    {q.question_text}
+                                                </p>
+                                                <div
+                                                    className={
+                                                        styles.bankItemMeta
+                                                    }
+                                                >
+                                                    <span
+                                                        className={`${styles.statusChip} ${styles[q.difficulty]}`}
+                                                    >
+                                                        {q.difficulty}
+                                                    </span>
+                                                    <span>
+                                                        Type: {q.question_type}
+                                                    </span>
+                                                    <span>
+                                                        Points: {q.points}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
+                                    );
+                                })}
+                                {filteredBankQuestions.length === 0 && (
+                                    <div className={styles.emptyBank}>
+                                        No eligible questions found in your
+                                        bank.
                                     </div>
-                                );
-                            })}
-                            {filteredBankQuestions.length === 0 && (
-                                <div className={styles.emptyBank}>
-                                    No eligible questions found in your bank.
-                                </div>
-                            )}
-                        </div>
+                                )}
+                            </div>
 
-                        <div className={styles.modalFooter}>
-                            <span className={styles.selectedCount}>{selectedBankQIds.length} questions selected</span>
-                            <div>
-                                <MainButton onClick={() => setIsBankModalOpen(false)} variant="secondary">
-                                    Cancel
-                                </MainButton>
-                                <MainButton onClick={handleImportFromBank} variant="primary" disabled={selectedBankQIds.length === 0}>
-                                    Add Selected ({selectedBankQIds.length})
-                                </MainButton>
+                            <div className={styles.modalFooter}>
+                                <span className={styles.selectedCount}>
+                                    {selectedBankQIds.length} questions selected
+                                </span>
+                                <div>
+                                    <MainButton
+                                        onClick={() =>
+                                            setIsBankModalOpen(false)
+                                        }
+                                        variant="secondary"
+                                    >
+                                        Cancel
+                                    </MainButton>
+                                    <MainButton
+                                        onClick={handleImportFromBank}
+                                        variant="primary"
+                                        disabled={selectedBankQIds.length === 0}
+                                    >
+                                        Add Selected ({selectedBankQIds.length})
+                                    </MainButton>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
                 </ModalPortal>
             )}
 
             {/* EDIT PUBLISHED WARNING MODAL */}
             {isEditWarningOpen && (
                 <ModalPortal onClose={() => navigate("/instructor/quizzes")}>
-                <div 
-                    className={styles.modalOverlay}
-                    onClick={() => navigate("/instructor/quizzes")} // Redirect back if they click backdrop
-                >
-                    <div 
-                        className={styles.warningModal}
-                        onClick={(e) => e.stopPropagation()} // Prevent bubble
+                    <div
+                        className={styles.modalOverlay}
+                        onClick={() => navigate("/instructor/quizzes")} // Redirect back if they click backdrop
                     >
-                        <div className={styles.warningIconCircle}>
-                            <FiInfo />
-                        </div>
-                        <h3>Edit Live Published Quiz?</h3>
-                        <p className={styles.modalWarningText}>
-                            Editing this quiz will automatically **Unpublish** it back to a draft. Students currently in the middle of taking this quiz will still be allowed to submit, but no new attempts can be started until you publish it again.
-                        </p>
-                        <div className={styles.modalButtons}>
-                            <MainButton onClick={() => navigate("/instructor/quizzes")} variant="secondary">
-                                Cancel
-                            </MainButton>
-                            <MainButton onClick={handleEditAnyway} variant="primary">
-                                Edit Anyway
-                            </MainButton>
+                        <div
+                            className={styles.warningModal}
+                            onClick={(e) => e.stopPropagation()} // Prevent bubble
+                        >
+                            <div className={styles.warningIconCircle}>
+                                <FiInfo />
+                            </div>
+                            <h3>Edit Live Published Quiz?</h3>
+                            <p className={styles.modalWarningText}>
+                                Editing this quiz will automatically
+                                **Unpublish** it back to a draft. Students
+                                currently in the middle of taking this quiz will
+                                still be allowed to submit, but no new attempts
+                                can be started until you publish it again.
+                            </p>
+                            <div className={styles.modalButtons}>
+                                <MainButton
+                                    onClick={() =>
+                                        navigate("/instructor/quizzes")
+                                    }
+                                    variant="secondary"
+                                >
+                                    Cancel
+                                </MainButton>
+                                <MainButton
+                                    onClick={handleEditAnyway}
+                                    variant="primary"
+                                >
+                                    Edit Anyway
+                                </MainButton>
+                            </div>
                         </div>
                     </div>
-                </div>
                 </ModalPortal>
             )}
         </div>

@@ -42,6 +42,12 @@ import {
 // react-toastify
 import { toast } from "react-toastify";
 
+// sweetalert2
+import Swal from "sweetalert2";
+
+// custom select
+import CustomSelect from "../../../components/ui/select/CustomSelect";
+
 // Material UI
 import { Avatar, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
 
@@ -71,8 +77,6 @@ const RoomDetail = () => {
     // Modals
     const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
     const [isAssignQuizOpen, setIsAssignQuizOpen] = useState(false);
-    const [studentToRemove, setStudentToRemove] = useState(null);
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     // Modal Forms inputs
     const [selectedStudentUids, setSelectedStudentUids] = useState([]);
@@ -80,14 +84,11 @@ const RoomDetail = () => {
     const [assignDueDate, setAssignDueDate] = useState("");
     const [assignLimit, setAssignLimit] = useState("");
     const [assignNote, setAssignNote] = useState("");
-    const [deleteRoomNameInput, setDeleteRoomNameInput] = useState("");
     const [bankSearch, setBankSearch] = useState("");
 
     const containerRef = useRef(null);
     const addModalRef = useRef(null);
     const assignModalRef = useRef(null);
-    const removeModalRef = useRef(null);
-    const deleteModalRef = useRef(null);
 
     const fetchRoomAssignments = useCallback(async () => {
         const { data, error } = await supabase
@@ -138,26 +139,52 @@ const RoomDetail = () => {
         }
     };
 
-    const handleRemoveStudent = async () => {
-        if (!studentToRemove) return;
-        try {
-            await dispatch(removeMemberThunk({
-                roomId: id,
-                studentUid: studentToRemove.uid
-            })).unwrap();
-
-            toast.success(`Removed ${studentToRemove.full_name} from classroom!`);
-            setStudentToRemove(null);
-            refreshMembers();
-        } catch (err) {
-            toast.error(err || "Failed to remove member");
-        }
+    const handleRemoveStudent = (student) => {
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: `Remove ${student.full_name}?`,
+            text: "Their account remains active. They will only lose access to this classroom's quizzes and announcements. All past attempt data is preserved.",
+            icon: "warning",
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Remove Student",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-danger, #ef4444)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            customClass: {
+                popup: "premium-swal-popup"
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await dispatch(removeMemberThunk({
+                        roomId: id,
+                        studentUid: student.uid
+                    })).unwrap();
+                    toast.success(`Removed ${student.full_name} from classroom!`);
+                    refreshMembers();
+                } catch (err) {
+                    toast.error(err || "Failed to remove member");
+                }
+            }
+        });
     };
+
+    // Set of quiz IDs already assigned to this room – used to filter dropdown & guard submit
+    const assignedQuizIds = new Set(roomAssignments.map(a => a.quiz?.id).filter(Boolean));
+
+    // Published quizzes that have NOT already been assigned to this room
+    const availableQuizzes = quizzes.filter(q => q.status === "published" && !assignedQuizIds.has(q.id));
 
     const handleAssignQuiz = async (e) => {
         e.preventDefault();
         if (!assignQuizId) {
             toast.error("Please select a quiz");
+            return;
+        }
+        if (assignedQuizIds.has(assignQuizId)) {
+            toast.error("This quiz is already assigned to this room");
             return;
         }
 
@@ -183,19 +210,56 @@ const RoomDetail = () => {
         }
     };
 
-    const handleDeleteRoom = async () => {
-        if (deleteRoomNameInput !== room.name) {
-            toast.error("Verification name does not match");
-            return;
-        }
-
-        try {
-            await dispatch(deleteRoomThunk(id)).unwrap();
-            toast.success(`Classroom "${room.name}" deleted successfully!`);
-            navigate("/instructor/rooms");
-        } catch (err) {
-            toast.error(err || "Failed to delete classroom");
-        }
+    const handleDeleteRoom = () => {
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: `Delete classroom "${room.name}"?`,
+            html: `
+                <div style="text-align: left; font-family: var(--font-sans, sans-serif);">
+                    <p style="color: ${isDark ? "#94a3b8" : "#475569"}; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1rem;">
+                        Students will be notified and removed immediately. Past attempt records are preserved in logs.
+                    </p>
+                    <label style="font-weight: 600; font-size: 0.8125rem; display: block; margin-bottom: 0.5rem; color: ${isDark ? "#f8fafc" : "#0f172a"};">
+                        Type the room name to confirm:
+                    </label>
+                </div>
+            `,
+            input: "text",
+            inputPlaceholder: room.name,
+            inputAttributes: {
+                autocapitalize: "off",
+                autocorrect: "off"
+            },
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Delete Room",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-danger, #ef4444)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            buttonsStyling: true,
+            customClass: {
+                popup: "premium-swal-popup",
+                input: "premium-swal-input"
+            },
+            preConfirm: (inputValue) => {
+                if (inputValue !== room.name) {
+                    Swal.showValidationMessage("Room name does not match");
+                    return false;
+                }
+                return true;
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await dispatch(deleteRoomThunk(id)).unwrap();
+                    toast.success(`Classroom "${room.name}" deleted successfully!`);
+                    navigate("/instructor/rooms");
+                } catch (err) {
+                    toast.error(err || "Failed to delete classroom");
+                }
+            }
+        });
     };
 
     const handleToggleStudentSelection = (uid) => {
@@ -239,7 +303,7 @@ const RoomDetail = () => {
                 breadcrumbs={["Rooms", room.name]}
                 onBack={() => navigate("/instructor/rooms")}
                 actions={
-                    <button className={styles.deleteBtn} onClick={() => setIsDeleteOpen(true)}>
+                    <button className={styles.deleteBtn} onClick={handleDeleteRoom}>
                         <FiTrash2 /> Delete Room
                     </button>
                 }
@@ -358,7 +422,7 @@ const RoomDetail = () => {
                                         <TableCell align="center" className={styles.tdCell}>
                                             <button 
                                                 className={styles.removeStudentBtn} 
-                                                onClick={() => setStudentToRemove(m.profile)}
+                                                onClick={() => handleRemoveStudent(m.profile)}
                                                 title="Remove Student from Room"
                                             >
                                                 <FiUserMinus /> Remove
@@ -563,37 +627,7 @@ const RoomDetail = () => {
                 </ModalPortal>
             )}
 
-            {/* REMOVE MEMBER CONFIRMATION MODAL */}
-            {studentToRemove && (
-                <ModalPortal onClose={() => setStudentToRemove(null)}>
-                <div 
-                    className={styles.modalOverlay}
-                    onClick={() => setStudentToRemove(null)} // Close on outside click
-                >
-                    <div 
-                        className={styles.removeConfirmModal} 
-                        ref={removeModalRef}
-                        onClick={(e) => e.stopPropagation()} // Prevent bubble
-                    >
-                        <div className={styles.deleteIconCircle}>
-                            <FiUserMinus />
-                        </div>
-                        <h3>Remove {studentToRemove.full_name}?</h3>
-                        <p className={styles.modalWarningText}>
-                            Their account remains active. They will only lose access to this classroom's quizzes and announcements. All past attempt data is preserved.
-                        </p>
-                        <div className={styles.modalButtons}>
-                            <MainButton onClick={() => setStudentToRemove(null)} variant="secondary">
-                                Cancel
-                            </MainButton>
-                            <MainButton onClick={handleRemoveStudent} variant="danger">
-                                Remove Student
-                            </MainButton>
-                        </div>
-                    </div>
-                </div>
-                </ModalPortal>
-            )}
+
 
             {/* ASSIGN QUIZ MODAL */}
             {isAssignQuizOpen && (
@@ -619,17 +653,13 @@ const RoomDetail = () => {
                             {/* Select Quiz */}
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>Select Quiz <span className={styles.req}>*</span></label>
-                                <select 
-                                    value={assignQuizId} 
-                                    onChange={(e) => setAssignQuizId(e.target.value)}
-                                    className={styles.select}
-                                    required
-                                >
-                                    <option value="">Choose quiz...</option>
-                                    {quizzes.filter(q => q.status === "published").map(q => (
-                                        <option key={q.id} value={q.id}>{q.title}</option>
-                                    ))}
-                                </select>
+                                <CustomSelect
+                                    options={availableQuizzes.map(q => ({ value: q.id, label: q.title }))}
+                                    value={assignQuizId}
+                                    onChange={setAssignQuizId}
+                                    placeholder={availableQuizzes.length === 0 ? "All quizzes are already assigned" : "Choose quiz..."}
+                                    isDisabled={availableQuizzes.length === 0}
+                                />
                             </div>
 
                             {/* Due date */}
@@ -646,13 +676,17 @@ const RoomDetail = () => {
                             {/* Attempt overrides */}
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>Attempts Limit Override</label>
-                                <select value={assignLimit} onChange={(e) => setAssignLimit(e.target.value)} className={styles.select}>
-                                    <option value="">Use Quiz Defaults</option>
-                                    <option value="1">1 Attempt Only</option>
-                                    <option value="2">2 Attempts</option>
-                                    <option value="3">3 Attempts</option>
-                                    <option value="5">5 Attempts</option>
-                                </select>
+                                <CustomSelect
+                                    options={[
+                                        { value: "", label: "Use Quiz Defaults" },
+                                        { value: "1", label: "1 Attempt Only" },
+                                        { value: "2", label: "2 Attempts" },
+                                        { value: "3", label: "3 Attempts" },
+                                        { value: "5", label: "5 Attempts" }
+                                    ]}
+                                    value={assignLimit}
+                                    onChange={setAssignLimit}
+                                />
                             </div>
 
                             {/* Notes */}
@@ -682,53 +716,6 @@ const RoomDetail = () => {
                 </ModalPortal>
             )}
 
-            {/* DELETE ROOM CONFIRMATION */}
-            {isDeleteOpen && (
-                <ModalPortal onClose={() => { setIsDeleteOpen(false); setDeleteRoomNameInput(""); }}>
-                <div 
-                    className={styles.modalOverlay}
-                    onClick={() => { setIsDeleteOpen(false); setDeleteRoomNameInput(""); }} // Close on outside click
-                >
-                    <div 
-                        className={styles.deleteModal} 
-                        ref={deleteModalRef}
-                        onClick={(e) => e.stopPropagation()} // Prevent bubble
-                    >
-                        <div className={styles.deleteIconCircle}>
-                            <FiTrash2 />
-                        </div>
-                        <h3>Delete classroom "{room.name}"?</h3>
-                        <p className={styles.modalWarningText}>
-                            Students will be notified and removed immediately. Past attempt records are preserved in logs.
-                        </p>
-
-                        <div className={styles.confirmInputGroup}>
-                            <label className={styles.confirmLabel}>Type the room name to confirm:</label>
-                            <input 
-                                type="text"
-                                value={deleteRoomNameInput}
-                                onChange={(e) => setDeleteRoomNameInput(e.target.value)}
-                                placeholder={room.name}
-                                className={styles.confirmInput}
-                            />
-                        </div>
-
-                        <div className={styles.modalButtons}>
-                            <MainButton onClick={() => { setIsDeleteOpen(false); setDeleteRoomNameInput(""); }} variant="secondary">
-                                Cancel
-                            </MainButton>
-                            <MainButton 
-                                onClick={handleDeleteRoom} 
-                                variant="danger"
-                                disabled={deleteRoomNameInput !== room.name}
-                            >
-                                Delete Room
-                            </MainButton>
-                        </div>
-                    </div>
-                </div>
-                </ModalPortal>
-            )}
         </div>
     );
 };

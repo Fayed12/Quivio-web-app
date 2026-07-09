@@ -121,7 +121,7 @@ const Dashboard = () => {
             />
 
             {/* Stats Row */}
-            <div className={styles.statsGrid}>
+            <div className={styles.statsGrid} data-tour="dashboard-stats">
                 <StatCard 
                     icon={<FiClipboard />} 
                     value={stats.quizzesCount} 
@@ -160,7 +160,7 @@ const Dashboard = () => {
             </div>
 
             {/* Quick Actions Panel */}
-            <div className={styles.quickActionsCard}>
+            <div className={styles.quickActionsCard} data-tour="dashboard-actions">
                 <h3 className={styles.sectionTitle}>Quick Actions</h3>
                 <div className={styles.quickActionsGrid}>
                     <MainButton onClick={() => navigate("/instructor/quizzes/create")} variant="primary" size="md">
@@ -176,7 +176,7 @@ const Dashboard = () => {
             </div>
 
             {/* Main Visual Grids */}
-            <div className={styles.gridMain}>
+            <div className={styles.gridMain} data-tour="dashboard-recent">
                 {/* Left Side: Recent Quizzes + Attempts chart */}
                 <div className={styles.gridMainLeft}>
                     {/* Recent Quizzes table */}

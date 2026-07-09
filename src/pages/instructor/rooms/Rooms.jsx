@@ -39,6 +39,9 @@ import {
 // react-toastify
 import { toast } from "react-toastify";
 
+// sweetalert2
+import Swal from "sweetalert2";
+
 // Material UI
 import { Avatar, AvatarGroup } from "@mui/material";
 
@@ -85,7 +88,6 @@ const Rooms = () => {
     // Local States
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingRoom, setEditingRoom] = useState(null); // active room for edit modal
-    const [deletingRoom, setDeletingRoom] = useState(null); // active room for delete modal
     const [activeDropdown, setActiveDropdown] = useState(null);
 
     // Form inputs (Create / Edit)
@@ -94,16 +96,12 @@ const Rooms = () => {
     const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[0]);
     const [selectedIcon, setSelectedIcon] = useState("FiBook");
 
-    // Delete confirmation text state
-    const [deleteConfirmText, setDeleteConfirmText] = useState("");
-
     // Avatar map state to store fetched student profiles per room
     const [roomAvatars, setRoomAvatars] = useState({});
 
     const containerRef = useRef(null);
     const dropdownRef = useRef(null);
     const modalRef = useRef(null);
-    const deleteModalRef = useRef(null);
 
     // Fetch student avatars for each room once list loads
     useEffect(() => {
@@ -202,20 +200,55 @@ const Rooms = () => {
         }
     };
 
-    const handleDeleteRoom = async () => {
-        if (!deletingRoom || deleteConfirmText !== deletingRoom.name) {
-            toast.error("Verification name does not match");
-            return;
-        }
-
-        try {
-            await dispatch(deleteRoomThunk(deletingRoom.id)).unwrap();
-            toast.success(`Deleted classroom "${deletingRoom.name}" successfully!`);
-            setDeletingRoom(null);
-            setDeleteConfirmText("");
-        } catch (err) {
-            toast.error(err || "Failed to delete room");
-        }
+    const handleDeleteRoom = (room) => {
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: `Delete classroom "${room.name}"?`,
+            html: `
+                <div style="text-align: left; font-family: var(--font-sans, sans-serif);">
+                    <p style="color: ${isDark ? "#94a3b8" : "#475569"}; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1rem;">
+                        All student memberships will be deleted and removed from this classroom layout. Students lose access to assigned quizzes in this room. Past attempt records are preserved.
+                    </p>
+                    <label style="font-weight: 600; font-size: 0.8125rem; display: block; margin-bottom: 0.5rem; color: ${isDark ? "#f8fafc" : "#0f172a"};">
+                        Type the room name to confirm:
+                    </label>
+                </div>
+            `,
+            input: "text",
+            inputPlaceholder: room.name,
+            inputAttributes: {
+                autocapitalize: "off",
+                autocorrect: "off"
+            },
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Delete Classroom",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-danger, #ef4444)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            buttonsStyling: true,
+            customClass: {
+                popup: "premium-swal-popup",
+                input: "premium-swal-input"
+            },
+            preConfirm: (inputValue) => {
+                if (inputValue !== room.name) {
+                    Swal.showValidationMessage("Room name does not match");
+                    return false;
+                }
+                return true;
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await dispatch(deleteRoomThunk(room.id)).unwrap();
+                    toast.success(`Deleted classroom "${room.name}" successfully!`);
+                } catch (err) {
+                    toast.error(err || "Failed to delete room");
+                }
+            }
+        });
     };
 
     const renderIcon = (iconName) => {
@@ -266,7 +299,7 @@ const Rooms = () => {
                                                     <FiEdit2 /> Edit Room
                                                 </button>
                                                 <div className={styles.dropdownDivider} />
-                                                <button onClick={() => { setDeletingRoom(room); setActiveDropdown(null); }} className={`${styles.dropdownItem} ${styles.danger}`}>
+                                                <button onClick={() => { handleDeleteRoom(room); setActiveDropdown(null); }} className={`${styles.dropdownItem} ${styles.danger}`}>
                                                     <FiTrash2 /> Delete Room
                                                 </button>
                                             </div>
@@ -424,53 +457,6 @@ const Rooms = () => {
                 </ModalPortal>
             )}
 
-            {/* DELETE ROOM MODAL */}
-            {deletingRoom && (
-                <ModalPortal onClose={() => { setDeletingRoom(null); setDeleteConfirmText(""); }}>
-                <div 
-                    className={styles.modalOverlay}
-                    onClick={() => { setDeletingRoom(null); setDeleteConfirmText(""); }} // Close on outside click
-                >
-                    <div 
-                        className={styles.deleteModal} 
-                        ref={deleteModalRef}
-                        onClick={(e) => e.stopPropagation()} // Prevent bubble
-                    >
-                        <div className={styles.deleteIconCircle}>
-                            <FiTrash2 />
-                        </div>
-                        <h3>Delete classroom "{deletingRoom.name}"?</h3>
-                        <p className={styles.modalWarningText}>
-                            All student memberships will be deleted and removed from this classroom layout. Students lose access to assigned quizzes in this room. Past attempt records are preserved.
-                        </p>
-                        
-                        <div className={styles.confirmInputGroup}>
-                            <label className={styles.confirmLabel}>Type the room name to confirm:</label>
-                            <input 
-                                type="text"
-                                value={deleteConfirmText}
-                                onChange={(e) => setDeleteConfirmText(e.target.value)}
-                                placeholder={deletingRoom.name}
-                                className={styles.confirmInput}
-                            />
-                        </div>
-
-                        <div className={styles.modalButtons}>
-                            <MainButton onClick={() => { setDeletingRoom(null); setDeleteConfirmText(""); }} variant="secondary">
-                                Cancel
-                            </MainButton>
-                            <MainButton 
-                                onClick={handleDeleteRoom} 
-                                variant="danger"
-                                disabled={deleteConfirmText !== deletingRoom.name}
-                            >
-                                Delete Classroom
-                            </MainButton>
-                        </div>
-                    </div>
-                </div>
-                </ModalPortal>
-            )}
         </div>
     );
 };

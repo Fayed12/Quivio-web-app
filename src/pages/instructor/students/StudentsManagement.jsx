@@ -41,6 +41,12 @@ import {
 // react-toastify
 import { toast } from "react-toastify";
 
+// sweetalert2
+import Swal from "sweetalert2";
+
+// custom select
+import CustomSelect from "../../../components/ui/select/CustomSelect";
+
 // Material UI
 import { Avatar, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
 
@@ -70,12 +76,6 @@ const StudentsManagement = () => {
     const [isImportOpen, setIsImportOpen] = useState(false);
     const [selectedStudent, setSelectedStudent] = useState(null); // side panel student object
     const [activeDropdown, setActiveDropdown] = useState(null);
-
-    // Confirm modals
-    const [resendCredsStudent, setResendCredsStudent] = useState(null);
-    const [toggleActiveStudent, setToggleActiveStudent] = useState(null);
-    const [deleteStudent, setDeleteStudent] = useState(null);
-    const [deleteVerifyName, setDeleteVerifyName] = useState("");
 
     // Create student form states
     const [fullName, setFullName] = useState("");
@@ -162,53 +162,125 @@ const StudentsManagement = () => {
     };
 
     // Resend login credentials
-    const handleResendCredentials = async () => {
-        if (!resendCredsStudent) return;
-        try {
-            await dispatch(resendCredentialsThunk(resendCredsStudent.student_uid)).unwrap();
-            toast.success(`Login credentials resent to ${resendCredsStudent.profile?.email}!`);
-            setResendCredsStudent(null);
-        } catch (err) {
-            toast.error(err || "Failed to resend credentials");
-        }
+    const handleResendCredentials = (student) => {
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: `Resend credentials to "${student.profile?.full_name}"?`,
+            text: `This triggers a credential dispatch notification containing a fresh auto-signed token link. The email will be sent to ${student.profile?.email}.`,
+            icon: "info",
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Resend",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-accent, #2563eb)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            customClass: {
+                popup: "premium-swal-popup"
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await dispatch(resendCredentialsThunk(student.student_uid)).unwrap();
+                    toast.success(`Login credentials resent to ${student.profile?.email}!`);
+                } catch (err) {
+                    toast.error(err || "Failed to resend credentials");
+                }
+            }
+        });
     };
 
     // Toggle active / deactivate account status
-    const handleToggleStudentActive = async () => {
-        if (!toggleActiveStudent) return;
-        const newStatus = !toggleActiveStudent.profile?.is_active;
-        try {
-            const { error } = await supabase
-                .from("profiles")
-                .update({ is_active: newStatus })
-                .eq("uid", toggleActiveStudent.student_uid);
+    const handleToggleStudentActive = (student) => {
+        const isDark = document.documentElement.classList.contains("dark");
+        const isActive = student.profile?.is_active;
+        Swal.fire({
+            title: `${isActive ? "Deactivate" : "Activate"} "${student.profile?.full_name}"?`,
+            text: isActive 
+                ? "Deactivating students immediately logs them out and prevents further dashboard sign-ins until reactivated." 
+                : "Activating students restores access and permits dashboard sign-ins immediately.",
+            icon: "warning",
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Confirm",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-accent, #2563eb)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            customClass: {
+                popup: "premium-swal-popup"
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const newStatus = !isActive;
+                try {
+                    const { error } = await supabase
+                        .from("profiles")
+                        .update({ is_active: newStatus })
+                        .eq("uid", student.student_uid);
 
-            if (error) throw error;
+                    if (error) throw error;
 
-            toast.success(`Account for ${toggleActiveStudent.profile?.full_name} is now ${newStatus ? "Active" : "Inactive"}`);
-            setToggleActiveStudent(null);
-            dispatch(fetchMyStudents());
-        } catch (err) {
-            toast.error(err.message || "Failed to update profile status");
-        }
+                    toast.success(`Account for ${student.profile?.full_name} is now ${newStatus ? "Active" : "Inactive"}`);
+                    dispatch(fetchMyStudents());
+                } catch (err) {
+                    toast.error(err.message || "Failed to update profile status");
+                }
+            }
+        });
     };
 
     // Delete Student
-    const handleDeleteStudent = async () => {
-        if (!deleteStudent || deleteVerifyName !== deleteStudent.profile?.full_name) {
-            toast.error("Verification name does not match");
-            return;
-        }
-
-        try {
-            await dispatch(deleteStudentThunk(deleteStudent.student_uid)).unwrap();
-            toast.success(`Permanently deleted student "${deleteStudent.profile?.full_name}" records!`);
-            setDeleteStudent(null);
-            setDeleteVerifyName("");
-            dispatch(fetchMyStudents());
-        } catch (err) {
-            toast.error(err || "Failed to delete student");
-        }
+    const handleDeleteStudent = (student) => {
+        const isDark = document.documentElement.classList.contains("dark");
+        Swal.fire({
+            title: `Delete Student "${student.profile?.full_name}"?`,
+            html: `
+                <div style="text-align: left; font-family: var(--font-sans, sans-serif);">
+                    <p style="color: ${isDark ? "#94a3b8" : "#475569"}; font-size: 0.875rem; line-height: 1.5; margin-bottom: 1rem;">
+                        Permanently deletes student Supabase Auth accounts. All attempts, achievements, scores, and PDF certificates will be destroyed.
+                    </p>
+                    <label style="font-weight: 600; font-size: 0.8125rem; display: block; margin-bottom: 0.5rem; color: ${isDark ? "#f8fafc" : "#0f172a"};">
+                        Type the student full name to confirm:
+                    </label>
+                </div>
+            `,
+            input: "text",
+            inputPlaceholder: student.profile?.full_name,
+            inputAttributes: {
+                autocapitalize: "off",
+                autocorrect: "off"
+            },
+            background: isDark ? "#1e293b" : "#ffffff",
+            color: isDark ? "#f8fafc" : "#0f172a",
+            showCancelButton: true,
+            confirmButtonText: "Delete Student",
+            cancelButtonText: "Cancel",
+            confirmButtonColor: "var(--color-danger, #ef4444)",
+            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
+            buttonsStyling: true,
+            customClass: {
+                popup: "premium-swal-popup",
+                input: "premium-swal-input"
+            },
+            preConfirm: (inputValue) => {
+                if (inputValue !== student.profile?.full_name) {
+                    Swal.showValidationMessage("Student name does not match");
+                    return false;
+                }
+                return true;
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    await dispatch(deleteStudentThunk(student.student_uid)).unwrap();
+                    toast.success(`Permanently deleted student "${student.profile?.full_name}" records!`);
+                    dispatch(fetchMyStudents());
+                } catch (err) {
+                    toast.error(err || "Failed to delete student");
+                }
+            }
+        });
     };
 
     // CSV parser logic
@@ -404,24 +476,37 @@ const StudentsManagement = () => {
                 </div>
 
                 <div className={styles.filtersGrid}>
-                    <select value={roomFilter} onChange={(e) => setRoomFilter(e.target.value)} className={styles.select}>
-                        <option value="all">All Rooms</option>
-                        {rooms.map(r => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                    </select>
+                    <CustomSelect
+                        options={[
+                            { value: "all", label: "All Rooms" },
+                            ...rooms.map(r => ({ value: r.id, label: r.name }))
+                        ]}
+                        value={roomFilter}
+                        onChange={setRoomFilter}
+                        className={styles.select}
+                    />
 
-                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={styles.select}>
-                        <option value="all">All Statuses</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
+                    <CustomSelect
+                        options={[
+                            { value: "all", label: "All Statuses" },
+                            { value: "active", label: "Active" },
+                            { value: "inactive", label: "Inactive" }
+                        ]}
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        className={styles.select}
+                    />
 
-                    <select value={sortOption} onChange={(e) => setSortOption(e.target.value)} className={styles.select}>
-                        <option value="name_az">Name: A-Z</option>
-                        <option value="name_za">Name: Z-A</option>
-                        <option value="date_newest">Newest Added</option>
-                    </select>
+                    <CustomSelect
+                        options={[
+                            { value: "name_az", label: "Name: A-Z" },
+                            { value: "name_za", label: "Name: Z-A" },
+                            { value: "date_newest", label: "Newest Added" }
+                        ]}
+                        value={sortOption}
+                        onChange={setSortOption}
+                        className={styles.select}
+                    />
                 </div>
             </div>
 
@@ -480,14 +565,14 @@ const StudentsManagement = () => {
 
                                             {activeDropdown === s.student_uid && (
                                                 <div className={styles.dropdown} ref={dropdownRef}>
-                                                    <button onClick={() => { setResendCredsStudent(s); setActiveDropdown(null); }} className={styles.dropdownItem}>
+                                                    <button onClick={() => { handleResendCredentials(s); setActiveDropdown(null); }} className={styles.dropdownItem}>
                                                         <FiKey /> Resend Credentials
                                                     </button>
-                                                    <button onClick={() => { setToggleActiveStudent(s); setActiveDropdown(null); }} className={styles.dropdownItem}>
+                                                    <button onClick={() => { handleToggleStudentActive(s); setActiveDropdown(null); }} className={styles.dropdownItem}>
                                                         {s.profile?.is_active ? <FiUserX /> : <FiUserCheck />} {s.profile?.is_active ? "Deactivate" : "Activate"}
                                                     </button>
                                                     <div className={styles.dropdownDivider} />
-                                                    <button onClick={() => { setDeleteStudent(s); setActiveDropdown(null); }} className={`${styles.dropdownItem} ${styles.danger}`}>
+                                                    <button onClick={() => { handleDeleteStudent(s); setActiveDropdown(null); }} className={`${styles.dropdownItem} ${styles.danger}`}>
                                                         <FiTrash2 /> Delete Student
                                                     </button>
                                                 </div>
@@ -693,16 +778,15 @@ const StudentsManagement = () => {
                             {/* Room Selector */}
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>Assign to Classroom (Optional)</label>
-                                <select 
-                                    value={assignRoomId} 
-                                    onChange={(e) => setAssignRoomId(e.target.value)}
-                                    className={styles.select}
-                                >
-                                    <option value="">Select Room...</option>
-                                    {rooms.map(r => (
-                                        <option key={r.id} value={r.id}>{r.name}</option>
-                                    ))}
-                                </select>
+                                <CustomSelect
+                                    options={[
+                                        { value: "", label: "Select Room..." },
+                                        ...rooms.map(r => ({ value: r.id, label: r.name }))
+                                    ]}
+                                    value={assignRoomId}
+                                    onChange={setAssignRoomId}
+                                    placeholder="Select Room..."
+                                />
                             </div>
                         </div>
 
@@ -808,118 +892,6 @@ const StudentsManagement = () => {
                 </ModalPortal>
             )}
 
-            {/* CREDENTIALS RESEND MODAL */}
-            {resendCredsStudent && (
-                <ModalPortal onClose={() => setResendCredsStudent(null)}>
-                <div 
-                    className={styles.modalOverlay}
-                    onClick={() => setResendCredsStudent(null)} // Close on outside click
-                >
-                    <div 
-                        className={styles.confirmModal}
-                        onClick={(e) => e.stopPropagation()} // Prevent bubble
-                    >
-                        <div className={styles.iconCircleBlue}>
-                            <FiKey />
-                        </div>
-                        <h3>Resend Login Credentials to "{resendCredsStudent.profile?.full_name}"?</h3>
-                        <p className={styles.modalWarningText}>
-                            This triggers a credential dispatch notification containing a fresh auto-signed token link. The email will be sent to <strong>{resendCredsStudent.profile?.email}</strong>.
-                        </p>
-                        <div className={styles.modalButtons}>
-                            <MainButton onClick={() => setResendCredsStudent(null)} variant="secondary">
-                                Cancel
-                            </MainButton>
-                            <MainButton onClick={handleResendCredentials} variant="primary">
-                                Resend Credentials
-                            </MainButton>
-                        </div>
-                    </div>
-                </div>
-                </ModalPortal>
-            )}
-
-            {/* DEACTIVATE CONFIRM MODAL */}
-            {toggleActiveStudent && (
-                <ModalPortal onClose={() => setToggleActiveStudent(null)}>
-                <div 
-                    className={styles.modalOverlay}
-                    onClick={() => setToggleActiveStudent(null)} // Close on outside click
-                >
-                    <div 
-                        className={styles.confirmModal}
-                        onClick={(e) => e.stopPropagation()} // Prevent bubble
-                    >
-                        <div className={styles.iconCircleYellow}>
-                            {toggleActiveStudent.profile?.is_active ? <FiUserX /> : <FiUserCheck />}
-                        </div>
-                        <h3>
-                            {toggleActiveStudent.profile?.is_active ? "Deactivate" : "Activate"} "{toggleActiveStudent.profile?.full_name}"?
-                        </h3>
-                        <p className={styles.modalWarningText}>
-                            {toggleActiveStudent.profile?.is_active 
-                                ? "Deactivating students immediately logs them out and prevents further dashboard sign-ins until reactivated." 
-                                : "Activating students restores access and permits dashboard sign-ins immediately."}
-                        </p>
-                        <div className={styles.modalButtons}>
-                            <MainButton onClick={() => setToggleActiveStudent(null)} variant="secondary">
-                                Cancel
-                            </MainButton>
-                            <MainButton onClick={handleToggleStudentActive} variant="primary">
-                                Confirm Changes
-                            </MainButton>
-                        </div>
-                    </div>
-                </div>
-                </ModalPortal>
-            )}
-
-            {/* DELETE STUDENT CONFIRM MODAL */}
-            {deleteStudent && (
-                <ModalPortal onClose={() => { setDeleteStudent(null); setDeleteVerifyName(""); }}>
-                <div 
-                    className={styles.modalOverlay}
-                    onClick={() => { setDeleteStudent(null); setDeleteVerifyName(""); }} // Close on outside click
-                >
-                    <div 
-                        className={styles.deleteModal}
-                        onClick={(e) => e.stopPropagation()} // Prevent bubble
-                    >
-                        <div className={styles.deleteIconCircle}>
-                            <FiTrash2 />
-                        </div>
-                        <h3>Delete Student "{deleteStudent.profile?.full_name}"?</h3>
-                        <p className={styles.modalWarningText}>
-                            Permanently deletes student Supabase Auth accounts. All attempts, achievements, scores, and PDF certificates will be destroyed.
-                        </p>
-
-                        <div className={styles.confirmInputGroup}>
-                            <label className={styles.confirmLabel}>Type the student full name to confirm:</label>
-                            <input 
-                                type="text"
-                                value={deleteVerifyName}
-                                onChange={(e) => setDeleteVerifyName(e.target.value)}
-                                placeholder={deleteStudent.profile?.full_name}
-                                className={styles.confirmInput}
-                            />
-                        </div>
-
-                        <div className={styles.modalButtons}>
-                            <MainButton onClick={() => { setDeleteStudent(null); setDeleteVerifyName(""); }} variant="secondary">
-                                Cancel
-                            </MainButton>
-                            <MainButton 
-                                onClick={handleDeleteStudent} 
-                                variant="danger"
-                                disabled={deleteVerifyName !== deleteStudent.profile?.full_name}
-                            >
-                                Delete Student
-                            </MainButton>
-                        </div>
-                    </div>
-                </div>
-                </ModalPortal>
-            )}
         </div>
     );
 };
