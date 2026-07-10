@@ -10,10 +10,12 @@ import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { 
     fetchMyStudents,
+    fetchStudentById,
     createStudentThunk,
     bulkCreateThunk,
     resendCredentialsThunk,
-    deleteStudentThunk
+    deleteStudentThunk,
+    selectCurrentStudent
 } from "../../../redux/slices/instructorStudentsSlice";
 import { fetchMyRooms, selectMyRooms } from "../../../redux/slices/roomsSlice";
 
@@ -64,6 +66,7 @@ const StudentsManagement = () => {
     // Redux selectors using custom data hook
     const { students } = useStudentsData();
     const rooms = useSelector(selectMyRooms);
+    const currentStudent = useSelector(selectCurrentStudent);
 
     // Filter states
     const [searchQuery, setSearchQuery] = useState("");
@@ -74,14 +77,15 @@ const StudentsManagement = () => {
     // Modal togglers
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isImportOpen, setIsImportOpen] = useState(false);
-    const [selectedStudent, setSelectedStudent] = useState(null); // side panel student object
+    const [selectedStudentId, setSelectedStudentId] = useState(null); // side panel student UID
+    const [isDetailsLoading, setIsDetailsLoading] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState(null);
 
     // Create student form states
     const [fullName, setFullName] = useState("");
     const [studentId, setStudentId] = useState("");
     const [email, setEmail] = useState("");
-    const [autoGeneratePassword, setAutoGeneratePassword] = useState(true);
+    const [password, setPassword] = useState("stuA12@12");
     const [assignRoomId, setAssignRoomId] = useState("");
 
     // CSV Bulk Importer states
@@ -120,9 +124,19 @@ const StudentsManagement = () => {
     // Page entrance animation
     usePageAnimation(containerRef);
 
+    // Load detailed student info when selected
+    useEffect(() => {
+        if (selectedStudentId) {
+            dispatch(fetchStudentById(selectedStudentId))
+                .unwrap()
+                .catch((err) => toast.error(err || "Failed to load student details"))
+                .finally(() => setIsDetailsLoading(false));
+        }
+    }, [selectedStudentId, dispatch]);
+
     // GSAP animation for slide-in side panel
     useEffect(() => {
-        if (selectedStudent && sidePanelRef.current) {
+        if (selectedStudentId && sidePanelRef.current) {
             const rafId = requestAnimationFrame(() => {
                 gsap.fromTo(sidePanelRef.current,
                     { x: "100%", opacity: 0 },
@@ -131,7 +145,7 @@ const StudentsManagement = () => {
             });
             return () => cancelAnimationFrame(rafId);
         }
-    }, [selectedStudent]);
+    }, [selectedStudentId]);
 
     // Add student handler
     const handleCreateStudent = async (e) => {
@@ -146,7 +160,8 @@ const StudentsManagement = () => {
                 full_name: fullName,
                 student_code: studentId,
                 email,
-                room_id: assignRoomId || null
+                room_id: assignRoomId || null,
+                password: password.trim()
             })).unwrap();
 
             toast.success(`Student "${fullName}" account created successfully! Credentials sent to email.`);
@@ -154,6 +169,7 @@ const StudentsManagement = () => {
             setFullName("");
             setStudentId("");
             setEmail("");
+            setPassword("Quivio123!");
             setAssignRoomId("");
             dispatch(fetchMyStudents());
         } catch (err) {
@@ -383,9 +399,8 @@ const StudentsManagement = () => {
                             (statusFilter === "active" && s.profile?.is_active) ||
                             (statusFilter === "inactive" && !s.profile?.is_active);
 
-        // Filter by Room requires querying database membership or checking local memberships
-        // (Mock or let matchesRoom be true if room filter is "all")
-        const matchesRoom = roomFilter === "all";
+        // Filter by Room checks membership dynamically
+        const matchesRoom = roomFilter === "all" || (s.rooms && s.rooms.some(r => r.id === roomFilter));
 
         return matchesSearch && matchesStatus && matchesRoom;
     });
@@ -418,6 +433,12 @@ const StudentsManagement = () => {
     // Count states
     const activeCount = students.filter(s => s.profile?.is_active).length;
     const inactiveCount = students.length - activeCount;
+
+    // Calculate class average score dynamically
+    const studentsWithScores = students.filter(s => s.avg_score > 0);
+    const avgClassScore = studentsWithScores.length > 0
+        ? Math.round(studentsWithScores.reduce((sum, s) => sum + s.avg_score, 0) / studentsWithScores.length)
+        : 0;
 
     return (
         <div ref={containerRef} className={styles.container}>
@@ -456,7 +477,7 @@ const StudentsManagement = () => {
                     <span>Inactive Accounts</span>
                 </div>
                 <div className={styles.statCard}>
-                    <strong>82%</strong>
+                    <strong style={{color: "var(--color-accent)"}}>{avgClassScore}%</strong>
                     <span>Avg. Class Score</span>
                 </div>
             </div>
@@ -540,7 +561,7 @@ const StudentsManagement = () => {
                                 </TableCell>
                                 <TableCell className={styles.tdCell} style={{fontWeight: 600}}>{s.student_code}</TableCell>
                                 <TableCell className={styles.tdCell}>{s.profile?.email}</TableCell>
-                                <TableCell align="center" className={styles.tdCell} style={{fontWeight: 700}}>82%</TableCell>
+                                <TableCell align="center" className={styles.tdCell} style={{fontWeight: 700}}>{s.avg_score > 0 ? `${s.avg_score}%` : "N/A"}</TableCell>
                                 <TableCell align="center" className={styles.tdCell}>
                                     <span className={`${styles.statusBadge} ${s.profile?.is_active ? styles.badgeActive : styles.badgeInactive}`}>
                                         {s.profile?.is_active ? "Active" : "Inactive"}
@@ -551,7 +572,14 @@ const StudentsManagement = () => {
                                 </TableCell>
                                 <TableCell align="center" className={styles.tdCell} style={{ position: "relative", zIndex: activeDropdown === s.student_uid ? 100 : 1 }}>
                                     <div className={styles.actions}>
-                                        <button className={styles.actionBtn} onClick={() => setSelectedStudent(s)} title="View Profile">
+                                        <button 
+                                            className={styles.actionBtn} 
+                                            onClick={() => {
+                                                setSelectedStudentId(s.student_uid);
+                                                setIsDetailsLoading(true);
+                                            }} 
+                                            title="View Profile"
+                                        >
                                             <FiEye />
                                         </button>
                                         
@@ -631,72 +659,114 @@ const StudentsManagement = () => {
             )}
 
             {/* SIDE DETAIL SLIDE-IN PANEL */}
-            {selectedStudent && (
-                <ModalPortal onClose={() => setSelectedStudent(null)}>
+            {selectedStudentId && (
+                <ModalPortal onClose={() => setSelectedStudentId(null)}>
                     {/* Backdrop */}
-                    <div className={styles.panelBackdrop} onClick={() => setSelectedStudent(null)} />
+                    <div className={styles.panelBackdrop} onClick={() => setSelectedStudentId(null)} />
                     
                     <div className={styles.sidePanel} ref={sidePanelRef}>
                         <div className={styles.panelHeader}>
                             <h3>Student Profile Details</h3>
-                            <button className={styles.panelClose} onClick={() => setSelectedStudent(null)}>
+                            <button className={styles.panelClose} onClick={() => setSelectedStudentId(null)}>
                                 <FiX />
                             </button>
                         </div>
 
-                        <div className={styles.panelBody}>
-                            {/* Profile Card */}
-                            <div className={styles.panelProfileCard}>
-                                <Avatar src={selectedStudent.profile?.avatar_url} sx={{ width: 56, height: 56 }}>
-                                    {selectedStudent.profile?.full_name?.charAt(0)}
-                                </Avatar>
-                                <h4>{selectedStudent.profile?.full_name}</h4>
-                                <span>ID: {selectedStudent.student_code}</span>
-                                <span>{selectedStudent.profile?.email}</span>
+                        {isDetailsLoading ? (
+                            <div className={styles.panelLoader}>
+                                <div className={styles.spinner} />
+                                <span>Retrieving profile details...</span>
                             </div>
+                        ) : currentStudent ? (
+                            <div className={styles.panelBody}>
+                                {/* Profile Card */}
+                                <div className={styles.panelProfileCard}>
+                                    <Avatar src={currentStudent.profile?.avatar_url} sx={{ width: 56, height: 56 }}>
+                                        {currentStudent.profile?.full_name?.charAt(0)}
+                                    </Avatar>
+                                    <h4>{currentStudent.profile?.full_name}</h4>
+                                    <span>ID: {currentStudent.student_code}</span>
+                                    <span>{currentStudent.profile?.email}</span>
+                                </div>
 
-                            {/* Mini stats */}
-                            <div className={styles.miniStatsGrid}>
-                                <div className={styles.miniStatCard}>
-                                    <FiActivity className={styles.miniStatIcon} />
-                                    <div>
-                                        <strong>12</strong>
-                                        <span>Attempts</span>
+                                {/* Mini stats */}
+                                <div className={styles.miniStatsGrid}>
+                                    <div className={styles.miniStatCard}>
+                                        <FiActivity className={styles.miniStatIcon} />
+                                        <div>
+                                            <strong>{currentStudent.attempts?.length || 0}</strong>
+                                            <span>Attempts</span>
+                                        </div>
+                                    </div>
+                                    <div className={styles.miniStatCard}>
+                                        <FiAward className={styles.miniStatIcon} />
+                                        <div>
+                                            <strong>
+                                                {currentStudent.attempts && currentStudent.attempts.length > 0
+                                                    ? `${Math.round(currentStudent.attempts.reduce((sum, a) => sum + (a.score ?? 0), 0) / currentStudent.attempts.length)}%`
+                                                    : "N/A"
+                                                }
+                                            </strong>
+                                            <span>Avg. Score</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className={styles.miniStatCard}>
-                                    <FiAward className={styles.miniStatIcon} />
-                                    <div>
-                                        <strong>82%</strong>
-                                        <span>Avg. Score</span>
-                                    </div>
-                                </div>
-                            </div>
 
-                            {/* Classrooms */}
-                            <div className={styles.panelSection}>
-                                <h4>Classroom Memberships</h4>
-                                <div className={styles.roomsList}>
-                                    <div className={styles.roomTag}>CS 101</div>
-                                    <div className={styles.roomTag}>Web Design</div>
+                                {/* Classrooms */}
+                                <div className={styles.panelSection}>
+                                    <h4>Classroom Memberships</h4>
+                                    <div className={styles.roomsList}>
+                                        {currentStudent.rooms && currentStudent.rooms.length > 0 ? (
+                                            currentStudent.rooms.map((room) => (
+                                                <div 
+                                                    key={room.id} 
+                                                    className={styles.roomTag}
+                                                    style={{ 
+                                                        backgroundColor: room.color ? `${room.color}15` : "var(--color-accent-light)", 
+                                                        color: room.color || "var(--color-accent)" 
+                                                    }}
+                                                >
+                                                    {room.name}
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <span className={styles.noRoomsText}>No classrooms assigned</span>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Recent Quiz Attempts */}
-                            <div className={styles.panelSection}>
-                                <h4>Recent Quiz Attempts</h4>
-                                <div className={styles.attemptsFeed}>
-                                    <div className={styles.attemptItem}>
-                                        <span>JS Scopes</span>
-                                        <strong>85%</strong>
-                                    </div>
-                                    <div className={styles.attemptItem}>
-                                        <span>HTML Layouts</span>
-                                        <strong>90%</strong>
+                                {/* Recent Quiz Attempts */}
+                                <div className={styles.panelSection}>
+                                    <h4>Recent Quiz Attempts</h4>
+                                    <div className={styles.attemptsFeed}>
+                                        {currentStudent.attempts && currentStudent.attempts.length > 0 ? (
+                                            currentStudent.attempts.map((attempt) => (
+                                                <div key={attempt.id} className={styles.attemptItem}>
+                                                    <div className={styles.attemptInfo}>
+                                                        <span className={styles.attemptTitle}>{attempt.quiz?.title || "Quiz"}</span>
+                                                        <span className={styles.attemptDate}>{new Date(attempt.submitted_at).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className={styles.attemptScoreWrapper}>
+                                                        <strong className={attempt.passed ? styles.scorePassed : styles.scoreFailed}>
+                                                            {attempt.score}%
+                                                        </strong>
+                                                        <span className={styles.attemptStatusText}>
+                                                            {attempt.passed ? "Passed" : "Failed"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <span className={styles.noAttemptsText}>No quiz attempts recorded</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className={styles.panelError}>
+                                <span>Failed to load student details.</span>
+                            </div>
+                        )}
                     </div>
                 </ModalPortal>
             )}
@@ -761,18 +831,21 @@ const StudentsManagement = () => {
                                 />
                             </div>
 
-                            {/* Passwords */}
-                            <div className={styles.toggleRow}>
-                                <div>
-                                    <label className={styles.toggleLabel}>Auto-Generate Password</label>
-                                    <p className={styles.toggleDesc}>A secure credentials email will be auto-sent to student.</p>
-                                </div>
+                            {/* Password */}
+                            <div className={styles.formGroup}>
+                                <label className={styles.label}>Account Password <span className={styles.req}>*</span></label>
                                 <input 
-                                    type="checkbox" 
-                                    checked={autoGeneratePassword}
-                                    onChange={(e) => setAutoGeneratePassword(e.target.checked)}
-                                    className={styles.toggleSwitch}
+                                    type="text" 
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="e.g. stuA12@12!"
+                                    className={styles.input}
+                                    readOnly
+                                    disabled
                                 />
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                    Instructors provision student passwords directly. Students will be forced to change this upon first login.
+                                </span>
                             </div>
 
                             {/* Room Selector */}

@@ -8,7 +8,7 @@ export const useStudentsData = () => {
     const loading = useSelector((s) => s.instructorStudents?.loading || false);
 
     useEffect(() => {
-        dispatch(fetchMyStudents());
+        dispatch(fetchMyStudents({ pageSize: 1000 }));
     }, [dispatch]);
 
     return { students, loading };
