@@ -1,0 +1,126 @@
+.achievementsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    width: 100%;
+}
+
+.statsCard {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-width: 600px;
+}
+
+.progressContainer {
+    height: 12px;
+    background: var(--bg-surface-2);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative;
+}
+
+.progressBarFill {
+    height: 100%;
+    background: var(--color-accent);
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease-out;
+}
+
+.achievementsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-6);
+}
+
+.achievementCard {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    position: relative;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.achievementCard:hover {
+    transform: translateY(-2px);
+}
+
+.unlockedCard {
+    border-color: var(--color-accent-light);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.05);
+}
+
+:global(.dark) .unlockedCard {
+    border-color: rgba(59, 130, 246, 0.2);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);
+}
+
+.lockedCard {
+    opacity: 0.65;
+    background: var(--bg-surface-2);
+}
+
+.headerRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.badgeIcon {
+    font-size: 2.5rem;
+}
+
+.lockedIcon {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+}
+
+.xpBadge {
+    font-size: var(--text-xs);
+    font-weight: var(--fw-bold);
+    background: var(--color-xp);
+    color: white;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+}
+
+.xpBadgeLocked {
+    background: var(--bg-surface-3);
+    color: var(--text-muted);
+}
+
+.name {
+    font-size: var(--text-md);
+    font-weight: var(--fw-semibold);
+    color: var(--text-primary);
+}
+
+.description {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    min-height: 40px;
+}
+
+.earnedDate {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-weight: var(--fw-medium);
+    margin-top: auto;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: var(--space-2);
+}
+
+.bronzeBadge { border-top: 4px solid var(--tier-bronze-border); }
+.silverBadge { border-top: 4px solid var(--tier-silver-border); }
+.goldBadge { border-top: 4px solid var(--tier-gold-border); }
+.platinumBadge { border-top: 4px solid var(--tier-platinum-border); }

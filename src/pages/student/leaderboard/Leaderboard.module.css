@@ -1,0 +1,233 @@
+.leaderboardContainer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    width: 100%;
+    padding-bottom: 80px; /* Space for sticky current student banner */
+}
+
+.tabsRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--border-default);
+    padding-bottom: 2px;
+}
+
+.tabsList {
+    display: flex;
+    gap: var(--space-1);
+    position: relative;
+    top: 2px;
+}
+
+.tabBtn {
+    border: none;
+    background: transparent;
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    transition: color var(--transition-base);
+}
+
+.tabBtnActive {
+    color: var(--color-accent);
+    border-bottom: 2px solid var(--color-accent);
+}
+
+.categorySelect {
+    height: 36px;
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    outline: none;
+}
+
+/* Podium UI (Top 3) */
+.podiumContainer {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: var(--space-6);
+    margin: var(--space-6) 0;
+    min-height: 280px;
+}
+
+.podiumColumn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    max-width: 160px;
+    position: relative;
+}
+
+.podiumAvatar {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-full);
+    border: 3px solid;
+    object-fit: cover;
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-2);
+}
+
+.podiumBar {
+    width: 100%;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: var(--fw-bold);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-3) 0;
+}
+
+.goldBar {
+    height: 140px;
+    background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+    border: 1px solid #D97706;
+}
+
+.silverBar {
+    height: 100px;
+    background: linear-gradient(180deg, #94A3B8 0%, #64748B 100%);
+    border: 1px solid #64748B;
+}
+
+.bronzeBar {
+    height: 80px;
+    background: linear-gradient(180deg, #B45309 0%, #78350F 100%);
+    border: 1px solid #78350F;
+}
+
+.crownIcon {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-1);
+    color: #FBBF24;
+}
+
+.podiumName {
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--text-primary);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    margin-bottom: 2px;
+}
+
+.podiumXp {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    font-weight: var(--fw-medium);
+}
+
+/* Table styling */
+.tableCard {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-sm);
+}
+
+.searchBarRow {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    margin-bottom: var(--space-4);
+    position: relative;
+    max-width: 320px;
+}
+
+.searchInput {
+    height: 38px;
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface-2);
+    color: var(--text-primary);
+    padding: 0 var(--space-3) 0 30px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    outline: none;
+    width: 100%;
+}
+
+.tableWrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.leaderboardTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+}
+
+.leaderboardTable th {
+    background: var(--bg-surface-2);
+    color: var(--text-muted);
+    font-weight: var(--fw-semibold);
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.leaderboardTable td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    vertical-align: middle;
+}
+
+.studentCell {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+}
+
+.highlightRow td {
+    background: var(--color-accent-light) !important;
+    color: var(--color-accent) !important;
+}
+
+/* Sticky banner */
+.stickyBanner {
+    position: fixed;
+    bottom: 0;
+    left: var(--sidebar-width); /* wait, layout width shifts, let's make it responsive */
+    right: 0;
+    background: var(--color-accent);
+    color: white;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-8);
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+
+@media (max-width: 768px) {
+    .stickyBanner {
+        left: 0;
+        padding: 0 var(--space-4);
+    }
+}

@@ -1,0 +1,335 @@
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    background-color: var(--bg-surface);
+    border-right: 1px solid var(--border-default);
+    display: flex;
+    flex-direction: column;
+    z-index: 400;
+    transition: width var(--transition-slower), transform var(--transition-slower);
+}
+
+.collapsed {
+    width: var(--sidebar-collapsed);
+}
+
+.logoSection {
+    height: var(--topbar-height);
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 var(--space-4);
+    border-bottom: 1px solid var(--border-default);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.collapsed .logoSection {
+    justify-content: center;
+    padding: 0;
+}
+
+.logoImg {
+    max-height: 32px;
+    max-width: 100%;
+    object-fit: contain;
+    transition: transform var(--transition-base);
+}
+
+.collapsed .logoImg {
+    max-height: 24px;
+}
+
+.nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-4) 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Scrollbar styling for navigation */
+.nav::-webkit-scrollbar {
+    width: 5px;
+}
+.nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+.nav::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 99px;
+}
+.nav::-webkit-scrollbar-thumb:hover {
+    background: var(--border-medium);
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: 0 var(--space-3);
+}
+
+.sectionLabel {
+    font-size: var(--text-xs);
+    font-weight: var(--fw-semibold);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wider);
+    color: var(--text-muted);
+    padding-left: var(--space-3);
+    margin-bottom: var(--space-1);
+}
+
+.sectionDivider {
+    height: 1px;
+    background-color: var(--border-default);
+    margin: var(--space-1) 0;
+}
+
+.sectionList {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 var(--space-3);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    text-decoration: none !important;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    transition: background-color var(--transition-base), color var(--transition-base);
+    position: relative;
+    cursor: pointer;
+}
+
+.navItem:hover {
+    background-color: var(--bg-surface-2);
+    color: var(--text-primary);
+}
+
+.navItemActive {
+    background-color: var(--color-accent-light) !important;
+    color: var(--color-accent) !important;
+    position: relative;
+}
+
+.navItemActive::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 15%;
+    height: 70%;
+    width: 3px;
+    background-color: var(--color-accent);
+    border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+}
+
+.navItemIcon {
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: var(--space-3);
+    flex-shrink: 0;
+}
+
+.collapsed .navItemIcon {
+    margin-right: 0;
+}
+
+.collapsed .nav {
+    overflow: visible !important;
+}
+
+.collapsed .navItem {
+    justify-content: center;
+    padding: 0;
+    position: relative;
+}
+
+.collapsed .navItem::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + var(--space-2));
+    top: 50%;
+    transform: translateY(-50%) translateX(-8px);
+    background-color: var(--slate-950, #020617);
+    color: #ffffff;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    font-weight: var(--fw-semibold);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-base), transform var(--transition-base);
+    box-shadow: var(--shadow-lg);
+    z-index: 20000;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.collapsed .navItem:hover::after {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+}
+
+.navItemLabel {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badge {
+    background-color: var(--color-danger);
+    color: white;
+    font-size: 10px;
+    font-weight: var(--fw-bold);
+    border-radius: var(--radius-full);
+    padding: 2px 6px;
+    line-height: 1;
+}
+
+.restricted {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.restricted:hover {
+    background-color: transparent;
+    color: var(--text-secondary);
+}
+
+.lockBadge {
+    font-size: 11px;
+    margin-left: auto;
+}
+
+.collapsed .lockBadge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 8px;
+}
+
+.footer {
+    padding: var(--space-4) var(--space-3);
+    border-top: 1px solid var(--border-default);
+    flex-shrink: 0;
+    background-color: var(--bg-surface);
+}
+
+.userCard {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--fw-bold);
+    font-size: var(--text-md);
+    flex-shrink: 0;
+}
+
+.userInfo {
+    flex: 1;
+    overflow: hidden;
+}
+
+.userName {
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.userRole {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.logoutBtn {
+    color: var(--text-muted);
+    font-size: 18px;
+    padding: var(--space-1);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-base), background-color var(--transition-base);
+}
+
+.logoutBtn:hover {
+    color: var(--color-danger);
+    background-color: var(--bg-danger);
+}
+
+.collapsed .userInfo,
+.collapsed .logoutBtn {
+    display: none;
+}
+
+.collapsed .userCard {
+    justify-content: center;
+}
+
+/* Mobile responsive drawer overlay rules */
+.backdrop {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 260px !important;
+        box-shadow: var(--shadow-xl);
+    }
+    
+    .collapsed {
+        transform: translateX(-100%);
+    }
+
+    .open {
+        transform: translateX(0) !important;
+    }
+
+    .backdrop {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: var(--bg-overlay);
+        backdrop-filter: blur(4px);
+        z-index: 399;
+    }
+
+    .collapsed .userInfo,
+    .collapsed .logoutBtn {
+        display: flex;
+    }
+
+    .open .userInfo,
+    .open .logoutBtn {
+        display: flex;
+    }
+}

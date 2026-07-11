@@ -1,0 +1,176 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    width: 100%;
+}
+
+.heroSection {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    position: relative;
+}
+
+.heroHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.categoryIcon {
+    font-size: 3rem;
+    padding: var(--space-3);
+    background: var(--bg-surface-2);
+    border-radius: var(--radius-lg);
+}
+
+.titleArea {
+    flex: 1;
+}
+
+.title {
+    margin-bottom: var(--space-1);
+}
+
+.metaRow {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.mainGrid {
+    display: grid;
+    grid-template-columns: 2.5fr 1.2fr;
+    gap: var(--space-6);
+}
+
+@media (max-width: 1024px) {
+    .mainGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.leftCol, .rightCol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.sectionCard {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.sectionTitle {
+    font-size: var(--text-md);
+    font-weight: var(--fw-semibold);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: var(--space-2);
+}
+
+/* Sample Question */
+.sampleQuestion {
+    background: var(--bg-surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+    margin-top: var(--space-2);
+}
+
+.blurAnswers {
+    filter: blur(5px);
+    pointer-events: none;
+    user-select: none;
+}
+
+/* History Table */
+.historyTableWrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.historyTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+}
+
+.historyTable th {
+    background: var(--bg-surface-2);
+    color: var(--text-muted);
+    font-weight: var(--fw-semibold);
+    text-align: left;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.historyTable td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+.historyTable tr:hover td {
+    background: var(--bg-surface-2);
+}
+
+/* Action Card */
+.actionCard {
+    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--color-accent-light) 100%);
+    border: 1px solid var(--border-accent);
+}
+
+:global(.dark) .actionCard {
+    background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(59, 130, 246, 0.05) 100%);
+}
+
+.actionStats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: var(--space-2) 0;
+}
+
+.actionStatRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--text-sm);
+}
+
+/* Stats Panel */
+.statsPanel {
+    background: var(--bg-surface);
+}
+
+.statRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+}
+
+.statVal {
+    font-size: var(--text-xl);
+    font-weight: var(--fw-bold);
+    color: var(--color-accent);
+}
+
+.statLabel {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}

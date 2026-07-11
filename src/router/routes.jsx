@@ -33,6 +33,20 @@ const ProtectedInstructorLayout = lazy(() => import("../layouts/ProtectedInstruc
 const StudentDashboard = lazy(() => import("../pages/student/dashboard/Dashboard"));
 const InstructorDashboard = lazy(() => import("../pages/instructor/dashboard/Dashboard"));
 
+// Lazy-loaded student pages
+const BrowseQuizzes = lazy(() => import("../pages/student/quizzes/BrowseQuizzes"));
+const QuizDetail = lazy(() => import("../pages/student/quizzes/QuizDetail"));
+const QuizTaking = lazy(() => import("../pages/student/quizzes/QuizTaking"));
+const QuizResults = lazy(() => import("../pages/student/quizzes/QuizResults"));
+const MyAttempts = lazy(() => import("../pages/student/attempts/MyAttempts"));
+const AttemptDetail = lazy(() => import("../pages/student/attempts/AttemptDetail"));
+const ProgressAnalytics = lazy(() => import("../pages/student/progress/ProgressAnalytics"));
+const Achievements = lazy(() => import("../pages/student/achievements/Achievements"));
+const Leaderboard = lazy(() => import("../pages/student/leaderboard/Leaderboard"));
+const Bookmarks = lazy(() => import("../pages/student/bookmarks/Bookmarks"));
+const StudentNotifications = lazy(() => import("../pages/student/notifications/Notifications"));
+const StudentProfile = lazy(() => import("../pages/student/profile/Profile"));
+
 // Lazy-loaded instructor pages
 const MyQuizzes = lazy(() => import("../pages/instructor/quizzes/MyQuizzes"));
 const CreateEditQuiz = lazy(() => import("../pages/instructor/quizzes/CreateEditQuiz"));
@@ -163,10 +177,114 @@ const router = createBrowserRouter([
                 element: <ProtectedStudentLayout />,
                 children: [
                     {
+                        index: true,
+                        element: (
+                            <SuspenseComponent>
+                                <StudentDashboard />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
                         path: "dashboard",
                         element: (
                             <SuspenseComponent>
                                 <StudentDashboard />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "quizzes",
+                        element: (
+                            <SuspenseComponent>
+                                <BrowseQuizzes />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "quizzes/:quizId",
+                        element: (
+                            <SuspenseComponent>
+                                <QuizDetail />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "quiz/:quizId/take",
+                        element: (
+                            <SuspenseComponent>
+                                <QuizTaking />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "quiz/:quizId/results/:attemptId",
+                        element: (
+                            <SuspenseComponent>
+                                <QuizResults />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "attempts",
+                        element: (
+                            <SuspenseComponent>
+                                <MyAttempts />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "attempts/:attemptId",
+                        element: (
+                            <SuspenseComponent>
+                                <AttemptDetail />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "progress",
+                        element: (
+                            <SuspenseComponent>
+                                <ProgressAnalytics />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "achievements",
+                        element: (
+                            <SuspenseComponent>
+                                <Achievements />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "leaderboard",
+                        element: (
+                            <SuspenseComponent>
+                                <Leaderboard />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "bookmarks",
+                        element: (
+                            <SuspenseComponent>
+                                <Bookmarks />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "notifications",
+                        element: (
+                            <SuspenseComponent>
+                                <StudentNotifications />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "profile",
+                        element: (
+                            <SuspenseComponent>
+                                <StudentProfile />
                             </SuspenseComponent>
                         ),
                     },
@@ -182,6 +300,14 @@ const router = createBrowserRouter([
                 path: "instructor",
                 element: <ProtectedInstructorLayout />,
                 children: [
+                    {
+                        index: true,
+                        element: (
+                            <SuspenseComponent>
+                                <InstructorDashboard />
+                            </SuspenseComponent>
+                        ),
+                    },
                     {
                         path: "dashboard",
                         element: (

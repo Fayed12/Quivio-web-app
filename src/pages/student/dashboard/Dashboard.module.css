@@ -1,0 +1,274 @@
+.dashboardContainer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    width: 100%;
+}
+
+.welcomeCard {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    max-width: 600px;
+    margin: var(--space-10) auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.lockIcon {
+    font-size: 3.5rem;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.limitedPlaceholder {
+    font-size: 2rem;
+    font-weight: var(--fw-bold);
+    color: var(--text-muted);
+}
+
+.dashboardGrid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-6);
+}
+
+@media (max-width: 1024px) {
+    .dashboardGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.cardTitle {
+    font-size: var(--text-lg);
+    font-weight: var(--fw-semibold);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: var(--space-2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* XP Card */
+.xpCard {
+    background: linear-gradient(135deg, var(--bg-surface) 0%, var(--violet-50) 100%);
+    border: 1px solid var(--violet-200);
+}
+
+:global(.dark) .xpCard {
+    background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.xpProgressBar {
+    height: 12px;
+    background: var(--violet-100);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin: var(--space-2) 0;
+    position: relative;
+}
+
+:global(.dark) .xpProgressBar {
+    background: rgba(139, 92, 246, 0.15);
+}
+
+.xpProgressFill {
+    height: 100%;
+    background: var(--color-xp);
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease-out;
+}
+
+.xpText {
+    font-size: var(--text-xs);
+    color: var(--text-xp);
+    font-weight: var(--fw-medium);
+}
+
+/* Streak Calendar */
+.streakCalendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--space-2);
+    margin: var(--space-2) 0;
+}
+
+.streakDotContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.streakDot {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: var(--fw-bold);
+    border: 2px solid var(--border-default);
+    color: var(--text-secondary);
+}
+
+.streakDotActive {
+    background: var(--color-streak);
+    border-color: var(--color-streak);
+    color: white;
+    box-shadow: 0 0 8px rgba(234, 88, 12, 0.4);
+}
+
+.streakDotLabel {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+/* Category Progress Bars */
+.categoryItem {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.categoryHeader {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+}
+
+.progressBar {
+    height: 8px;
+    background: var(--bg-surface-2);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.4s ease-out;
+}
+
+/* Recent Activity Feed */
+.activityList, .assignedList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.activityItemRow, .assignedItemRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-app);
+}
+
+.activityInfo, .assignedInfo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.quizIcon {
+    font-size: 1.5rem;
+    color: var(--color-accent);
+}
+
+.quizName {
+    font-weight: var(--fw-medium);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+}
+
+.activityMeta, .assignedMeta {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.scoreBadge {
+    font-weight: var(--fw-bold);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+}
+
+.scorePass {
+    background: var(--bg-success-mid);
+    color: var(--text-success);
+}
+
+.scoreFail {
+    background: var(--bg-danger-mid);
+    color: var(--text-danger);
+}
+
+/* Achievements */
+.achievementItemRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+}
+
+.achievementIcon {
+    font-size: var(--text-2xl);
+}
+
+.achievementDetails {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.achievementName {
+    font-weight: var(--fw-semibold);
+    font-size: var(--text-sm);
+}
+
+.achievementTier {
+    font-size: 10px;
+    font-weight: var(--fw-bold);
+    padding: 1px 6px;
+    border-radius: var(--radius-xs);
+    width: fit-content;
+    text-transform: uppercase;
+}
+
+.bronze { background: var(--tier-bronze-bg); color: var(--tier-bronze-text); border: 1px solid var(--tier-bronze-border); }
+.silver { background: var(--tier-silver-bg); color: var(--tier-silver-text); border: 1px solid var(--tier-silver-border); }
+.gold { background: var(--tier-gold-bg); color: var(--tier-gold-text); border: 1px solid var(--tier-gold-border); }
+.platinum { background: var(--tier-platinum-bg); color: var(--tier-platinum-text); border: 1px solid var(--tier-platinum-border); }

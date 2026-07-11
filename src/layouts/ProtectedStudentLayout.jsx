@@ -5,11 +5,25 @@ import { useState, useEffect, useRef } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router";
 
 // redux
-import { useSelector } from "react-redux";
-import { selectIsAuthenticated, selectRole, selectIsInitializing, selectMustChangePassword } from "../redux/slices/authSlice";
+import { useDispatch, useSelector } from "react-redux";
+import {
+    selectIsAuthenticated,
+    selectRole,
+    selectIsInitializing,
+    selectMustChangePassword,
+    selectProfile,
+    logoutThunk
+} from "../redux/slices/authSlice";
+import { fetchStudentRooms } from "../redux/slices/roomsSlice";
 
 // components
 import MainButton from "../components/ui/button/MainButton";
+import StudentSidebar from "../pages/student/components/StudentSidebar";
+import StudentTopbar from "../pages/student/components/StudentTopbar";
+import StudentMovingBackground from "../pages/student/components/StudentMovingBackground";
+
+// local
+import styles from "./ProtectedStudentLayout.module.css";
 
 // gsap
 import { gsap } from "gsap";
@@ -19,14 +33,58 @@ const ProtectedStudentLayout = () => {
     const role = useSelector(selectRole);
     const isInitializing = useSelector(selectIsInitializing);
     const mustChangePwd = useSelector(selectMustChangePassword);
+    const profile = useSelector(selectProfile);
     
+    const dispatch = useDispatch();
     const navigate = useNavigate();
 
     // Local state to track if student skipped password change prompt in this session
     const [showPrompt, setShowPrompt] = useState(false);
     
+    // States for collapsible and mobile sidebar
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        return localStorage.getItem("student-sidebar-collapsed") === "true";
+    });
+    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(
+        typeof window !== "undefined" ? window.innerWidth <= 768 : false,
+    );
+
     const modalRef = useRef(null);
     const backdropRef = useRef(null);
+    const deactContainerRef = useRef(null);
+
+    // Track mobile viewport resizing
+    useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth <= 768;
+            setIsMobile(mobile);
+            if (!mobile) {
+                setIsMobileOpen(false); // Close drawer if resizing to desktop
+            }
+        };
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    // Prevent scrolling on mobile when sidebar drawer is open
+    useEffect(() => {
+        if (isMobile && isMobileOpen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [isMobile, isMobileOpen]);
+
+    // Fetch student rooms on load to check limited/active state
+    useEffect(() => {
+        if (isAuth && role === "student") {
+            dispatch(fetchStudentRooms());
+        }
+    }, [isAuth, role, dispatch]);
 
     useEffect(() => {
         // If must change password is true, and they haven't skipped yet, show the prompt
@@ -53,6 +111,19 @@ const ProtectedStudentLayout = () => {
         }
     }, [showPrompt]);
 
+    // GSAP Animation for Deactivated Screen
+    useEffect(() => {
+        if (profile && profile.is_active === false) {
+            const ctx = gsap.context(() => {
+                gsap.fromTo(deactContainerRef.current,
+                    { opacity: 0, scale: 0.9, y: 40 },
+                    { opacity: 1, scale: 1, y: 0, duration: 0.7, ease: "back.out(1.2)" }
+                );
+            });
+            return () => ctx.revert();
+        }
+    }, [profile]);
+
     if (isInitializing) return null;
 
     if (!isAuth) {
@@ -64,6 +135,63 @@ const ProtectedStudentLayout = () => {
             return <Navigate to="/instructor/dashboard" replace />;
         }
         return <Navigate to="/login" replace />;
+    }
+
+    // Check if user is deactivated
+    if (profile && profile.is_active === false) {
+        return (
+            <div 
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: "100vh",
+                    backgroundColor: "var(--bg-app)",
+                    padding: "2rem"
+                }}
+            >
+                <StudentMovingBackground />
+                <div 
+                    ref={deactContainerRef}
+                    style={{
+                        background: "var(--bg-surface)",
+                        maxWidth: "500px",
+                        width: "100%",
+                        padding: "3rem 2.5rem",
+                        borderRadius: "var(--radius-lg)",
+                        boxShadow: "var(--shadow-xl)",
+                        border: "1px solid var(--border-danger)",
+                        textAlign: "center",
+                        zIndex: 10
+                    }}
+                >
+                    <div style={{ fontSize: "4rem", marginBottom: "1.5rem" }} role="img" aria-label="Locked">
+                        🛑
+                    </div>
+                    <h1 style={{ 
+                        fontSize: "var(--text-2xl)", 
+                        fontWeight: "var(--fw-bold)", 
+                        color: "var(--color-danger)",
+                        marginBottom: "1rem" 
+                    }}>
+                        Account Deactivated
+                    </h1>
+                    <p style={{ 
+                        fontSize: "var(--text-base)", 
+                        color: "var(--text-secondary)", 
+                        lineHeight: "var(--leading-normal)",
+                        marginBottom: "2.5rem" 
+                    }}>
+                        Hello, <strong>{profile?.full_name || "Student"}</strong>. Your account has been temporarily deactivated by your instructor. You no longer have access to quizzes, attempts, or leaderboard data. Please reach out to your instructor to reactivate your access.
+                    </p>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                        <MainButton onClick={() => dispatch(logoutThunk())} variant="danger" size="md">
+                            Sign Out
+                        </MainButton>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     const handleSkip = () => {
@@ -91,10 +219,61 @@ const ProtectedStudentLayout = () => {
         navigate("/reset-password");
     };
 
+    const handleToggleSidebar = () => {
+        const newCollapsedState = !isCollapsed;
+        setIsCollapsed(newCollapsedState);
+        localStorage.setItem(
+            "student-sidebar-collapsed",
+            String(newCollapsedState),
+        );
+    };
+
+    const currentMarginLeft = isMobile
+        ? "0px"
+        : isCollapsed
+          ? "var(--sidebar-collapsed)"
+          : "var(--sidebar-width)";
+
     return (
-        <>
-            <Outlet />
-            
+        <div className={styles.appShell}>
+            {/* Moving background circles */}
+            <StudentMovingBackground />
+
+            {/* Sidebar */}
+            <StudentSidebar
+                isCollapsed={isCollapsed}
+                isOpen={isMobileOpen}
+                onClose={() => setIsMobileOpen(false)}
+            />
+
+            {/* Main view content */}
+            <div
+                className={styles.mainContent}
+                style={{
+                    marginLeft: currentMarginLeft,
+                    width: `calc(100% - ${currentMarginLeft})`,
+                    transition: "margin-left var(--transition-slower), width var(--transition-slower)",
+                }}
+            >
+                {/* Topbar */}
+                <StudentTopbar
+                    onToggleSidebar={handleToggleSidebar}
+                    onToggleMobileSidebar={() => setIsMobileOpen(!isMobileOpen)}
+                    style={{
+                        left: currentMarginLeft,
+                        width: `calc(100% - ${currentMarginLeft})`,
+                    }}
+                />
+
+                {/* Inner views outlet */}
+                <main className={styles.contentWrapper}>
+                    <div className={styles.innerContainer}>
+                        <Outlet />
+                    </div>
+                </main>
+            </div>
+
+            {/* Force change temporary password modal */}
             {showPrompt && (
                 <div 
                     ref={backdropRef}
@@ -156,7 +335,7 @@ const ProtectedStudentLayout = () => {
                     </div>
                 </div>
             )}
-        </>
+        </div>
     );
 };
 
