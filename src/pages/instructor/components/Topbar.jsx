@@ -4,30 +4,38 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 
 // react-icons
-import { 
-    FiMenu, 
-    FiBell, 
-    FiSearch, 
-    FiSun, 
-    FiMoon, 
-    FiChevronDown, 
-    FiUser, 
+import {
+    FiMenu,
+    FiBell,
+    FiSearch,
+    FiSun,
+    FiMoon,
+    FiChevronDown,
+    FiUser,
     FiLogOut,
     FiX,
     FiHelpCircle,
-    FiRefreshCw
+    FiRefreshCw,
 } from "react-icons/fi";
 
 // redux
 import { logoutThunk, selectProfile } from "../../../redux/slices/authSlice";
 import { toggleTheme, selectTheme } from "../../../redux/slices/themeSLice";
-import { selectUnreadCount, fetchUnreadCount } from "../../../redux/slices/notificationsSlice";
+import {
+    selectUnreadCount,
+    fetchUnreadCount,
+} from "../../../redux/slices/notificationsSlice";
 
 // local
 import { supabase } from "../../../services/config/supabaseClient";
 import styles from "./Topbar.module.css";
 
-const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
+const Topbar = ({
+    onToggleSidebar,
+    onToggleMobileSidebar,
+    onStartGuide,
+    style,
+}) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const profile = useSelector(selectProfile);
@@ -41,7 +49,11 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
 
     // Search states
     const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState({ quizzes: [], rooms: [], students: [] });
+    const [searchResults, setSearchResults] = useState({
+        quizzes: [],
+        rooms: [],
+        students: [],
+    });
     const [isSearching, setIsSearching] = useState(false);
     const [showResults, setShowResults] = useState(false);
 
@@ -65,15 +77,22 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
     // Handle clicks outside the dropdowns to close them
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target)
+            ) {
                 setIsMenuOpen(false);
             }
-            if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+            if (
+                searchContainerRef.current &&
+                !searchContainerRef.current.contains(event.target)
+            ) {
                 setShowResults(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
     const triggerSearch = async () => {
@@ -105,26 +124,32 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
             // Query students
             const { data: studentRows } = await supabase
                 .from("instructor_students")
-                .select(`
+                .select(
+                    `
                     student_uid,
                     profile:profiles!student_uid(uid, full_name, email, avatar_url)
-                `)
+                `,
+                )
                 .eq("instructor_uid", profile.uid);
 
             const matchingStudents = (studentRows || [])
-                .filter(s => {
+                .filter((s) => {
                     if (!s.profile) return false;
-                    const nameMatch = s.profile.full_name?.toLowerCase().includes(trimmed.toLowerCase());
-                    const emailMatch = s.profile.email?.toLowerCase().includes(trimmed.toLowerCase());
+                    const nameMatch = s.profile.full_name
+                        ?.toLowerCase()
+                        .includes(trimmed.toLowerCase());
+                    const emailMatch = s.profile.email
+                        ?.toLowerCase()
+                        .includes(trimmed.toLowerCase());
                     return nameMatch || emailMatch;
                 })
                 .slice(0, 5)
-                .map(s => s.profile);
+                .map((s) => s.profile);
 
             setSearchResults({
                 quizzes: quizzes || [],
                 rooms: rooms || [],
-                students: matchingStudents || []
+                students: matchingStudents || [],
             });
         } catch (err) {
             console.error("Search failed:", err);
@@ -159,20 +184,20 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
     };
 
     return (
-        <header className={styles.topbar}>
+        <header className={styles.topbar} style={style}>
             {/* Left section */}
             <div className={styles.left}>
                 {/* Desktop Sidebar Toggle */}
-                <button 
-                    className={`${styles.toggleBtn} ${styles.desktopOnly}`} 
+                <button
+                    className={`${styles.toggleBtn} ${styles.desktopOnly}`}
                     onClick={onToggleSidebar}
                     aria-label="Toggle Sidebar"
                 >
                     <FiMenu />
                 </button>
                 {/* Mobile Sidebar Toggle */}
-                <button 
-                    className={`${styles.toggleBtn} ${styles.mobileOnly}`} 
+                <button
+                    className={`${styles.toggleBtn} ${styles.mobileOnly}`}
                     onClick={onToggleMobileSidebar}
                     aria-label="Toggle Navigation Drawer"
                 >
@@ -180,112 +205,224 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
                 </button>
 
                 {/* Search bar with explicit trigger */}
-                <div className={styles.searchWrapper} ref={searchContainerRef} data-tour="topbar-search">
+                <div
+                    className={styles.searchWrapper}
+                    ref={searchContainerRef}
+                    data-tour="topbar-search"
+                >
                     <div className={styles.searchBar}>
                         <FiSearch className={styles.searchIcon} />
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             ref={searchInputRef}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={handleSearchKeyDown}
-                            placeholder="Search quizzes, students, rooms..." 
+                            placeholder="Search quizzes, students, rooms..."
                             className={styles.searchInput}
                         />
                         {searchQuery && (
-                            <button className={styles.clearBtn} onClick={handleClearSearch} aria-label="Clear search">
+                            <button
+                                className={styles.clearBtn}
+                                onClick={handleClearSearch}
+                                aria-label="Clear search"
+                            >
                                 <FiX />
                             </button>
                         )}
                         <kbd className={styles.searchShortcut}>Ctrl+K</kbd>
                     </div>
-                    <button 
-                        className={styles.searchBtn} 
-                        onClick={triggerSearch} 
+                    <button
+                        className={styles.searchBtn}
+                        onClick={triggerSearch}
                         disabled={isSearching || !searchQuery.trim()}
                     >
-                        {isSearching ? <div className={styles.searchSpinner} /> : "Search"}
+                        {isSearching ? (
+                            <div className={styles.searchSpinner} />
+                        ) : (
+                            "Search"
+                        )}
                     </button>
 
                     {/* Custom search results dropdown */}
                     {showResults && (
                         <div className={styles.searchResultsPanel}>
                             {isSearching ? (
-                                <div className={styles.searchLoading}>Searching...</div>
+                                <div className={styles.searchLoading}>
+                                    Searching...
+                                </div>
                             ) : (
                                 <>
-                                    {searchResults.quizzes.length === 0 && 
-                                     searchResults.rooms.length === 0 && 
-                                     searchResults.students.length === 0 ? (
+                                    {searchResults.quizzes.length === 0 &&
+                                    searchResults.rooms.length === 0 &&
+                                    searchResults.students.length === 0 ? (
                                         <div className={styles.searchEmpty}>
                                             No results found for "{searchQuery}"
                                         </div>
                                     ) : (
                                         <>
                                             {/* Quizzes Group */}
-                                            {searchResults.quizzes.length > 0 && (
-                                                <div className={styles.searchGroup}>
-                                                    <div className={styles.searchGroupTitle}>Quizzes</div>
-                                                    {searchResults.quizzes.map(q => (
-                                                        <div 
-                                                            key={q.id} 
-                                                            className={styles.searchResultItem}
-                                                            onClick={() => {
-                                                                setShowResults(false);
-                                                                navigate(`/instructor/quizzes/${q.id}/edit`);
-                                                            }}
-                                                        >
-                                                            <FiSearch className={styles.searchResultIcon} />
-                                                            <div className={styles.searchResultDetails}>
-                                                                <span>{q.title}</span>
+                                            {searchResults.quizzes.length >
+                                                0 && (
+                                                <div
+                                                    className={
+                                                        styles.searchGroup
+                                                    }
+                                                >
+                                                    <div
+                                                        className={
+                                                            styles.searchGroupTitle
+                                                        }
+                                                    >
+                                                        Quizzes
+                                                    </div>
+                                                    {searchResults.quizzes.map(
+                                                        (q) => (
+                                                            <div
+                                                                key={q.id}
+                                                                className={
+                                                                    styles.searchResultItem
+                                                                }
+                                                                onClick={() => {
+                                                                    setShowResults(
+                                                                        false,
+                                                                    );
+                                                                    navigate(
+                                                                        `/instructor/quizzes/${q.id}/edit`,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <FiSearch
+                                                                    className={
+                                                                        styles.searchResultIcon
+                                                                    }
+                                                                />
+                                                                <div
+                                                                    className={
+                                                                        styles.searchResultDetails
+                                                                    }
+                                                                >
+                                                                    <span>
+                                                                        {
+                                                                            q.title
+                                                                        }
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        ),
+                                                    )}
                                                 </div>
                                             )}
 
                                             {/* Rooms Group */}
                                             {searchResults.rooms.length > 0 && (
-                                                <div className={styles.searchGroup}>
-                                                    <div className={styles.searchGroupTitle}>Rooms</div>
-                                                    {searchResults.rooms.map(r => (
-                                                        <div 
-                                                            key={r.id} 
-                                                            className={styles.searchResultItem}
-                                                            onClick={() => {
-                                                                setShowResults(false);
-                                                                navigate(`/instructor/rooms/${r.id}`);
-                                                            }}
-                                                        >
-                                                            <FiSearch className={styles.searchResultIcon} />
-                                                            <div className={styles.searchResultDetails}>
-                                                                <span>{r.name}</span>
+                                                <div
+                                                    className={
+                                                        styles.searchGroup
+                                                    }
+                                                >
+                                                    <div
+                                                        className={
+                                                            styles.searchGroupTitle
+                                                        }
+                                                    >
+                                                        Rooms
+                                                    </div>
+                                                    {searchResults.rooms.map(
+                                                        (r) => (
+                                                            <div
+                                                                key={r.id}
+                                                                className={
+                                                                    styles.searchResultItem
+                                                                }
+                                                                onClick={() => {
+                                                                    setShowResults(
+                                                                        false,
+                                                                    );
+                                                                    navigate(
+                                                                        `/instructor/rooms/${r.id}`,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <FiSearch
+                                                                    className={
+                                                                        styles.searchResultIcon
+                                                                    }
+                                                                />
+                                                                <div
+                                                                    className={
+                                                                        styles.searchResultDetails
+                                                                    }
+                                                                >
+                                                                    <span>
+                                                                        {r.name}
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        ),
+                                                    )}
                                                 </div>
                                             )}
 
                                             {/* Students Group */}
-                                            {searchResults.students.length > 0 && (
-                                                <div className={styles.searchGroup}>
-                                                    <div className={styles.searchGroupTitle}>Students</div>
-                                                    {searchResults.students.map(s => (
-                                                        <div 
-                                                            key={s.uid} 
-                                                            className={styles.searchResultItem}
-                                                            onClick={() => {
-                                                                setShowResults(false);
-                                                                navigate(`/instructor/students`);
-                                                            }}
-                                                        >
-                                                            <FiSearch className={styles.searchResultIcon} />
-                                                            <div className={styles.searchResultDetails}>
-                                                                <span>{s.full_name}</span>
-                                                                <span className={styles.searchResultSubText}>{s.email}</span>
+                                            {searchResults.students.length >
+                                                0 && (
+                                                <div
+                                                    className={
+                                                        styles.searchGroup
+                                                    }
+                                                >
+                                                    <div
+                                                        className={
+                                                            styles.searchGroupTitle
+                                                        }
+                                                    >
+                                                        Students
+                                                    </div>
+                                                    {searchResults.students.map(
+                                                        (s) => (
+                                                            <div
+                                                                key={s.uid}
+                                                                className={
+                                                                    styles.searchResultItem
+                                                                }
+                                                                onClick={() => {
+                                                                    setShowResults(
+                                                                        false,
+                                                                    );
+                                                                    navigate(
+                                                                        `/instructor/students`,
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <FiSearch
+                                                                    className={
+                                                                        styles.searchResultIcon
+                                                                    }
+                                                                />
+                                                                <div
+                                                                    className={
+                                                                        styles.searchResultDetails
+                                                                    }
+                                                                >
+                                                                    <span>
+                                                                        {
+                                                                            s.full_name
+                                                                        }
+                                                                    </span>
+                                                                    <span
+                                                                        className={
+                                                                            styles.searchResultSubText
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            s.email
+                                                                        }
+                                                                    </span>
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        ),
+                                                    )}
                                                 </div>
                                             )}
                                         </>
@@ -300,18 +437,22 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
             {/* Right section */}
             <div className={styles.right} data-tour="topbar-actions">
                 {/* Theme Switcher */}
-                <button 
-                    className={styles.iconBtn} 
+                <button
+                    className={styles.iconBtn}
                     onClick={handleThemeToggle}
-                    title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                    title={
+                        theme === "dark"
+                            ? "Switch to Light Mode"
+                            : "Switch to Dark Mode"
+                    }
                     aria-label="Toggle Theme"
                 >
                     {theme === "dark" ? <FiSun /> : <FiMoon />}
                 </button>
 
                 {/* Notifications Bell */}
-                <button 
-                    className={styles.iconBtn} 
+                <button
+                    className={styles.iconBtn}
                     onClick={() => navigate("/instructor/notifications")}
                     title="View Notifications"
                     aria-label="Notifications"
@@ -327,8 +468,8 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
                 </button>
 
                 {/* Manual Reload Button */}
-                <button 
-                    className={styles.iconBtn} 
+                <button
+                    className={styles.iconBtn}
                     onClick={() => window.location.reload()}
                     title="Reload Page"
                     aria-label="Reload Page"
@@ -337,8 +478,8 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
                 </button>
 
                 {/* Tour / Help Button */}
-                <button 
-                    className={styles.iconBtn} 
+                <button
+                    className={styles.iconBtn}
                     onClick={onStartGuide}
                     title="Start Tour Guide"
                     aria-label="Start Tour Guide"
@@ -350,8 +491,8 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
 
                 {/* Profile Selector */}
                 <div className={styles.profileContainer} ref={dropdownRef}>
-                    <button 
-                        className={styles.profileBtn} 
+                    <button
+                        className={styles.profileBtn}
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         aria-expanded={isMenuOpen}
                         aria-label="Instructor profile actions"
@@ -362,20 +503,26 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
                         <span className={styles.profileName}>
                             {profile?.full_name?.split(" ")[0] || "Instructor"}
                         </span>
-                        <FiChevronDown className={`${styles.chevron} ${isMenuOpen ? styles.rotated : ""}`} />
+                        <FiChevronDown
+                            className={`${styles.chevron} ${isMenuOpen ? styles.rotated : ""}`}
+                        />
                     </button>
 
                     {/* Profile Dropdown */}
                     {isMenuOpen && (
                         <div className={styles.dropdown}>
                             <div className={styles.dropdownHeader}>
-                                <div className={styles.dropdownName}>{profile?.full_name || "Instructor"}</div>
-                                <div className={styles.dropdownEmail}>{profile?.email || ""}</div>
+                                <div className={styles.dropdownName}>
+                                    {profile?.full_name || "Instructor"}
+                                </div>
+                                <div className={styles.dropdownEmail}>
+                                    {profile?.email || ""}
+                                </div>
                             </div>
                             <div className={styles.dropdownDivider} />
-                            
-                            <button 
-                                className={styles.dropdownItem} 
+
+                            <button
+                                className={styles.dropdownItem}
                                 onClick={() => {
                                     setIsMenuOpen(false);
                                     navigate("/instructor/profile");
@@ -384,11 +531,11 @@ const Topbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide }) => {
                                 <FiUser className={styles.dropdownItemIcon} />
                                 <span>My Profile</span>
                             </button>
-                            
+
                             <div className={styles.dropdownDivider} />
-                            
-                            <button 
-                                className={`${styles.dropdownItem} ${styles.danger}`} 
+
+                            <button
+                                className={`${styles.dropdownItem} ${styles.danger}`}
                                 onClick={handleLogout}
                             >
                                 <FiLogOut className={styles.dropdownItemIcon} />

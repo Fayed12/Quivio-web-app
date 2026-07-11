@@ -126,6 +126,7 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                                             to={item.path}
                                             onClick={onClose}
                                             data-tour={`sidebar-${tourKey}`}
+                                            data-label={item.label}
                                             className={({ isActive }) => 
                                                 `${styles.navItem} ${isActive ? styles.navItemActive : ""}`
                                             }

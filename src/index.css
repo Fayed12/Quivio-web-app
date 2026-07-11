@@ -905,6 +905,8 @@ code {
   background-size: 1.125rem;
   padding-right: var(--space-8);
   cursor: pointer;
+  background-color: transparent !important;
+  border: none !important;
 }
 
 .input::placeholder,

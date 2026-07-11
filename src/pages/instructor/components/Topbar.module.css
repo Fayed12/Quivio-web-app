@@ -1,7 +1,7 @@
 .topbar {
-    position: sticky;
+    position: fixed;
     top: 0;
-    width: 100%;
+    right: 0;
     height: var(--topbar-height);
     background-color: var(--bg-surface);
     border-bottom: 1px solid var(--border-default);
@@ -10,7 +10,7 @@
     justify-content: space-between;
     padding: 0 var(--space-6);
     z-index: 300;
-    transition: background-color var(--transition-slow);
+    transition: background-color var(--transition-slow), left var(--transition-slower), width var(--transition-slower);
 }
 
 .left, .right {
@@ -406,7 +406,7 @@
     }
     
     .mobileOnly {
-        display: flex;
+        display: none;
     }
 
     .profileName,

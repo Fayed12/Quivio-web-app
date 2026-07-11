@@ -14,7 +14,6 @@ import {
     createStudentThunk,
     bulkCreateThunk,
     resendCredentialsThunk,
-    deleteStudentThunk,
     selectCurrentStudent
 } from "../../../redux/slices/instructorStudentsSlice";
 import { fetchMyRooms, selectMyRooms } from "../../../redux/slices/roomsSlice";
@@ -37,7 +36,10 @@ import {
     FiTrash2,
     FiAward, 
     FiActivity,
-    FiDownload
+    FiDownload,
+    FiCopy,
+    FiCheck,
+    FiAlertTriangle
 } from "react-icons/fi";
 
 // react-toastify
@@ -80,13 +82,14 @@ const StudentsManagement = () => {
     const [selectedStudentId, setSelectedStudentId] = useState(null); // side panel student UID
     const [isDetailsLoading, setIsDetailsLoading] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState(null);
+    const [dropdownDirection, setDropdownDirection] = useState("down");
 
     // Create student form states
     const [fullName, setFullName] = useState("");
     const [studentId, setStudentId] = useState("");
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("stuA12@12");
     const [assignRoomId, setAssignRoomId] = useState("");
+    const [isCopied, setIsCopied] = useState(false);
 
     // CSV Bulk Importer states
     const [csvPreview, setCsvPreview] = useState([]);
@@ -121,6 +124,32 @@ const StudentsManagement = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [activeDropdown]);
 
+    // Handle actions menu toggle with smart positioning
+    const handleToggleDropdown = (e, studentUid) => {
+        e.stopPropagation();
+        if (activeDropdown === studentUid) {
+            setActiveDropdown(null);
+        } else {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const spaceBelowViewport = window.innerHeight - rect.bottom;
+            
+            let shouldShowUp = spaceBelowViewport < 185;
+            
+            // Also check space relative to scrollable table container
+            const tableContainer = e.currentTarget.closest(`.${styles.tableContainer}`);
+            if (tableContainer) {
+                const containerRect = tableContainer.getBoundingClientRect();
+                const spaceInContainer = containerRect.bottom - rect.bottom;
+                if (spaceInContainer < 185) {
+                    shouldShowUp = true;
+                }
+            }
+            
+            setDropdownDirection(shouldShowUp ? "up" : "down");
+            setActiveDropdown(studentUid);
+        }
+    };
+
     // Page entrance animation
     usePageAnimation(containerRef);
 
@@ -147,6 +176,14 @@ const StudentsManagement = () => {
         }
     }, [selectedStudentId]);
 
+    // Copy password helper
+    const handleCopyPassword = () => {
+        navigator.clipboard.writeText("Student@123");
+        setIsCopied(true);
+        toast.success("Default password copied to clipboard!");
+        setTimeout(() => setIsCopied(false), 2000);
+    };
+
     // Add student handler
     const handleCreateStudent = async (e) => {
         e.preventDefault();
@@ -160,8 +197,7 @@ const StudentsManagement = () => {
                 full_name: fullName,
                 student_code: studentId,
                 email,
-                room_id: assignRoomId || null,
-                password: password.trim()
+                room_id: assignRoomId || null
             })).unwrap();
 
             toast.success(`Student "${fullName}" account created successfully! Credentials sent to email.`);
@@ -169,7 +205,6 @@ const StudentsManagement = () => {
             setFullName("");
             setStudentId("");
             setEmail("");
-            setPassword("Quivio123!");
             setAssignRoomId("");
             dispatch(fetchMyStudents());
         } catch (err) {
@@ -289,11 +324,40 @@ const StudentsManagement = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    await dispatch(deleteStudentThunk(student.student_uid)).unwrap();
+                    const { data, error } = await supabase.functions.invoke('delete-student', {
+                        body: { student_uid: student.student_uid }
+                    });
+                    console.log(data);
+                    if (error) {
+                        console.error("Edge function error context:", error);
+                        let errText = "";
+                        if (error.context && typeof error.context.text === 'function') {
+                            try {
+                                errText = await error.context.text();
+                            } catch (e) {
+                                console.error(e);
+                                errText = error.message || String(error);
+                            }
+                        } else {
+                            errText = error.message || String(error);
+                        }
+                        
+                        let parsedError;
+                        try {
+                            parsedError = JSON.parse(errText);
+                        } catch (e) {
+                            console.error(e);
+                            parsedError = { error: errText };
+                        }
+                        
+                        throw new Error(parsedError.error || parsedError.message || errText || "Failed to delete student");
+                    }
+                    
                     toast.success(`Permanently deleted student "${student.profile?.full_name}" records!`);
                     dispatch(fetchMyStudents());
                 } catch (err) {
-                    toast.error(err || "Failed to delete student");
+                    console.error("Failed to delete student error:", err);
+                    toast.error(err.message || String(err) || "Failed to delete student");
                 }
             }
         });
@@ -586,13 +650,13 @@ const StudentsManagement = () => {
                                         <div className={styles.dropdownContainer}>
                                             <button 
                                                 className={styles.moreBtn}
-                                                onClick={() => setActiveDropdown(activeDropdown === s.student_uid ? null : s.student_uid)}
+                                                onClick={(e) => handleToggleDropdown(e, s.student_uid)}
                                             >
                                                 <FiMoreVertical />
                                             </button>
 
                                             {activeDropdown === s.student_uid && (
-                                                <div className={styles.dropdown} ref={dropdownRef}>
+                                                <div className={`${styles.dropdown} ${dropdownDirection === "up" ? styles.dropdownUp : ""}`} ref={dropdownRef}>
                                                     <button onClick={() => { handleResendCredentials(s); setActiveDropdown(null); }} className={styles.dropdownItem}>
                                                         <FiKey /> Resend Credentials
                                                     </button>
@@ -834,18 +898,34 @@ const StudentsManagement = () => {
                             {/* Password */}
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>Account Password <span className={styles.req}>*</span></label>
-                                <input 
-                                    type="text" 
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="e.g. stuA12@12!"
-                                    className={styles.input}
-                                    readOnly
-                                    disabled
-                                />
-                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                                    Instructors provision student passwords directly. Students will be forced to change this upon first login.
-                                </span>
+                                <div className={styles.passwordCard}>
+                                    <div className={styles.passwordCardHeader}>
+                                        <div className={styles.passwordCardTitle}>
+                                            <FiKey className={styles.passwordIcon} />
+                                            <span>Default Student Password</span>
+                                        </div>
+                                        <button 
+                                            type="button" 
+                                            className={styles.copyBtn} 
+                                            onClick={handleCopyPassword}
+                                            title="Copy Password"
+                                        >
+                                            {isCopied ? <FiCheck className={styles.copiedIcon} /> : <FiCopy />}
+                                        </button>
+                                    </div>
+                                    <div className={styles.passwordValue}>
+                                        <code>Student@123</code>
+                                    </div>
+                                    <div className={styles.warningAlert}>
+                                        <FiAlertTriangle className={styles.warningIcon} />
+                                        <div className={styles.warningContent}>
+                                            <strong>Safety Warning</strong>
+                                            <span>
+                                                Instructors provision passwords directly. Students are prompted to change their password immediately upon initial log in.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Room Selector */}

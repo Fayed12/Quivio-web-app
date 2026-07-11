@@ -6,7 +6,7 @@ import PropTypes from "prop-types";
 const getCustomStyles = () => ({
     control: (provided, state) => ({
         ...provided,
-        backgroundColor: "var(--bg-surface, #ffffff)",
+        backgroundColor: "transparent",
         borderColor: state.isFocused ? "var(--color-accent, #2563eb)" : "var(--border-default, #cbd5e1)",
         borderRadius: "var(--radius-md, 0.5rem)",
         minHeight: "2.5rem",

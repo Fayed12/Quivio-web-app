@@ -10,7 +10,7 @@ const EFN = (name) => `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}
 // Request : { full_name, email, student_code, room_id? }
 // Response: { data: { student_uid, instructor_students_id }, error }
 // ─────────────────────────────────────────────
-export async function createStudent({ full_name, email, student_code, room_id, password }) {
+export async function createStudent({ full_name, email, student_code, room_id }) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { data: null, error: 'Not authenticated' };
 
@@ -20,7 +20,7 @@ export async function createStudent({ full_name, email, student_code, room_id, p
       'Content-Type': 'application/json',
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify(clean({ full_name, email, student_code, room_id, password })),
+    body: JSON.stringify(clean({ full_name, email, student_code, room_id })),
   });
 
   const json = await res.json();

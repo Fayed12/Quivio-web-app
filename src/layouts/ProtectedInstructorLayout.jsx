@@ -241,7 +241,7 @@ const ProtectedInstructorLayout = () => {
                         borderRadius: "var(--radius-lg)",
                         fontSize: "var(--text-sm)",
                         fontFamily: "var(--font-sans)",
-                        zIndex : 20001
+                        zIndex: 20001,
                     },
                 }}
             />
@@ -271,6 +271,10 @@ const ProtectedInstructorLayout = () => {
                     onToggleSidebar={handleToggleSidebar}
                     onToggleMobileSidebar={() => setIsMobileOpen(!isMobileOpen)}
                     onStartGuide={() => setRunGuide(true)}
+                    style={{
+                        left: currentMarginLeft,
+                        width: `calc(100% - ${currentMarginLeft})`,
+                    }}
                 />
 
                 {/* Inner views outlet */}
