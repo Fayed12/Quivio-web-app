@@ -21,6 +21,16 @@ export const fetchActiveAttempt = createAsyncThunk(
     },
 );
 
+export const fetchAttemptForTaking = createAsyncThunk(
+    "attempts/fetchForTaking",
+    async (attemptId, { rejectWithValue }) => {
+        const { data, error } = await svc.getAttemptForTaking(attemptId);
+        if (error) return rejectWithValue(error);
+        if (!data) return rejectWithValue("Attempt not found");
+        return data;
+    },
+);
+
 
 export const fetchAttemptById = createAsyncThunk(
     "attempts/fetchById",
@@ -150,7 +160,9 @@ const slice = createSlice({
             s.answers = {};
             s.flagged = [];
         })
+            .addCase(fetchActiveAttempt.pending, pending)
             .addCase(fetchActiveAttempt.fulfilled, (s, { payload }) => {
+                s.loading = false;
                 s.active = payload;
                 if (payload) {
                     s.timeRemaining = payload.time_remaining_secs;
@@ -162,6 +174,20 @@ const slice = createSlice({
                     s.answers = answerMap;
                 }
             })
+            .addCase(fetchActiveAttempt.rejected, rejected)
+            .addCase(fetchAttemptForTaking.pending, pending)
+            .addCase(fetchAttemptForTaking.fulfilled, (s, { payload }) => {
+                s.loading = false;
+                s.active = payload;
+                s.timeRemaining = payload.time_remaining_secs;
+                s.flagged = payload.flagged_questions ?? [];
+                const answerMap = {};
+                (payload.attempt_answers ?? []).forEach((a) => {
+                    answerMap[a.question_id] = a.selected_option_id;
+                });
+                s.answers = answerMap;
+            })
+            .addCase(fetchAttemptForTaking.rejected, rejected)
             .addCase(fetchAttemptById.pending, pending)
             .addCase(fetchAttemptById.fulfilled, (s, { payload }) => {
                 s.loading = false;

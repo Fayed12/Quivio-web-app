@@ -6,7 +6,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router";
 // redux
 import { fetchQuizById, selectCurrentQuiz } from "../../../redux/slices/quizzesSlice";
 import {
-    fetchActiveAttempt,
+    fetchAttemptForTaking,
     selectActiveAttempt,
     selectAttemptAnswers,
     selectFlagged,
@@ -92,6 +92,8 @@ const QuizTaking = () => {
     const currentIndex = useSelector(selectCurrentIndex) || 0;
     const timeRemaining = useSelector(selectTimeRemaining);
     const submitting = useSelector(selectSubmitting);
+    const attemptLoading = useSelector(s => s.attempts.loading);
+    const attemptError = useSelector(s => s.attempts.error);
 
     // Local states
     const [shuffledQuestions, setShuffledQuestions] = useState([]);
@@ -126,7 +128,7 @@ const QuizTaking = () => {
     useEffect(() => {
         if (quizId && attemptId) {
             dispatch(fetchQuizById(quizId));
-            dispatch(fetchActiveAttempt(quizId));
+            dispatch(fetchAttemptForTaking(attemptId));
         }
         return () => {
             dispatch(clearActiveAttempt());
@@ -281,10 +283,45 @@ const QuizTaking = () => {
         navigate(`/student/quizzes/${quizId}`);
     };
 
+    // Guard: missing attemptId in URL
+    if (!attemptId) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "100vh", gap: "var(--space-3)" }}>
+                <span style={{ fontSize: "2rem" }}>⚠️</span>
+                <p style={{ color: "var(--text-secondary)" }}>No attempt ID found. Please start the quiz from the quiz detail page.</p>
+                <MainButton variant="primary" onClick={() => navigate(`/student/quizzes/${quizId}`)}>
+                    Go to Quiz Detail
+                </MainButton>
+            </div>
+        );
+    }
+
+    // Guard: error loading attempt
+    if (attemptError && !activeAttempt) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "100vh", gap: "var(--space-3)" }}>
+                <span style={{ fontSize: "2rem" }}>❌</span>
+                <p style={{ color: "var(--text-danger)" }}>Failed to load attempt: {typeof attemptError === 'string' ? attemptError : 'Unknown error'}</p>
+                <MainButton variant="primary" onClick={() => navigate(`/student/quizzes/${quizId}`)}>
+                    Go Back
+                </MainButton>
+            </div>
+        );
+    }
+
     if (shuffledQuestions.length === 0 || !activeAttempt) {
         return (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", color: "var(--text-secondary)" }}>
-                Initializing attempt...
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "100vh", color: "var(--text-secondary)", gap: "var(--space-3)" }}>
+                <div>Initializing attempt...</div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", textAlign: "center" }}>
+                    <div>Quiz loaded: {quiz ? '✅' : '⏳'} {quiz ? `(${quiz.quiz_questions?.length ?? 0} questions)` : ''}</div>
+                    <div>Attempt loaded: {activeAttempt ? '✅' : attemptLoading ? '⏳ Loading...' : '❌ Not loaded'}</div>
+                    <div>Questions ready: {shuffledQuestions.length > 0 ? '✅' : '⏳'}</div>
+                    {attemptError && <div style={{ color: "var(--text-danger)" }}>Error: {String(attemptError)}</div>}
+                </div>
+                <MainButton variant="secondary" size="sm" onClick={() => navigate(`/student/quizzes/${quizId}`)}>
+                    ← Go Back
+                </MainButton>
             </div>
         );
     }
@@ -459,18 +496,18 @@ const QuizTaking = () => {
                     <button
                         onClick={handleFlagToggle}
                         className="btn btn--outline btn--md"
-                        style={{ display: "flex", alignItems: "center", gap: "6px", borderColor: flagged.includes(currentQuestion.id) ? "var(--color-warning)" : "" }}
+                        style={{ display: "flex", alignItems: "center", gap: "6px", borderColor: flagged.includes(currentQuestion?.id) ? "var(--color-warning)" : "" }}
                         title="Flag for review"
                     >
-                        <FiFlag fill={flagged.includes(currentQuestion.id) ? "var(--color-warning)" : "none"} style={{ color: flagged.includes(currentQuestion.id) ? "var(--color-warning)" : "" }} />
-                        <span style={{ color: flagged.includes(currentQuestion.id) ? "var(--color-warning-hover)" : "" }}>Flag</span>
+                        <FiFlag fill={flagged.includes(currentQuestion?.id) ? "var(--color-warning)" : "none"} style={{ color: flagged.includes(currentQuestion?.id) ? "var(--color-warning)" : "" }} />
+                        <span style={{ color: flagged.includes(currentQuestion?.id) ? "var(--color-warning-hover)" : "" }}>Flag</span>
                     </button>
 
                     <MainButton
                         variant="primary"
                         size="md"
                         onClick={handleNext}
-                        disabled={currentIndex === totalQuestions - 1 || !answers[currentQuestion.id]}
+                        disabled={currentIndex === totalQuestions - 1 || !answers[currentQuestion?.id]}
                     >
                         Next →
                     </MainButton>

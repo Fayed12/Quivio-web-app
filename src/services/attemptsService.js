@@ -72,6 +72,29 @@ export async function getActiveAttempt(quizId) {
 }
 
 // ─────────────────────────────────────────────
+// GET: Specific attempt by ID for quiz-taking (with answers)
+// Request : attemptId: string
+// Response: attempt row with answers or null
+// ─────────────────────────────────────────────
+export async function getAttemptForTaking(attemptId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: 'Not authenticated' };
+
+  const { data, error } = await supabase
+    .from('attempts')
+    .select(`
+      *,
+      attempt_answers(question_id, selected_option_id)
+    `)
+    .eq('id', attemptId)
+    .eq('uid', user.id)
+    .single();
+
+  if (error) return { data: null, error: error.message };
+  return { data, error: null };
+}
+
+// ─────────────────────────────────────────────
 // GET: Single attempt by id (with answers)
 // Request : id: string
 // Response: attempt row with answers + question details
