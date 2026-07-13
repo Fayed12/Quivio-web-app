@@ -22,6 +22,15 @@ export const fetchCertsByQuiz = createAsyncThunk(
 );
 
 
+export const fetchInstructorCertificates = createAsyncThunk(
+    "certs/fetchInstructorCertificates",
+    async (_, { rejectWithValue }) => {
+        const { data, error, count } = await svc.getInstructorIssuedCertificates();
+        return error ? rejectWithValue(error) : { data, count };
+    },
+);
+
+
 export const verifyCertificateThunk = createAsyncThunk(
     "certs/verify",
     async (code, { rejectWithValue }) => {
@@ -61,6 +70,18 @@ const slice = createSlice({
                 s.count = payload.count;
             })
             .addCase(fetchMyCertificates.rejected, (s, { payload }) => {
+                s.loading = false;
+                s.error = payload;
+            })
+            .addCase(fetchInstructorCertificates.pending, (s) => {
+                s.loading = true;
+            })
+            .addCase(fetchInstructorCertificates.fulfilled, (s, { payload }) => {
+                s.loading = false;
+                s.items = payload.data ?? [];
+                s.count = payload.count;
+            })
+            .addCase(fetchInstructorCertificates.rejected, (s, { payload }) => {
                 s.loading = false;
                 s.error = payload;
             })

@@ -270,7 +270,16 @@ const Certificates = () => {
                         <TableBody>
                             {issuedCerts.map((cert) => (
                                 <TableRow key={cert.id} className={styles.tableRow}>
-                                    <TableCell className={styles.tdCell}>Student Account</TableCell>
+                                    <TableCell className={styles.tdCell}>
+                                        <div style={{ display: "flex", flexDirection: "column" }}>
+                                            <span style={{ fontWeight: 600 }}>{cert.profile?.full_name || "Unknown Student"}</span>
+                                            {cert.profile?.email && (
+                                                <span style={{ fontSize: "11px", color: "var(--text-muted)", display: "block" }}>
+                                                    {cert.profile.email}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </TableCell>
                                     <TableCell className={styles.tdCell} style={{fontWeight: 600}}>
                                         {cert.quiz?.title || "Quiz"}
                                     </TableCell>

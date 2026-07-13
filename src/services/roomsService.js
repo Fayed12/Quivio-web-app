@@ -123,12 +123,42 @@ export async function getRoomMembers({ roomId, page = 1, pageSize = 20, search =
     `, { count: 'exact' })
     .eq('room_id', roomId);
 
-  if (search) query = query.ilike('profile.full_name', `%${search}%`);
+  if (search) {
+    query = query.or(`profile.full_name.ilike.%${search}%,profile.email.ilike.%${search}%`);
+  }
 
   query = query.range(from, to).order('joined_at', { ascending: false });
 
   const { data, error, count } = await query;
   if (error) return { data: null, error: error.message, count: 0 };
+
+  if (data && data.length > 0) {
+    const studentUids = data.map(m => m.profile?.uid).filter(Boolean);
+
+    // Fetch attempts to compute average score
+    const { data: attempts } = await supabase
+      .from('attempts')
+      .select('uid, score, status, quiz_id, submitted_at, passed')
+      .in('uid', studentUids)
+      .eq('status', 'completed');
+
+    data.forEach(member => {
+      if (member.profile) {
+        const studentAttempts = (attempts ?? []).filter(a => a.uid === member.profile.uid);
+        const totalScore = studentAttempts.reduce((sum, a) => sum + (a.score ?? 0), 0);
+        const avgScore = studentAttempts.length > 0 ? Math.round(totalScore / studentAttempts.length) : 0;
+        
+        member.attempts_count = studentAttempts.length;
+        member.avg_score = avgScore;
+        member.attempts = studentAttempts;
+      } else {
+        member.attempts_count = 0;
+        member.avg_score = 0;
+        member.attempts = [];
+      }
+    });
+  }
+
   return { data, error: null, count };
 }
 
@@ -195,3 +225,20 @@ export async function getMembersNotInRoom(roomId) {
 
   return handleQuery(query);
 }
+
+// ─────────────────────────────────────────────
+// GET: Fetch top student profiles for a list of rooms in one query
+// Request : roomIds: string[]
+// Response: { data: room_members[] with profiles, error }
+// ─────────────────────────────────────────────
+export async function getRoomsMembersAvatars(roomIds) {
+  if (!roomIds || !roomIds.length) return { data: [], error: null };
+
+  return handleQuery(
+    supabase
+      .from('room_members')
+      .select('room_id, joined_at, profile:profiles!room_members_uid_fkey(uid, full_name, avatar_url)')
+      .in('room_id', roomIds)
+  );
+}
+

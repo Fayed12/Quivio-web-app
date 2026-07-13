@@ -4,18 +4,20 @@ import PropTypes from "prop-types";
 
 // Dynamic custom styling based on index.css theme variables
 const getCustomStyles = () => ({
-    control: (provided, state) => ({
+    container: (provided) => ({
+        ...provided,
+        backgroundImage: "none !important", // Prevent double arrow background from global .select style
+    }),
+    control: (provided) => ({
         ...provided,
         backgroundColor: "transparent",
-        borderColor: state.isFocused ? "var(--color-accent, #2563eb)" : "var(--border-default, #cbd5e1)",
-        borderRadius: "var(--radius-md, 0.5rem)",
+        border: "none",
+        boxShadow: "none",
         minHeight: "2.5rem",
-        boxShadow: state.isFocused ? "0 0 0 1px var(--color-accent, #2563eb)" : "none",
         fontFamily: "var(--font-sans, sans-serif)",
         fontSize: "var(--text-sm, 0.8125rem)",
-        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
         "&:hover": {
-            borderColor: state.isFocused ? "var(--color-accent, #2563eb)" : "var(--border-strong, #94a3b8)"
+            border: "none"
         }
     }),
     valueContainer: (provided) => ({

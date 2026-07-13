@@ -80,3 +80,27 @@ export async function getCertificateDownloadUrl(pdfPath) {
   if (error) return { data: null, error: error.message };
   return { data: data.signedUrl, error: null };
 }
+
+// ─────────────────────────────────────────────
+// GET: Certificates issued for this instructor's quizzes (instructor view)
+// Request : none
+// Response: { data: certificates[] with student info + quiz info, count }
+// ─────────────────────────────────────────────
+export async function getInstructorIssuedCertificates() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: 'Not authenticated' };
+
+  const { data, error, count } = await supabase
+    .from('certificates')
+    .select(`
+      id, certificate_code, score, pdf_url, issued_at,
+      quiz:quizzes!inner(id, title, instructor_uid),
+      profile:profiles!uid(uid, full_name, email, avatar_url)
+    `, { count: 'exact' })
+    .eq('quiz.instructor_uid', user.id)
+    .order('issued_at', { ascending: false });
+
+  if (error) return { data: null, error: error.message, count: 0 };
+  return { data, error: null, count };
+}
+

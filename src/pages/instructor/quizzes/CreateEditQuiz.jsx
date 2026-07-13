@@ -11,7 +11,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router";
 
 // redux
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { selectProfile } from "../../../redux/slices/authSlice";
 import {
     createQuizThunk,
     updateQuizThunk,
@@ -59,6 +60,9 @@ const CreateEditQuiz = () => {
     const navigate = useNavigate();
     const { id } = useParams();
     const { state } = useLocation();
+
+    const profile = useSelector(selectProfile);
+    const userId = profile?.uid || profile?.id;
 
     // Custom hook loaders
     const { categories, bankQuestions, currentQuiz } =
@@ -130,7 +134,7 @@ const CreateEditQuiz = () => {
         const q = linkItem.question;
         setSelectedQuestionId(linkItem.id); // links ID
         setQText(q.question_text || "");
-        setQType(q.question_type || "MCQ");
+        setQType((q.question_type || "mcq").toLowerCase());
         setQPoints(linkItem.points_override || q.points || 1);
         setQDifficulty(q.difficulty || "medium");
         setQTags(q.tags || []);
@@ -649,26 +653,33 @@ const CreateEditQuiz = () => {
             return;
         }
 
-        // Mock upload or Supabase Storage upload
         const isDark = document.documentElement.classList.contains("dark");
         toast.info("Uploading cover image...", {
             theme: isDark ? "dark" : "light",
         });
 
         try {
-            const fileExt = file.name.split(".").pop();
-            const fileName = `${id || "temp"}-${Math.random()}.${fileExt}`;
-            const filePath = `quiz-covers/${fileName}`;
+            const filePath = `${userId}/${id || "temp"}-${Date.now()}.jpg`;
 
             const { error: uploadError } = await supabase.storage
-                .from("assets")
-                .upload(filePath, file);
+                .from("quiz-covers")
+                .upload(filePath, file, { upsert: true });
 
             if (uploadError) throw uploadError;
 
             const {
                 data: { publicUrl },
-            } = supabase.storage.from("assets").getPublicUrl(filePath);
+            } = supabase.storage.from("quiz-covers").getPublicUrl(filePath);
+
+            if (id) {
+                const { error: updateError } = await supabase
+                    .from("quizzes")
+                    .update({ cover_image_url: publicUrl })
+                    .eq("id", id)
+                    .select();
+
+                if (updateError) throw updateError;
+            }
 
             setCoverImageUrl(publicUrl);
             markDirty();

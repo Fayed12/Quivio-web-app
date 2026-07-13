@@ -134,12 +134,21 @@
 
 .select {
     height: 40px;
-    border: none;
+    background-color: var(--bg-surface-2);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
     padding: 0 var(--space-4);
     font-size: var(--text-sm);
     color: var(--text-primary);
     cursor: pointer;
     outline: none;
+    transition: border-color var(--transition-base), background-color var(--transition-base);
+}
+
+.select:focus,
+.select:focus-within {
+    border-color: var(--color-accent);
+    background-color: var(--bg-surface);
 }
 
 /* Data Table list style */

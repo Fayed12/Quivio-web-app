@@ -905,8 +905,6 @@ code {
   background-size: 1.125rem;
   padding-right: var(--space-8);
   cursor: pointer;
-  background-color: transparent !important;
-  border: none !important;
 }
 
 .input::placeholder,
@@ -920,7 +918,8 @@ code {
 
 .input:focus,
 .textarea:focus,
-.select:focus {
+.select:focus,
+.select:focus-within {
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px var(--color-accent-mid);
   background: var(--bg-surface);

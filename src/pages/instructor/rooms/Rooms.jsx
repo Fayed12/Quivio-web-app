@@ -74,7 +74,7 @@ const ICON_OPTIONS = [
 ];
 
 import { useRoomsData } from "../../../hooks/instructor/useRoomsData";
-import { supabase } from "../../../services/config/supabaseClient";
+import { getRoomsMembersAvatars } from "../../../services/roomsService";
 
 const Rooms = () => {
     const dispatch = useDispatch();
@@ -103,22 +103,22 @@ const Rooms = () => {
     const dropdownRef = useRef(null);
     const modalRef = useRef(null);
 
-    // Fetch student avatars for each room once list loads
+    // Fetch student avatars for each room once list loads in a single batch query
     useEffect(() => {
         if (rooms.length > 0) {
-            rooms.forEach(async (r) => {
-                const { data } = await supabase
-                    .from("room_members")
-                    .select("joined_at, profile:profiles!room_members_uid_fkey(uid, full_name, avatar_url)")
-                    .eq("room_id", r.id)
-                    .limit(5);
+            const fetchAvatars = async () => {
+                const roomIds = rooms.map(r => r.id);
+                const { data } = await getRoomsMembersAvatars(roomIds);
                 if (data) {
-                    setRoomAvatars(prev => ({
-                        ...prev,
-                        [r.id]: data.map(m => m.profile)
-                    }));
+                    const avatarsMap = {};
+                    rooms.forEach(r => {
+                        const roomMembers = data.filter(m => m.room_id === r.id).slice(0, 5);
+                        avatarsMap[r.id] = roomMembers.map(m => m.profile).filter(Boolean);
+                    });
+                    setRoomAvatars(avatarsMap);
                 }
-            });
+            };
+            fetchAvatars();
         }
     }, [rooms]);
 

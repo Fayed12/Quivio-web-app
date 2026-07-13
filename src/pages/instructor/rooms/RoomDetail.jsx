@@ -282,13 +282,106 @@ const RoomDetail = () => {
                n.profile?.email?.toLowerCase().includes(bankSearch.toLowerCase());
     });
 
-    // Dummy Analytics Data
-    const analyticsChartData = [
-        { day: "06/05", score: 72 }, { day: "06/10", score: 78 }, 
-        { day: "06/15", score: 74 }, { day: "06/20", score: 85 }, 
-        { day: "06/25", score: 81 }, { day: "06/30", score: 88 }, 
-        { day: "07/04", score: 92 }
-    ];
+    // Calculate overall classroom stats based on real member score/attempts data
+    const membersWithScores = members.filter(m => m.avg_score > 0);
+    const roomAvgScore = membersWithScores.length > 0
+        ? Math.round(membersWithScores.reduce((sum, m) => sum + m.avg_score, 0) / membersWithScores.length)
+        : 0;
+
+    // Calculate Completion Rate:
+    // Total possible completions = members * assignments
+    // Actual completions = count members who have completed attempts for assigned quizzes
+    const totalPossibleCompletions = members.length * roomAssignments.length;
+    let actualCompletions = 0;
+    if (totalPossibleCompletions > 0) {
+        members.forEach(m => {
+            const memberAttempts = m.attempts || [];
+            const completedQuizIds = new Set(memberAttempts.map(a => a.quiz_id));
+            roomAssignments.forEach(ass => {
+                if (ass.quiz?.id && completedQuizIds.has(ass.quiz.id)) {
+                    actualCompletions++;
+                }
+            });
+        });
+    }
+    const completionRate = totalPossibleCompletions > 0
+        ? Math.round((actualCompletions / totalPossibleCompletions) * 100)
+        : 0;
+
+    // Filter and sort top performers
+    const topPerformers = [...members]
+        .filter(m => m.avg_score > 0)
+        .sort((a, b) => b.avg_score - a.avg_score)
+        .slice(0, 5);
+
+    // Compute Chronological progression data for Recharts AreaChart
+    const getAnalyticsData = () => {
+        const allAttempts = [];
+        members.forEach(m => {
+            if (m.attempts) {
+                m.attempts.forEach(a => {
+                    if (a.submitted_at) {
+                        allAttempts.push({
+                            score: a.score || 0,
+                            date: new Date(a.submitted_at)
+                        });
+                    }
+                });
+            }
+        });
+
+        if (allAttempts.length === 0) {
+            return [
+                { day: "No Data", score: 0 }
+            ];
+        }
+
+        // Sort chronologically
+        allAttempts.sort((a, b) => a.date - b.date);
+
+        // Group by date (MM/DD format) and calculate average
+        const grouped = {};
+        allAttempts.forEach(att => {
+            const dateStr = att.date.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit' });
+            if (!grouped[dateStr]) {
+                grouped[dateStr] = { sum: 0, count: 0 };
+            }
+            grouped[dateStr].sum += att.score;
+            grouped[dateStr].count += 1;
+        });
+
+        return Object.keys(grouped).map(day => ({
+            day,
+            score: Math.round(grouped[day].sum / grouped[day].count)
+        }));
+    };
+
+    const analyticsChartData = getAnalyticsData();
+
+    const getQuizRoomStats = (quizId) => {
+        const quizAttempts = [];
+        members.forEach(m => {
+            if (m.attempts) {
+                m.attempts.forEach(a => {
+                    if (a.quiz_id === quizId) {
+                        quizAttempts.push(a);
+                    }
+                });
+            }
+        });
+
+        if (quizAttempts.length === 0) {
+            return { avgScore: "N/A", passRate: "N/A" };
+        }
+
+        const totalScore = quizAttempts.reduce((sum, a) => sum + (a.score ?? 0), 0);
+        const avgScore = Math.round(totalScore / quizAttempts.length);
+
+        const passedCount = quizAttempts.filter(a => a.passed).length;
+        const passRate = Math.round((passedCount / quizAttempts.length) * 100);
+
+        return { avgScore: `${avgScore}%`, passRate: `${passRate}%` };
+    };
 
     if (!room) {
         return <div className={styles.loading}>Loading Room Details...</div>;
@@ -313,8 +406,8 @@ const RoomDetail = () => {
             <div className={styles.statsGrid}>
                 <StatCard icon={<FiUsers />} value={room.member_count || 0} label="Class Students" color="blue" />
                 <StatCard icon={<FiClipboard />} value={roomAssignments.length} label="Assigned Quizzes" color="green" />
-                <StatCard icon={<FiAward />} value="82%" label="Average Score" color="amber" />
-                <StatCard icon={<FiPercent />} value="90%" label="Completion Rate" color="violet" />
+                <StatCard icon={<FiAward />} value={`${roomAvgScore}%`} label="Average Score" color="amber" />
+                <StatCard icon={<FiPercent />} value={`${completionRate}%`} label="Completion Rate" color="violet" />
             </div>
 
             {/* Tabs Selector Navigation */}
@@ -417,7 +510,7 @@ const RoomDetail = () => {
                                             {m.profile?.last_activity_date ? new Date(m.profile.last_activity_date).toLocaleDateString() : "Never"}
                                         </TableCell>
                                         <TableCell align="center" className={styles.tdCell} style={{fontWeight: 600}}>
-                                            82%
+                                            {m.avg_score > 0 ? `${m.avg_score}%` : "N/A"}
                                         </TableCell>
                                         <TableCell align="center" className={styles.tdCell}>
                                             <button 
@@ -476,10 +569,10 @@ const RoomDetail = () => {
                                             {ass.due_date ? new Date(ass.due_date).toLocaleDateString() : "No limit"}
                                         </TableCell>
                                         <TableCell align="center" className={styles.tdCell}>
-                                            {ass.quiz?.pass_rate ? `${Math.round(ass.quiz.pass_rate)}%` : "80%"}
+                                            {getQuizRoomStats(ass.quiz?.id).passRate}
                                         </TableCell>
                                         <TableCell align="center" className={styles.tdCell} style={{fontWeight: 600}}>
-                                            {ass.quiz?.avg_score ? `${Math.round(ass.quiz.avg_score)}%` : "78%"}
+                                            {getQuizRoomStats(ass.quiz?.id).avgScore}
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -526,7 +619,7 @@ const RoomDetail = () => {
                         <div className={styles.tabContentCard}>
                             <h3 className={styles.cardTitle}>Top Performers inside room</h3>
                             <div className={styles.studentList}>
-                                {members.slice(0, 5).map((m, idx) => (
+                                {topPerformers.map((m, idx) => (
                                     <div key={m.id} className={styles.studentItem}>
                                         <div className={styles.studentMeta}>
                                             <span className={styles.rankBadge}>{idx + 1}</span>
@@ -535,10 +628,10 @@ const RoomDetail = () => {
                                             </Avatar>
                                             <span className={styles.studentName}>{m.profile?.full_name}</span>
                                         </div>
-                                        <strong>88%</strong>
+                                        <strong>{m.avg_score}%</strong>
                                     </div>
                                 ))}
-                                {members.length === 0 && (
+                                {topPerformers.length === 0 && (
                                     <div className={styles.emptyFeed}>No analytics details available.</div>
                                 )}
                             </div>

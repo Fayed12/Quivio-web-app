@@ -264,6 +264,7 @@ const StudentsManagement = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 const newStatus = !isActive;
+                console.log(newStatus)
                 try {
                     const { error } = await supabase
                         .from("profiles")

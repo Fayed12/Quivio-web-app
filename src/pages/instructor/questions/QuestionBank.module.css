@@ -71,8 +71,8 @@
 
 .select {
     height: 40px;
-    background-color: transparent !important;
-    border: none !important;
+    background-color: var(--bg-surface-2);
+    border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
     padding: 0 var(--space-4);
     font-size: var(--text-sm);
@@ -82,7 +82,8 @@
     transition: border-color var(--transition-base), background-color var(--transition-base);
 }
 
-.select:focus {
+.select:focus,
+.select:focus-within {
     border-color: var(--color-accent);
     background-color: var(--bg-surface);
 }
@@ -127,8 +128,6 @@
 
 .bulkSelect {
     height: 32px;
-    background-color: var(--bg-surface);
-    border: 1px solid var(--border-medium);
     border-radius: var(--radius-sm);
     padding: 0 var(--space-2);
     font-size: var(--text-xs);

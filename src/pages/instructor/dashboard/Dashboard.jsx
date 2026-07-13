@@ -72,6 +72,8 @@ const Dashboard = () => {
         attemptsOverTime,
         topStudents,
         activityFeed,
+        upcomingDeadlines,
+        inProgressAlerts,
         getCategoryData
     } = useDashboardData();
 
@@ -85,17 +87,6 @@ const Dashboard = () => {
 
     // Colors for donut chart
     const COLORS = ["var(--blue-500)", "var(--violet-500)", "var(--teal-500)", "var(--amber-500)", "var(--red-500)"];
-
-    // Upcoming Deadlines (Mocked for dashboard layout)
-    const upcomingDeadlines = [
-        { id: 1, quiz: "Advanced Algebra", room: "Mathematics", date: "Jul 10, 2026", completion: 65 },
-        { id: 2, quiz: "Database Design II", room: "Computer Science", date: "Jul 14, 2026", completion: 24 }
-    ];
-
-    // In-Progress Alerts (Mocked for dashboard layout)
-    const inProgressAlerts = [
-        { id: 1, student: "Kareem Ibrahim", quiz: "OS Fundamentals", started: "26 hours ago" }
-    ];
 
     if (loading) {
         return <div style={{ color: "var(--text-secondary)", padding: "var(--space-6)" }}>Loading dashboard insights...</div>;
@@ -310,6 +301,11 @@ const Dashboard = () => {
                                     <div className={styles.deadlineCompletion}>{item.completion}% done</div>
                                 </div>
                             ))}
+                            {upcomingDeadlines.length === 0 && (
+                                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", padding: "var(--space-2) 0" }}>
+                                    No deadlines in the next 7 days.
+                                </div>
+                            )}
 
                             {/* In-Progress Alerts */}
                             <h4 className={styles.alertSubTitle} style={{marginTop: "1.25rem", color: "var(--color-danger)"}}><FiAlertCircle /> In-Progress Alerts (&gt;24h)</h4>
@@ -318,9 +314,14 @@ const Dashboard = () => {
                                     <div className={styles.alertHeader}>
                                         <strong>{alert.student}</strong> started <em>{alert.quiz}</em>
                                     </div>
-                                    <div className={styles.alertTime}>Started {alert.started} ago - no submission yet</div>
+                                    <div className={styles.alertTime}>Started {alert.started} - no submission yet</div>
                                 </div>
                             ))}
+                            {inProgressAlerts.length === 0 && (
+                                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", padding: "var(--space-2) 0" }}>
+                                    No alerts (all active attempts started &lt;24h ago).
+                                </div>
+                            )}
                         </div>
                     </div>
 

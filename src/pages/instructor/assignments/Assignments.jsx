@@ -51,7 +51,7 @@ const Assignments = () => {
     const navigate = useNavigate();
 
     // Custom hook loader
-    const { assignments, quizzes, rooms } = useAssignmentsData();
+    const { assignments, quizzes, rooms, completionsMap } = useAssignmentsData();
 
     // Local States
     const [searchQuery, setSearchQuery] = useState("");
@@ -253,8 +253,9 @@ const Assignments = () => {
                                         {ass.due_date ? new Date(ass.due_date).toLocaleDateString() : "No deadline"}
                                     </TableCell>
                                     <TableCell align="center" className={styles.tdCell}>
-                                        {/* Mock completions count */}
-                                        <span className={styles.completionCount}>8 / 12 completed</span>
+                                        <span className={styles.completionCount}>
+                                            {completionsMap[ass.id] ? `${completionsMap[ass.id].completed} / ${completionsMap[ass.id].total} completed` : "Loading..."}
+                                        </span>
                                     </TableCell>
                                     <TableCell align="center" className={styles.tdCell}>
                                         <span className={`${styles.statusBadge} ${isOverdue ? styles.badgeOverdue : styles.badgeActive}`}>

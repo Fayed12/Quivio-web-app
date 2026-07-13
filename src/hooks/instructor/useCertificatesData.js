@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchMyCertificates, selectMyCertificates } from "../../redux/slices/certificatesSlice";
+import { fetchInstructorCertificates, selectMyCertificates } from "../../redux/slices/certificatesSlice";
 
 export const useCertificatesData = () => {
     const dispatch = useDispatch();
     const issuedCerts = useSelector(selectMyCertificates);
 
     useEffect(() => {
-        dispatch(fetchMyCertificates());
+        dispatch(fetchInstructorCertificates());
     }, [dispatch]);
 
     return { issuedCerts };

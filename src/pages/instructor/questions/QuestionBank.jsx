@@ -167,7 +167,7 @@ const QuestionBank = () => {
             // Edit mode
             setActiveQuestion(q);
             setQText(q.question_text || "");
-            setQType(q.question_type || "MCQ");
+            setQType((q.question_type || "mcq").toLowerCase());
             setQCategoryId(q.category?.id || "");
             setQDifficulty(q.difficulty || "medium");
             setQPoints(q.points || 1);

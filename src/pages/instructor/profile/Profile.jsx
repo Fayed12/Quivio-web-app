@@ -13,6 +13,7 @@ import {
     updateAvatarThunk
 } from "../../../redux/slices/profilesSlice";
 import { forgotPasswordThunk } from "../../../redux/slices/authSlice";
+import { setTheme } from "../../../redux/slices/themeSLice";
 
 // animation
 import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
@@ -172,12 +173,8 @@ const Profile = () => {
         localStorage.setItem("pref_email_on_pass", emailOnPass);
         localStorage.setItem("pref_weekly_reports", weeklyReports);
         
-        // Dark mode preference toggle
-        if (darkModePref) {
-            document.documentElement.classList.add("dark");
-        } else {
-            document.documentElement.classList.remove("dark");
-        }
+        // Dispatch theme state update to Redux themeSlice
+        dispatch(setTheme(darkModePref ? "dark" : "light"));
 
         toast.success("Preferences saved successfully!");
     };
