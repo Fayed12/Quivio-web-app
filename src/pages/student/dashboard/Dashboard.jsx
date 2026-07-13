@@ -3,6 +3,9 @@ import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 
+// date-fns
+import { format, isSameDay, formatDistanceToNow } from "date-fns";
+
 // redux
 import { selectProfile } from "../../../redux/slices/authSlice";
 import { fetchMyStats, fetchMyAttempts, selectMyStats, selectMyAttempts } from "../../../redux/slices/attemptsSlice";
@@ -19,8 +22,33 @@ import {
     FiBookOpen,
     FiCheckCircle,
     FiClock,
-    FiZap
+    FiZap,
+    FiLock,
+    FiSmile,
+    FiPlay,
+    FiTarget,
+    FiTrendingUp,
+    FiCalendar,
+    FiShield,
+    FiCompass,
+    FiStar,
+    FiRotateCw
 } from "react-icons/fi";
+
+const achievementIconMap = {
+    first_quiz: <FiPlay style={{ color: "var(--blue-500)" }} />,
+    perfect_score: <FiTarget style={{ color: "var(--color-accent)" }} />,
+    fast_completion: <FiZap style={{ color: "var(--orange-500)" }} />,
+    top_performer: <FiTrendingUp style={{ color: "var(--violet-500)" }} />,
+    streak_3: <FiCalendar style={{ color: "var(--green-500)" }} />,
+    streak_7: <FiCalendar style={{ color: "var(--green-600)" }} />,
+    streak_30: <FiCalendar style={{ color: "var(--green-700)" }} />,
+    century: <FiShield style={{ color: "var(--blue-600)" }} />,
+    explorer: <FiCompass style={{ color: "var(--violet-600)" }} />,
+    perfect_10: <FiStar style={{ color: "var(--color-accent)" }} />,
+    quiz_master: <FiAward style={{ color: "var(--violet-500)" }} />,
+    comeback_kid: <FiRotateCw style={{ color: "var(--orange-600)" }} />
+};
 
 // local
 import styles from "./Dashboard.module.css";
@@ -97,7 +125,7 @@ const StudentDashboard = () => {
             
             const active = attempts.some(a => {
                 if (!a.submitted_at) return false;
-                return new Date(a.submitted_at).toDateString() === dateStr;
+                return isSameDay(new Date(a.submitted_at), d);
             });
 
             result.push({ label, active, key: i });
@@ -110,15 +138,7 @@ const StudentDashboard = () => {
     // Format time elapsed
     const formatTimeAgo = (dateStr) => {
         if (!dateStr) return "";
-        const diffMs = new Date() - new Date(dateStr);
-        const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-        if (diffHrs < 1) {
-            const mins = Math.floor(diffMs / (1000 * 60));
-            return `${mins}m ago`;
-        }
-        if (diffHrs < 24) return `${diffHrs}h ago`;
-        const days = Math.floor(diffHrs / 24);
-        return `${days}d ago`;
+        return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
     };
 
     // Level Title helper based on XP
@@ -144,7 +164,9 @@ const StudentDashboard = () => {
         return (
             <div ref={containerRef} className={styles.dashboardContainer}>
                 <div className={styles.welcomeCard}>
-                    <div className={styles.lockIcon} role="img" aria-label="Lock">🔒</div>
+                    <div className={styles.lockIcon} role="img" aria-label="Lock">
+                        <FiLock style={{ color: "var(--color-danger, #ef4444)" }} />
+                    </div>
                     <h1 className="h1">Welcome, {profile?.full_name || "Student"}!</h1>
                     <p className="text-secondary" style={{ maxWidth: "450px" }}>
                         Your account is ready, but you haven't been added to a class room yet. Please contact your instructor to get started.
@@ -177,9 +199,12 @@ const StudentDashboard = () => {
             {/* Personalized Header */}
             <div className="flex justify-between items-center" style={{ borderBottom: "1px solid var(--border-default)", paddingBottom: "var(--space-4)" }}>
                 <div>
-                    <h1 className="h1">{getGreeting()}, {profile?.full_name?.split(" ")[0]} 👋</h1>
+                    <h1 className="h1">
+                        {getGreeting()}, {profile?.full_name?.split(" ")[0]}{" "}
+                        <FiSmile style={{ color: "var(--color-warning, #f59e0b)", display: "inline-block", verticalAlign: "middle" }} />
+                    </h1>
                     <p className="text-sm text-secondary">
-                        {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                        {format(new Date(), "EEEE, MMMM d, yyyy")}
                     </p>
                 </div>
             </div>
@@ -225,7 +250,10 @@ const StudentDashboard = () => {
                             <FiZap style={{ color: "var(--orange-600)" }} />
                         </div>
                         <div className="flex flex-col">
-                            <span className="h2">{profile?.streak || 0} days 🔥</span>
+                            <span className="h2" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                {profile?.streak || 0} days{" "}
+                                <FiZap style={{ color: "var(--orange-500)", display: "inline-block" }} />
+                            </span>
                             <span className="text-xs text-muted">Current Streak</span>
                         </div>
                     </div>
@@ -259,7 +287,7 @@ const StudentDashboard = () => {
                                                 <div className="flex flex-col">
                                                     <span className={styles.quizName}>{a.quiz?.title}</span>
                                                     <span className={styles.assignedMeta}>
-                                                        Due: {a.due_date ? new Date(a.due_date).toLocaleDateString() : "No deadline"}
+                                                        Due: {a.due_date ? format(new Date(a.due_date), "PP") : "No deadline"}
                                                         {isOverdue && (
                                                             <span className="scoreBadge scoreFail" style={{ marginLeft: "var(--space-2)" }}>Overdue</span>
                                                         )}
@@ -381,7 +409,9 @@ const StudentDashboard = () => {
                     <div className={styles.card}>
                         <div className={styles.cardTitle}>
                             <span>Streak Widget</span>
-                            <span style={{ fontSize: "1.2rem" }}>🔥 {profile?.streak || 0}</span>
+                            <span style={{ fontSize: "1.2rem", display: "flex", alignItems: "center", gap: "4px" }}>
+                                <FiZap style={{ color: "var(--orange-500)" }} /> {profile?.streak || 0}
+                            </span>
                         </div>
                         <div className={styles.streakCalendar}>
                             {streakCalendar.map(day => (
@@ -406,7 +436,9 @@ const StudentDashboard = () => {
                             ) : (
                                 achievements.slice(0, 3).map(ach => (
                                     <div key={ach.id} className={styles.achievementItemRow}>
-                                        <span className={styles.achievementIcon}>{ach.achievement?.icon || "🏆"}</span>
+                                        <span className={styles.achievementIcon}>
+                                            {achievementIconMap[ach.achievement?.code] || <FiAward style={{ color: "var(--color-accent)" }} />}
+                                        </span>
                                         <div className={styles.achievementDetails}>
                                             <span className={styles.achievementName}>{ach.achievement?.name}</span>
                                             <span className={`${styles.achievementTier} ${styles[ach.achievement?.tier || "bronze"]}`}>

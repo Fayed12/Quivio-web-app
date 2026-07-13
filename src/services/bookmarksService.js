@@ -37,7 +37,16 @@ export async function addBookmark(quizId) {
   if (!user) return { data: null, error: 'Not authenticated' };
 
   return handleQuery(
-    supabase.from('bookmarks').insert({ uid: user.id, quiz_id: quizId }).select().single()
+    supabase
+      .from('bookmarks')
+      .insert({ uid: user.id, quiz_id: quizId })
+      .select(`
+        id, created_at,
+        quiz:quizzes(id, title, description, cover_image_url, difficulty,
+          time_limit_minutes, passing_score, question_count, attempt_count, avg_score,
+          category:categories(id, name, icon, color))
+      `)
+      .single()
   );
 }
 

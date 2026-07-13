@@ -24,6 +24,7 @@
     position: sticky;
     top: 0;
     z-index: 10;
+    gap: var(--space-3);
 }
 
 .topbarLeft, .topbarRight {
@@ -32,10 +33,21 @@
     gap: var(--space-4);
 }
 
+.quizTitle {
+    font-size: var(--text-sm);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .questionCounter {
     font-size: var(--text-sm);
     font-weight: var(--fw-semibold);
     color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 .timer {
@@ -46,6 +58,7 @@
     background: var(--bg-surface-2);
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-md);
+    white-space: nowrap;
 }
 
 .timerUrgent {
@@ -104,6 +117,14 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.questionHeaderLeft {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
 }
 
 .questionIndex {
@@ -111,6 +132,16 @@
     font-weight: var(--fw-bold);
     text-transform: uppercase;
     color: var(--text-muted);
+}
+
+.questionTypeBadge {
+    font-size: var(--text-xs);
+    font-weight: var(--fw-semibold);
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    white-space: nowrap;
 }
 
 .hintBtn {
@@ -126,6 +157,7 @@
     font-size: var(--text-lg);
     font-weight: var(--fw-semibold);
     margin-bottom: var(--space-5);
+    line-height: var(--leading-normal);
 }
 
 .questionImage {
@@ -143,16 +175,17 @@
 }
 
 .optionCard {
-    height: 56px;
+    min-height: 56px;
     border: 1px solid var(--border-default);
     background: var(--bg-surface);
     border-radius: var(--radius-lg);
-    padding: 0 var(--space-4);
+    padding: var(--space-3) var(--space-4);
     display: flex;
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
     transition: background var(--transition-base), border-color var(--transition-base);
+    gap: var(--space-3);
 }
 
 .optionCard:hover {
@@ -168,6 +201,7 @@
     font-size: var(--text-sm);
     font-weight: var(--fw-medium);
     color: var(--text-primary);
+    word-break: break-word;
 }
 
 .radioDot {
@@ -200,8 +234,12 @@
 }
 
 .tfCard {
-    height: 96px;
+    min-height: 96px;
     justify-content: center;
+    text-align: center;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
 }
 
 /* Hint Popover */
@@ -219,25 +257,61 @@
 .hintIcon {
     font-size: 1.5rem;
     color: var(--color-warning);
+    flex-shrink: 0;
 }
 
 /* Bottom Bar */
 .bottomNav {
-    height: 70px;
+    min-height: 70px;
     background: var(--bg-surface);
     border-top: 1px solid var(--border-default);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 var(--space-6);
+    padding: var(--space-3) var(--space-6);
     position: sticky;
     bottom: 0;
     z-index: 10;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.bottomNavActions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.flagBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    transition: all var(--transition-base);
+    white-space: nowrap;
+}
+
+.flagBtn:hover {
+    background: var(--bg-surface-2);
+}
+
+.flagBtnActive {
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+    background: var(--bg-warning);
 }
 
 .autoSaveIndicator {
     font-size: var(--text-xs);
     color: var(--text-muted);
+    white-space: nowrap;
 }
 
 /* Question Navigator Drawer */
@@ -270,6 +344,7 @@
     flex-direction: column;
     gap: var(--space-4);
     transition: right var(--transition-slower);
+    overflow-y: auto;
 }
 
 .drawerOpen {
@@ -346,4 +421,248 @@
     justify-content: flex-end;
     gap: var(--space-3);
     margin-top: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* Time's Up Modal */
+.timesUpModal {
+    text-align: center;
+    align-items: center;
+    max-width: 400px;
+}
+
+.timesUpIcon {
+    font-size: 3rem;
+    color: var(--color-danger);
+    animation: pulse 1s infinite alternate;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    background: var(--bg-danger-mid);
+    margin: 0 auto;
+}
+
+.timesUpTitle {
+    font-size: var(--text-xl);
+    font-weight: var(--fw-bold);
+    color: var(--color-danger);
+}
+
+.timesUpText {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-normal);
+}
+
+.timesUpLoader {
+    width: 100%;
+    height: 4px;
+    background: var(--bg-surface-3);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-top: var(--space-2);
+}
+
+.timesUpLoaderBar {
+    height: 100%;
+    background: var(--color-danger);
+    border-radius: var(--radius-full);
+    animation: timesUpProgress 2.5s ease-in-out forwards;
+}
+
+@keyframes timesUpProgress {
+    0% { width: 0%; }
+    100% { width: 100%; }
+}
+
+
+/* ═══════════════════════════════════════════════ */
+/* Responsive — Tablet (max-width: 768px)          */
+/* ═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .minimalTopbar {
+        height: auto;
+        min-height: 56px;
+        padding: var(--space-2) var(--space-3);
+        flex-wrap: wrap;
+        gap: var(--space-2);
+    }
+
+    .topbarLeft, .topbarRight {
+        gap: var(--space-2);
+    }
+
+    .quizTitle {
+        max-width: 120px;
+        font-size: var(--text-xs);
+    }
+
+    .questionCounter {
+        font-size: var(--text-xs);
+    }
+
+    .timer {
+        font-size: var(--text-sm);
+        padding: var(--space-1) var(--space-2);
+    }
+
+    .topProgressBar {
+        top: auto;
+    }
+
+    .contentArea {
+        padding: var(--space-4) var(--space-3);
+    }
+
+    .questionCard {
+        padding: var(--space-4);
+    }
+
+    .questionText {
+        font-size: var(--text-base);
+    }
+
+    .questionImage {
+        max-height: 180px;
+    }
+
+    .tfSplit {
+        grid-template-columns: 1fr;
+        gap: var(--space-3);
+    }
+
+    .tfCard {
+        min-height: 64px;
+    }
+
+    .optionCard {
+        min-height: 48px;
+        padding: var(--space-2) var(--space-3);
+    }
+
+    .bottomNav {
+        min-height: auto;
+        padding: var(--space-2) var(--space-3);
+        gap: var(--space-2);
+    }
+
+    .autoSaveIndicator {
+        order: 3;
+        width: 100%;
+        text-align: center;
+    }
+
+    .drawer {
+        width: 240px;
+        right: -240px;
+    }
+
+    .navigatorGrid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .navigatorBox {
+        height: 36px;
+        font-size: var(--text-xs);
+    }
+
+    .modalContent {
+        padding: var(--space-4);
+        margin: var(--space-3);
+    }
+
+    .modalActions {
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    .modalActions > * {
+        width: 100%;
+    }
+}
+
+
+/* ═══════════════════════════════════════════════ */
+/* Responsive — Small Mobile (max-width: 480px)    */
+/* ═══════════════════════════════════════════════ */
+@media (max-width: 480px) {
+    .minimalTopbar {
+        padding: var(--space-2);
+    }
+
+    .quizTitle {
+        display: none;
+    }
+
+    .topbarLeft {
+        gap: var(--space-1);
+    }
+
+    .topbarRight {
+        gap: var(--space-1);
+    }
+
+    .contentArea {
+        padding: var(--space-3) var(--space-2);
+    }
+
+    .questionCard {
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+    }
+
+    .questionText {
+        font-size: var(--text-sm);
+        margin-bottom: var(--space-3);
+    }
+
+    .optionText {
+        font-size: var(--text-xs);
+    }
+
+    .optionCard {
+        min-height: 44px;
+        border-radius: var(--radius-md);
+    }
+
+    .bottomNav {
+        padding: var(--space-2);
+    }
+
+    .flagBtn {
+        padding: var(--space-1) var(--space-2);
+        font-size: var(--text-xs);
+    }
+
+    .flagBtn span {
+        display: none;
+    }
+
+    .hintPopover {
+        padding: var(--space-3);
+        font-size: var(--text-xs);
+    }
+
+    .navigatorToggle {
+        padding: var(--space-2) var(--space-1);
+        font-size: var(--text-xs);
+    }
+
+    .drawer {
+        width: 200px;
+        right: -200px;
+    }
+
+    .navigatorGrid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+    }
+
+    .navigatorBox {
+        height: 32px;
+        font-size: 10px;
+    }
 }

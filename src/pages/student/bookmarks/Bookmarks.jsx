@@ -132,7 +132,7 @@ const Bookmarks = () => {
                                         <span>{quiz.attempt_count || 0} attempts</span>
                                     </div>
 
-                                    <div className="badgesRow">
+                                    <div className={styles.badgesRow}>
                                         <span className="scoreBadge" style={{ background: quiz.difficulty?.toLowerCase() === "easy" ? "var(--bg-success-mid)" : quiz.difficulty?.toLowerCase() === "medium" ? "var(--bg-warning-mid)" : "var(--bg-danger-mid)", color: quiz.difficulty?.toLowerCase() === "easy" ? "var(--text-success)" : quiz.difficulty?.toLowerCase() === "medium" ? "var(--text-warning)" : "var(--text-danger)" }}>
                                             {quiz.difficulty}
                                         </span>

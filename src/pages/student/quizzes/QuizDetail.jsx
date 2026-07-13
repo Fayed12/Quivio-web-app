@@ -1,7 +1,10 @@
 // react
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router";
+
+// date-fns
+import { format } from "date-fns";
 
 // redux
 import { fetchQuizById, selectCurrentQuiz, clearCurrentQuiz } from "../../../redux/slices/quizzesSlice";
@@ -55,14 +58,35 @@ const QuizDetail = () => {
 
     // Bookmark status
     const isBookmarked = bookmarks.some(b => b.quiz?.id === quizId);
+    const [isTogglingBookmark, setIsTogglingBookmark] = useState(false);
 
-    const handleBookmarkToggle = () => {
-        if (isBookmarked) {
-            dispatch(removeBookmarkThunk(quizId));
-            toast.success("Bookmark removed");
-        } else {
-            dispatch(addBookmarkThunk(quizId));
-            toast.success("Quiz bookmarked!");
+    const handleBookmarkToggle = async () => {
+        if (isTogglingBookmark) return;
+        setIsTogglingBookmark(true);
+
+        const promise = isBookmarked
+            ? dispatch(removeBookmarkThunk(quizId)).unwrap()
+            : dispatch(addBookmarkThunk(quizId)).unwrap();
+
+        toast.promise(
+            promise,
+            {
+                pending: isBookmarked ? "Removing bookmark..." : "Adding bookmark...",
+                success: isBookmarked ? "Bookmark removed successfully! ✨" : "Quiz bookmarked successfully! 🔖",
+                error: isBookmarked ? "Failed to update bookmark." : "Failed to add bookmark."
+            },
+            {
+                autoClose: 2000,
+                position: "top-right"
+            }
+        );
+
+        try {
+            await promise;
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsTogglingBookmark(false);
         }
     };
 
@@ -124,8 +148,9 @@ const QuizDetail = () => {
                 </button>
                 <button
                     onClick={handleBookmarkToggle}
+                    disabled={isTogglingBookmark}
                     className="btn btn--outline btn--sm"
-                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                    style={{ display: "flex", alignItems: "center", gap: "6px", opacity: isTogglingBookmark ? 0.7 : 1 }}
                 >
                     <FiBookmark fill={isBookmarked ? "var(--color-accent)" : "none"} />
                     {isBookmarked ? "Bookmarked" : "Bookmark"}
@@ -163,17 +188,17 @@ const QuizDetail = () => {
                     </span>
                 </div>
 
-                <div className="badgesRow" style={{ marginTop: "var(--space-2)" }}>
-                    <span className="scoreBadge" style={{ background: "var(--color-accent-light)", color: "var(--text-accent)" }}>
+                <div className={styles.badgesRow} style={{ marginTop: "var(--space-2)" }}>
+                    <span className="scoreBadge" style={{ background: "var(--color-accent-light)", color: "var(--text-accent)", padding: "4px 10px ", borderRadius: "6px"  }}>
                         Difficulty: {quiz.difficulty}
                     </span>
-                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
+                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", padding: "4px 10px ", borderRadius: "6px"  }}>
                         ⏱ {quiz.time_limit_minutes || "Untimed"} minutes
                     </span>
-                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
+                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", padding: "4px 10px ", borderRadius: "6px"  }}>
                         {quiz.question_count || 0} questions
                     </span>
-                    <span className="scoreBadge" style={{ background: "var(--bg-success-mid)", color: "var(--text-success)" }}>
+                    <span className="scoreBadge" style={{ background: "var(--bg-success-mid)", color: "var(--text-success)", padding: "4px 10px ", borderRadius: "6px"  }}>
                         {quiz.passing_score || 70}% passing score
                     </span>
                 </div>
@@ -192,9 +217,9 @@ const QuizDetail = () => {
                         {quiz.tags && quiz.tags.length > 0 && (
                             <div style={{ marginTop: "var(--space-3)" }}>
                                 <div className="text-xs text-muted" style={{ marginBottom: "var(--space-2)" }}>Topics covered:</div>
-                                <div className="badgesRow">
+                                <div className={styles.badgesRow}>
                                     {quiz.tags.map(tag => (
-                                        <span key={tag} className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
+                                        <span key={tag} className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", padding: "4px 10px ", borderRadius: "6px" }}>
                                             #{tag}
                                         </span>
                                     ))}
@@ -254,7 +279,7 @@ const QuizDetail = () => {
                                         {completedAttempts.map((att, idx) => (
                                             <tr key={att.id}>
                                                 <td>{completedAttempts.length - idx}</td>
-                                                <td>{new Date(att.submitted_at).toLocaleDateString()}</td>
+                                                <td>{format(new Date(att.submitted_at), "PP")}</td>
                                                 <td className="font-semibold">{Math.round(att.score)}%</td>
                                                 <td>
                                                     <span className={`scoreBadge ${att.passed ? styles.scorePass : styles.scoreFail}`}>

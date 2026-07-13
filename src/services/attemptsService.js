@@ -247,9 +247,9 @@ export async function toggleFlagQuestion({ attemptId, questionId, flagged }) {
     .eq('id', attemptId)
     .single();
 
-  const current = attempt?.flagged_questions ?? [];
+  const current = (attempt?.flagged_questions ?? []).filter(id => id != null);
   const updated = flagged
-    ? [...new Set([...current, questionId])]
+    ? [...new Set([...current, questionId].filter(id => id != null))]
     : current.filter(id => id !== questionId);
 
   return handleQuery(

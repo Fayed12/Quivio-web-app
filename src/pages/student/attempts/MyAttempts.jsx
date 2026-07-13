@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 
+// date-fns
+import { format, compareDesc, compareAsc } from "date-fns";
+
 // redux
 import { fetchMyAttempts, fetchMyStats, selectMyAttempts, selectMyStats } from "../../../redux/slices/attemptsSlice";
 import { fetchCategories, selectCategories } from "../../../redux/slices/categoriesSlice";
@@ -85,10 +88,10 @@ const MyAttempts = () => {
         return true;
     }).sort((a, b) => {
         if (sortBy === "newest") {
-            return new Date(b.submitted_at) - new Date(a.submitted_at);
+            return compareDesc(new Date(a.submitted_at), new Date(b.submitted_at));
         }
         if (sortBy === "oldest") {
-            return new Date(a.submitted_at) - new Date(b.submitted_at);
+            return compareAsc(new Date(a.submitted_at), new Date(b.submitted_at));
         }
         if (sortBy === "highest") {
             return (b.score || 0) - (a.score || 0);
@@ -250,7 +253,7 @@ const MyAttempts = () => {
                                         <tr key={att.id}>
                                             <td className="font-semibold">{att.quiz?.title || "Quiz"}</td>
                                             <td>{att.quiz?.category?.name || "General"}</td>
-                                            <td>{new Date(att.submitted_at || att.started_at).toLocaleDateString()}</td>
+                                            <td>{format(new Date(att.submitted_at || att.started_at), "PP")}</td>
                                             <td className="font-semibold">{Math.round(att.score)}%</td>
                                             <td>
                                                 <span className={`scoreBadge ${att.passed ? "scorePass" : "scoreFail"}`}>

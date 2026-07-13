@@ -2,6 +2,9 @@
 import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
+// date-fns
+import { format } from "date-fns";
+
 // redux
 import {
     fetchAllAchievements,
@@ -60,7 +63,7 @@ const Achievements = () => {
             "Description": ea.achievement?.description || "N/A",
             "Tier": (ea.achievement?.tier || "Bronze").toUpperCase(),
             "XP Earned": ea.achievement?.xp_reward || 0,
-            "Date Unlocked": new Date(ea.earned_at).toLocaleDateString()
+            "Date Unlocked": format(new Date(ea.earned_at), "PP")
         }));
 
         const worksheet = XLSX.utils.json_to_sheet(data);
@@ -150,7 +153,7 @@ const Achievements = () => {
 
                             {isUnlocked && earnedDetails?.earned_at && (
                                 <div className={styles.earnedDate}>
-                                    Unlocked on {new Date(earnedDetails.earned_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    Unlocked on {format(new Date(earnedDetails.earned_at), "PPP")}
                                 </div>
                             )}
                         </div>

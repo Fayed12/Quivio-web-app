@@ -2,6 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
+// date-fns
+import { format } from "date-fns";
+
 // redux
 import { selectProfile } from "../../../redux/slices/authSlice";
 import { updateProfileThunk, updateProfileLocal } from "../../../redux/slices/profilesSlice";
@@ -314,7 +317,7 @@ const StudentProfile = () => {
                                         <div key={c.id} className={styles.certCard}>
                                             <span className={styles.certTitle}>{c.quiz?.title}</span>
                                             <span className={styles.certMeta}>Code: <code>{c.certificate_code}</code></span>
-                                            <span className={styles.certMeta}>Issued: {new Date(c.issued_at).toLocaleDateString()}</span>
+                                            <span className={styles.certMeta}>Issued: {format(new Date(c.issued_at), "PP")}</span>
                                             
                                             <div className="flex gap-2" style={{ marginTop: "var(--space-2)" }}>
                                                 <button

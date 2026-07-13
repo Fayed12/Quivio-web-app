@@ -3,6 +3,9 @@ import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router";
 
+// date-fns
+import { format, compareDesc } from "date-fns";
+
 // redux
 import { fetchPublishedQuizzes, selectPublishedQuizzes, selectQuizLoading } from "../../../redux/slices/quizzesSlice";
 import { fetchCategories, selectCategories } from "../../../redux/slices/categoriesSlice";
@@ -12,6 +15,7 @@ import { fetchStudentAssignments, selectStudentAssignments } from "../../../redu
 
 // components
 import MainButton from "../../../components/ui/button/MainButton";
+import { toast } from "react-toastify";
 
 // react-icons
 import {
@@ -25,7 +29,9 @@ import {
     FiChevronUp,
     FiFilter,
     FiX,
-    FiCheck
+    FiCheck,
+    FiFolder,
+    FiBookOpen
 } from "react-icons/fi";
 
 // local
@@ -67,6 +73,7 @@ const BrowseQuizzes = () => {
     // Local states
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
+    const [togglingBookmarkId, setTogglingBookmarkId] = useState(null);
     
     // Search input
     const initialSearch = searchParams.get("search") || "";
@@ -114,12 +121,35 @@ const BrowseQuizzes = () => {
     };
 
     // Bookmark toggle helper
-    const handleBookmarkToggle = (e, quizId) => {
+    const handleBookmarkToggle = async (e, quizId) => {
         e.stopPropagation();
-        if (bookmarkedIds[quizId]) {
-            dispatch(removeBookmarkThunk(quizId));
-        } else {
-            dispatch(addBookmarkThunk(quizId));
+        if (togglingBookmarkId) return;
+        setTogglingBookmarkId(quizId);
+
+        const isBookmarked = !!bookmarkedIds[quizId];
+        const promise = isBookmarked
+            ? dispatch(removeBookmarkThunk(quizId)).unwrap()
+            : dispatch(addBookmarkThunk(quizId)).unwrap();
+
+        toast.promise(
+            promise,
+            {
+                pending: isBookmarked ? "Removing bookmark..." : "Adding bookmark...",
+                success: isBookmarked ? "Bookmark removed successfully! ✨" : "Quiz bookmarked successfully! 🔖",
+                error: isBookmarked ? "Failed to update bookmark." : "Failed to add bookmark."
+            },
+            {
+                autoClose: 2000,
+                position: "top-right"
+            }
+        );
+
+        try {
+            await promise;
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setTogglingBookmarkId(null);
         }
     };
 
@@ -149,7 +179,7 @@ const BrowseQuizzes = () => {
         const now = new Date();
         const isAvailableFromDate = !quiz.available_from || new Date(quiz.available_from) <= now;
         const countdown = !isAvailableFromDate 
-            ? new Date(quiz.available_from).toLocaleDateString() 
+            ? format(new Date(quiz.available_from), "PP") 
             : null;
 
         return {
@@ -202,7 +232,7 @@ const BrowseQuizzes = () => {
         return true;
     }).sort((a, b) => {
         if (sortBy === "published_at") {
-            return new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at);
+            return compareDesc(new Date(a.published_at || a.created_at), new Date(b.published_at || b.created_at));
         }
         if (sortBy === "attempt_count") {
             return (b.attempt_count || 0) - (a.attempt_count || 0);
@@ -432,7 +462,9 @@ const BrowseQuizzes = () => {
             {/* Quiz Cards Layout */}
             {filteredQuizzes.length === 0 ? (
                 <div className={styles.emptyState}>
-                    <div className={styles.emptyIllustration} role="img" aria-label="Inbox Empty">📂</div>
+                    <div className={styles.emptyIllustration} role="img" aria-label="Inbox Empty">
+                        <FiFolder style={{ fontSize: "3rem", color: "var(--text-muted)" }} />
+                    </div>
                     <h3 className="h3">No quizzes match your filters</h3>
                     <p className="text-secondary text-sm">Try clearing your filters or choosing different options.</p>
                     <MainButton variant="outline" size="md" onClick={handleClearFilters}>
@@ -452,12 +484,17 @@ const BrowseQuizzes = () => {
                             >
                                 {/* Category banner */}
                                 <div className={styles.cardBanner} style={{ backgroundColor: bannerCol }}>
-                                    <span className={styles.categoryIconInBanner}>{quiz.category?.icon || "📝"}</span>
+                                    <span className={styles.categoryIconInBanner}><FiBookOpen /></span>
                                     <button 
                                         onClick={(e) => handleBookmarkToggle(e, quiz.id)}
-                                        className={`${styles.bookmarkBtn} ${bookmarkedIds[quiz.id] ? styles.bookmarkActive : ""}`}
+                                        className={`${styles.bookmarkBtn} ${bookmarkedIds[quiz.id] ? styles.bookmarkActive : ""} ${togglingBookmarkId === quiz.id ? styles.bookmarkToggling : ""}`}
+                                        disabled={togglingBookmarkId === quiz.id}
                                     >
-                                        <FiBookmark fill={bookmarkedIds[quiz.id] ? "currentColor" : "none"} />
+                                        {togglingBookmarkId === quiz.id ? (
+                                            <div className={styles.spinner} />
+                                        ) : (
+                                            <FiBookmark fill={bookmarkedIds[quiz.id] ? "currentColor" : "none"} />
+                                        )}
                                     </button>
                                     
                                     {/* Overlay badges */}
@@ -541,8 +578,8 @@ const BrowseQuizzes = () => {
                                     <span className="scoreBadge" style={{ background: quiz.difficulty?.toLowerCase() === "easy" ? "var(--bg-success-mid)" : quiz.difficulty?.toLowerCase() === "medium" ? "var(--bg-warning-mid)" : "var(--bg-danger-mid)", color: quiz.difficulty?.toLowerCase() === "easy" ? "var(--text-success)" : quiz.difficulty?.toLowerCase() === "medium" ? "var(--text-warning)" : "var(--text-danger)" }}>
                                         {quiz.difficulty}
                                     </span>
-                                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
-                                        ⏱ {quiz.time_limit_minutes || "Untimed"}m
+                                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                                        <FiClock /> {quiz.time_limit_minutes || "Untimed"}m
                                     </span>
                                     <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
                                         {quiz.question_count || 0} Qs

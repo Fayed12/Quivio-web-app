@@ -1,5 +1,5 @@
 // react
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate, useSearchParams } from "react-router";
 
@@ -16,6 +16,7 @@ import {
     setCurrentIndex,
     setTimeRemaining,
     setAnswerLocal,
+    setFlaggedLocal,
     saveAnswerThunk,
     toggleFlagThunk,
     updateProgressThunk,
@@ -33,7 +34,7 @@ import {
     FiHelpCircle,
     FiAlertCircle,
     FiCheckSquare,
-    FiLogOut
+    FiClock
 } from "react-icons/fi";
 
 // howler
@@ -77,6 +78,9 @@ const seededShuffle = (array, seed) => {
     return copy;
 };
 
+// Helper: check if a question_type is True/False
+const isTrueFalseType = (type) => type === "true_false" || type === "tf";
+
 const QuizTaking = () => {
     const { quizId } = useParams();
     const [searchParams] = useSearchParams();
@@ -99,23 +103,35 @@ const QuizTaking = () => {
     const [shuffledQuestions, setShuffledQuestions] = useState([]);
     const [showHint, setShowHint] = useState(false);
     const [isNavigatorOpen, setIsNavigatorOpen] = useState(false);
-    const [showExitModal, setShowExitModal] = useState(false);
     const [showSubmitModal, setShowSubmitModal] = useState(false);
+    const [showTimesUpModal, setShowTimesUpModal] = useState(false);
     
     // Auto-save indicators
     const [saveStatus, setSaveStatus] = useState("saved"); // "saved" | "saving" | "saving_local" | "error"
 
-    // Handle Auto-Submit
-    const handleAutoSubmit = async () => {
+    // Ref to prevent double auto-submit
+    const autoSubmittedRef = useRef(false);
+
+    // Handle Auto-Submit when timer expires
+    const handleAutoSubmit = useCallback(async () => {
+        if (autoSubmittedRef.current) return;
+        autoSubmittedRef.current = true;
+
         submitSound.play();
-        toast.info("Time's up! Submitting your quiz...");
+        setShowTimesUpModal(true);
+
         const res = await dispatch(submitAttemptThunk(activeAttempt?.id));
         if (submitAttemptThunk.fulfilled.match(res)) {
-            navigate(`/student/quiz/${quizId}/results/${activeAttempt?.id}`);
+            // Short delay so the user sees the "Time's Up" message
+            setTimeout(() => {
+                navigate(`/student/quiz/${quizId}/results/${activeAttempt?.id}`);
+            }, 2500);
         } else {
             toast.error("Auto submit failed. Trying local recovery.");
+            setShowTimesUpModal(false);
+            autoSubmittedRef.current = false;
         }
-    };
+    }, [activeAttempt?.id, dispatch, navigate, quizId]);
 
     const containerRef = useRef(null);
 
@@ -135,10 +151,12 @@ const QuizTaking = () => {
         };
     }, [quizId, attemptId, dispatch]);
 
-    // Handle Shuffling with consistency
+    // Handle Shuffling with consistency + filter invalid questions
     useEffect(() => {
         if (quiz?.quiz_questions && attemptId) {
-            let questionsList = quiz.quiz_questions.map(qq => qq.question).filter(Boolean);
+            let questionsList = quiz.quiz_questions
+                .map(qq => qq.question)
+                .filter(q => q && q.id && q.question_text && (q.question_options?.length > 0 || isTrueFalseType(q.question_type)));
 
             if (quiz.shuffle_questions) {
                 questionsList = seededShuffle(questionsList, attemptId);
@@ -149,7 +167,7 @@ const QuizTaking = () => {
                 if (quiz.shuffle_answers && q.question_options) {
                     return {
                         ...q,
-                        question_options: seededShuffle(q.question_options, attemptId + q.id)
+                        question_options: seededShuffle(q.question_options, attemptId + q?.id)
                     };
                 }
                 return q;
@@ -158,6 +176,32 @@ const QuizTaking = () => {
             setShuffledQuestions(processed);
         }
     }, [quiz, attemptId]);
+
+    // Browser lockdown: block tab/window close
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            e.preventDefault();
+            e.returnValue = "You are in the middle of a quiz. Your progress may be lost if you leave.";
+            return e.returnValue;
+        };
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, []);
+
+    // Browser lockdown: block browser back/forward navigation
+    useEffect(() => {
+        // Push an extra history entry so we can intercept the back button
+        window.history.pushState(null, "", window.location.href);
+
+        const handlePopState = () => {
+            // Re-push to stay on the page
+            window.history.pushState(null, "", window.location.href);
+            toast.warning("You cannot leave the quiz. Please submit your answers first.", { toastId: "back-blocked" });
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => window.removeEventListener("popstate", handlePopState);
+    }, []);
 
     // Countdown Timer logic
     useEffect(() => {
@@ -180,7 +224,7 @@ const QuizTaking = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [timeRemaining, dispatch]);
+    }, [timeRemaining, dispatch, handleAutoSubmit]);
 
     // 2-second auto-save cycle
     useEffect(() => {
@@ -192,16 +236,16 @@ const QuizTaking = () => {
             try {
                 // Update time remaining in DB
                 await dispatch(updateProgressThunk({
-                    id: activeAttempt.id,
+                    id: activeAttempt?.id,
                     current_question_order: currentIndex,
                     time_remaining_secs: timeRemaining
                 }));
 
                 // Save answers to database
                 const currentQuestion = shuffledQuestions[currentIndex];
-                const selectedOptionId = answers[currentQuestion.id];
+                const selectedOptionId = answers[currentQuestion?.id];
                 
-                if (selectedOptionId) {
+                if (selectedOptionId && currentQuestion?.id) {
                     await dispatch(saveAnswerThunk({
                         attempt_id: activeAttempt?.id,
                         question_id: currentQuestion?.id,
@@ -252,14 +296,36 @@ const QuizTaking = () => {
     };
 
     const handleFlagToggle = () => {
-        flagSound.play();
         const currentQuestion = shuffledQuestions[currentIndex];
-        const isFlagged = flagged.includes(currentQuestion?.id);
+        const questionId = currentQuestion?.id;
+
+        // Guard: don't dispatch if questionId is null/undefined
+        if (!questionId) {
+            toast.error("Cannot flag this question.");
+            return;
+        }
+
+        flagSound.play();
+        const isFlagged = flagged.includes(questionId);
+
+        // Optimistic local update
+        const newFlagged = isFlagged
+            ? flagged.filter(id => id !== questionId)
+            : [...flagged, questionId];
+        dispatch(setFlaggedLocal(newFlagged));
+
+        // Persist to server
         dispatch(toggleFlagThunk({
             attemptId: activeAttempt?.id,
-            questionId: currentQuestion?.id,
+            questionId,
             flagged: !isFlagged
-        }));
+        })).then((res) => {
+            if (toggleFlagThunk.rejected.match(res)) {
+                // Rollback on failure
+                dispatch(setFlaggedLocal(flagged));
+                toast.error("Failed to update flag. Please try again.");
+            }
+        });
     };
 
     const handleNext = () => {
@@ -276,11 +342,6 @@ const QuizTaking = () => {
             dispatch(setCurrentIndex(currentIndex - 1));
             setShowHint(false);
         }
-    };
-
-    const handleExit = () => {
-        setShowExitModal(false);
-        navigate(`/student/quizzes/${quizId}`);
     };
 
     // Guard: missing attemptId in URL
@@ -319,9 +380,6 @@ const QuizTaking = () => {
                     <div>Questions ready: {shuffledQuestions.length > 0 ? '✅' : '⏳'}</div>
                     {attemptError && <div style={{ color: "var(--text-danger)" }}>Error: {String(attemptError)}</div>}
                 </div>
-                <MainButton variant="secondary" size="sm" onClick={() => navigate(`/student/quizzes/${quizId}`)}>
-                    ← Go Back
-                </MainButton>
             </div>
         );
     }
@@ -341,18 +399,17 @@ const QuizTaking = () => {
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
+    // Check if current question is T/F
+    const isCurrentTF = isTrueFalseType(currentQuestion?.question_type);
+
     return (
         <div ref={containerRef} className={styles.takingLayout}>
             {/* Top Bar */}
             <div className={styles.minimalTopbar}>
                 <div className={styles.topbarLeft}>
-                    <MainButton 
-                        variant="secondary" 
-                        size="sm"
-                        onClick={() => setShowExitModal(true)}
-                    >
-                        <FiLogOut /> Exit
-                    </MainButton>
+                    <span className={styles.quizTitle}>
+                        📝 {quiz?.title || "Quiz"}
+                    </span>
                     <span className={styles.questionCounter}>
                         Question {currentIndex + 1} of {totalQuestions}
                     </span>
@@ -399,7 +456,12 @@ const QuizTaking = () => {
                     {/* Question Card */}
                     <div className={styles.questionCard}>
                         <div className={styles.questionHeader}>
-                            <span className={styles.questionIndex}>Question {currentIndex + 1}</span>
+                            <div className={styles.questionHeaderLeft}>
+                                <span className={styles.questionIndex}>Question {currentIndex + 1}</span>
+                                <span className={styles.questionTypeBadge}>
+                                    {isCurrentTF ? "True / False" : "Multiple Choice"}
+                                </span>
+                            </div>
                             {currentQuestion?.hint ? (
                                 <button
                                     onClick={() => {
@@ -424,19 +486,23 @@ const QuizTaking = () => {
                         )}
 
                         <h2 className={styles.questionText}>
-                            {currentQuestion?.question_text}
+                            {currentQuestion?.question_text || (
+                                <span style={{ color: "var(--text-muted)", fontStyle: "italic" }}>
+                                    This question has no text. Please skip to the next question.
+                                </span>
+                            )}
                         </h2>
 
                         {/* Options depending on Question Type */}
-                        {currentQuestion?.question_type === "tf" ? (
+                        {isCurrentTF ? (
                             <div className={styles.tfSplit}>
                                 {["True", "False"].map((tfOpt) => {
                                     // True/False matches question option matching tfOpt text
                                     const opt = (currentQuestion?.question_options || []).find(
-                                        o => o.option_text.toLowerCase() === tfOpt.toLowerCase()
+                                        o => o.option_text?.toLowerCase() === tfOpt.toLowerCase()
                                     ) || { id: tfOpt, option_text: tfOpt };
                                     
-                                    const isSelected = answers[currentQuestion?.id] === opt.id;
+                                    const isSelected = answers[currentQuestion?.id] === opt?.id;
 
                                     return (
                                         <div
@@ -492,15 +558,14 @@ const QuizTaking = () => {
                     {saveStatus === "saving_local" && "⚠️ Offline: saved locally"}
                 </div>
 
-                <div className="flex gap-2">
+                <div className={styles.bottomNavActions}>
                     <button
                         onClick={handleFlagToggle}
-                        className="btn btn--outline btn--md"
-                        style={{ display: "flex", alignItems: "center", gap: "6px", borderColor: flagged.includes(currentQuestion?.id) ? "var(--color-warning)" : "" }}
+                        className={`${styles.flagBtn} ${flagged.includes(currentQuestion?.id) ? styles.flagBtnActive : ""}`}
                         title="Flag for review"
                     >
-                        <FiFlag fill={flagged.includes(currentQuestion?.id) ? "var(--color-warning)" : "none"} style={{ color: flagged.includes(currentQuestion?.id) ? "var(--color-warning)" : "" }} />
-                        <span style={{ color: flagged.includes(currentQuestion?.id) ? "var(--color-warning-hover)" : "" }}>Flag</span>
+                        <FiFlag fill={flagged.includes(currentQuestion?.id) ? "var(--color-warning)" : "none"} />
+                        <span>Flag</span>
                     </button>
 
                     <MainButton
@@ -528,8 +593,8 @@ const QuizTaking = () => {
                         <div className={styles.navigatorGrid}>
                             {shuffledQuestions.map((q, idx) => {
                                 const isCurrent = idx === currentIndex;
-                                const isAnswered = !!answers[q.id];
-                                const isFlagged = flagged.includes(q.id);
+                                const isAnswered = !!answers[q?.id];
+                                const isFlagged = flagged.includes(q?.id);
 
                                 let boxClass = styles.navigatorBox;
                                 if (isCurrent) boxClass += ` ${styles.boxCurrent}`;
@@ -538,7 +603,7 @@ const QuizTaking = () => {
 
                                 return (
                                     <div
-                                        key={q.id}
+                                        key={q?.id}
                                         onClick={() => {
                                             nextSound.play();
                                             dispatch(setCurrentIndex(idx));
@@ -555,24 +620,19 @@ const QuizTaking = () => {
                 </>
             )}
 
-            {/* Exit confirmation modal */}
-            {showExitModal && (
+            {/* Time's Up Modal — non-dismissable */}
+            {showTimesUpModal && (
                 <div className={styles.modalBackdrop}>
-                    <div className={styles.modalContent}>
-                        <div className="flex items-center gap-2" style={{ color: "var(--color-danger)" }}>
-                            <FiAlertCircle style={{ fontSize: "1.5rem" }} />
-                            <h3 className="h3">Exit Quiz?</h3>
+                    <div className={`${styles.modalContent} ${styles.timesUpModal}`}>
+                        <div className={styles.timesUpIcon}>
+                            <FiClock />
                         </div>
-                        <p className="text-secondary text-sm">
-                            Are you sure you want to exit? Your progress is saved, and you can resume this attempt later.
+                        <h3 className={styles.timesUpTitle}>Time's Up!</h3>
+                        <p className={styles.timesUpText}>
+                            Your quiz is being submitted automatically. You will be redirected to your results shortly.
                         </p>
-                        <div className={styles.modalActions}>
-                            <MainButton variant="ghost" onClick={() => setShowExitModal(false)}>
-                                Stay
-                            </MainButton>
-                            <MainButton variant="danger" onClick={handleExit}>
-                                Exit & Resume Later
-                            </MainButton>
+                        <div className={styles.timesUpLoader}>
+                            <div className={styles.timesUpLoaderBar} />
                         </div>
                     </div>
                 </div>
@@ -601,7 +661,7 @@ const QuizTaking = () => {
                                 <MainButton 
                                     variant="outline" 
                                     onClick={() => {
-                                        const unAnsIdx = shuffledQuestions.findIndex(q => !answers[q.id]);
+                                        const unAnsIdx = shuffledQuestions.findIndex(q => !answers[q?.id]);
                                         if (unAnsIdx !== -1) {
                                             dispatch(setCurrentIndex(unAnsIdx));
                                         }

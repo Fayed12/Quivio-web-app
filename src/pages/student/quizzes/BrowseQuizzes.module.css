@@ -295,7 +295,11 @@
 .badgesRow {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 10px !important;
+}
+
+.badgesRow > span{
+    margin-right: 10px !important;
 }
 
 .cardFooter {
@@ -380,4 +384,22 @@
 .emptyIllustration {
     font-size: 4rem;
     color: var(--text-muted);
+}
+
+.bookmarkToggling {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }

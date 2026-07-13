@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 
 // react-router
-import { Navigate, Outlet, useNavigate } from "react-router";
+import { Navigate, Outlet, useNavigate, useLocation } from "react-router";
 
 // redux
 import { useDispatch, useSelector } from "react-redux";
@@ -228,42 +228,52 @@ const ProtectedStudentLayout = () => {
         );
     };
 
-    const currentMarginLeft = isMobile
+    // Detect quiz-taking route — hide sidebar & topbar during exam
+    const location = useLocation();
+    const isQuizTaking = /\/student\/quiz\/[^/]+\/take/.test(location.pathname);
+
+    const currentMarginLeft = isQuizTaking
         ? "0px"
-        : isCollapsed
-          ? "var(--sidebar-collapsed)"
-          : "var(--sidebar-width)";
+        : isMobile
+          ? "0px"
+          : isCollapsed
+            ? "var(--sidebar-collapsed)"
+            : "var(--sidebar-width)";
 
     return (
         <div className={styles.appShell}>
             {/* Moving background circles */}
-            <StudentMovingBackground />
+            {!isQuizTaking && <StudentMovingBackground />}
 
-            {/* Sidebar */}
-            <StudentSidebar
-                isCollapsed={isCollapsed}
-                isOpen={isMobileOpen}
-                onClose={() => setIsMobileOpen(false)}
-            />
+            {/* Sidebar — hidden during quiz-taking */}
+            {!isQuizTaking && (
+                <StudentSidebar
+                    isCollapsed={isCollapsed}
+                    isOpen={isMobileOpen}
+                    onClose={() => setIsMobileOpen(false)}
+                />
+            )}
 
             {/* Main view content */}
             <div
                 className={styles.mainContent}
                 style={{
                     marginLeft: currentMarginLeft,
-                    width: `calc(100% - ${currentMarginLeft})`,
+                    width: isQuizTaking ? "100%" : `calc(100% - ${currentMarginLeft})`,
                     transition: "margin-left var(--transition-slower), width var(--transition-slower)",
                 }}
             >
-                {/* Topbar */}
-                <StudentTopbar
-                    onToggleSidebar={handleToggleSidebar}
-                    onToggleMobileSidebar={() => setIsMobileOpen(!isMobileOpen)}
-                    style={{
-                        left: currentMarginLeft,
-                        width: `calc(100% - ${currentMarginLeft})`,
-                    }}
-                />
+                {/* Topbar — hidden during quiz-taking */}
+                {!isQuizTaking && (
+                    <StudentTopbar
+                        onToggleSidebar={handleToggleSidebar}
+                        onToggleMobileSidebar={() => setIsMobileOpen(!isMobileOpen)}
+                        style={{
+                            left: currentMarginLeft,
+                            width: `calc(100% - ${currentMarginLeft})`,
+                        }}
+                    />
+                )}
 
                 {/* Inner views outlet */}
                 <main className={styles.contentWrapper}>
