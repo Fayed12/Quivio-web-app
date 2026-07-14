@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router";
 
+// date-fns
+import { format } from "date-fns";
+
 // redux
 import { fetchAttemptById, selectCurrentAttempt } from "../../../redux/slices/attemptsSlice";
 import { fetchMyCertificates, selectMyCertificates } from "../../../redux/slices/certificatesSlice";
@@ -23,7 +26,9 @@ import {
     FiArrowLeft,
     FiDownload,
     FiLink,
-    FiZap
+    FiZap,
+    FiAward,
+    FiFileText
 } from "react-icons/fi";
 
 // howler
@@ -36,9 +41,14 @@ import { gsap } from "gsap";
 import styles from "./QuizResults.module.css";
 import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
 
-// Initialize sounds
-const passSound = new Howl({ src: ["https://assets.mixkit.co/active_storage/sfx/2018/2018-84.wav"], html5: true, volume: 0.6 });
-const failSound = new Howl({ src: ["https://assets.mixkit.co/active_storage/sfx/1818/1818-84.wav"], html5: true, volume: 0.6 });
+// Initialize sounds with local fallbacks
+const passSound = new Howl({ src: ["/sounds/pass.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.6, preload: true });
+const failSound = new Howl({ src: ["/sounds/fail.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.6, preload: true });
+
+// Safe play wrapper
+const safePlay = (sound) => {
+    try { sound.play(); } catch { /* ignore */ }
+};
 
 // Confetti burst helper using GSAP
 const triggerConfetti = (element) => {
@@ -120,11 +130,11 @@ const QuizResults = () => {
             if (!soundPlayedRef.current) {
                 soundPlayedRef.current = true;
                 if (attempt.passed) {
-                    passSound.play();
+                    safePlay(passSound);
                     // Custom GSAP confetti burst!
                     setTimeout(() => triggerConfetti(heroCardRef.current), 200);
                 } else {
-                    failSound.play();
+                    safePlay(failSound);
                 }
             }
         }
@@ -227,13 +237,13 @@ const QuizResults = () => {
                 </div>
 
                 <h1 className={`${styles.heroHeading} ${attempt.passed ? styles.passHeading : styles.failHeading}`}>
-                    {attempt.passed ? "🎉 Passed!" : "✗ Failed"}
+                    {attempt.passed ? <><FiAward style={{ marginRight: "8px", verticalAlign: "middle" }} /> Passed!</> : <><FiX style={{ marginRight: "8px", verticalAlign: "middle" }} /> Failed</>}
                 </h1>
 
                 <h3 className="h3" style={{ margin: 0 }}>{attempt.quiz?.title}</h3>
                 
                 <p className="text-xs text-muted" style={{ marginTop: "-4px" }}>
-                    Completed on {new Date(attempt.submitted_at || attempt.started_at).toLocaleString()}
+                    Completed on {format(new Date(attempt.submitted_at || attempt.started_at), "PPpp")}
                 </p>
 
                 {/* Stat Chips */}
@@ -267,7 +277,9 @@ const QuizResults = () => {
             {/* Certificate Section */}
             {attempt.passed && cert && (
                 <div className={styles.certificateCard}>
-                    <div className={styles.certThumb} role="img" aria-label="Certificate Badge">📜</div>
+                    <div className={styles.certThumb} role="img" aria-label="Certificate Badge">
+                        <FiFileText style={{ fontSize: "2rem", color: "var(--color-accent)" }} />
+                    </div>
                     <div style={{ flex: 1 }}>
                         <h4 className="h4 text-primary" style={{ margin: 0 }}>Certificate Issued</h4>
                         <p className="text-secondary text-xs" style={{ marginTop: "4px" }}>
@@ -348,7 +360,7 @@ const QuizResults = () => {
                                         <span>
                                             Your answer: <strong>{selectedOption ? selectedOption.option_text : "No answer selected"}</strong>
                                         </span>
-                                        <span>{ans.is_correct ? "✓ Correct" : "✗ Incorrect"}</span>
+                                        <span>{ans.is_correct ? <><FiCheck style={{ color: "var(--color-success)", marginRight: "4px" }} />Correct</> : <><FiX style={{ color: "var(--color-danger)", marginRight: "4px" }} />Incorrect</>}</span>
                                     </div>
 
                                     {/* Correct answer if wrong */}

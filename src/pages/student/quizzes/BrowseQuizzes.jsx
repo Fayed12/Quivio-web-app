@@ -75,9 +75,8 @@ const BrowseQuizzes = () => {
     const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
     const [togglingBookmarkId, setTogglingBookmarkId] = useState(null);
     
-    // Search input
-    const initialSearch = searchParams.get("search") || "";
-    const [searchQuery, setSearchQuery] = useState(initialSearch);
+    // Search input derived directly from URL search params
+    const searchQuery = searchParams.get("search") || "";
 
     // Filters
     const [selectedCategories, setSelectedCategories] = useState([]);
@@ -107,11 +106,7 @@ const BrowseQuizzes = () => {
         dispatch(fetchStudentAssignments({ page: 1, pageSize: 100 }));
     }, [dispatch]);
 
-    // Sync URL search query parameter
-    useEffect(() => {
-        const urlSearch = searchParams.get("search") || "";
-        setSearchQuery(urlSearch);
-    }, [searchParams]);
+
 
     // Category click handler
     const handleCategoryToggle = (catId) => {
@@ -135,8 +130,8 @@ const BrowseQuizzes = () => {
             promise,
             {
                 pending: isBookmarked ? "Removing bookmark..." : "Adding bookmark...",
-                success: isBookmarked ? "Bookmark removed successfully! ✨" : "Quiz bookmarked successfully! 🔖",
-                error: isBookmarked ? "Failed to update bookmark." : "Failed to add bookmark."
+                success: isBookmarked ? "Bookmark removed successfully" : "Quiz bookmarked successfully",
+                error: isBookmarked ? "Failed to update bookmark" : "Failed to add bookmark"
             },
             {
                 autoClose: 2000,
@@ -159,7 +154,6 @@ const BrowseQuizzes = () => {
         setSelectedDifficulty("All");
         setMaxTime(120);
         setSelectedStatus("All");
-        setSearchQuery("");
         setSearchParams({});
     };
 
@@ -271,8 +265,13 @@ const BrowseQuizzes = () => {
                             type="text"
                             value={searchQuery}
                             onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setSearchParams({ search: e.target.value });
+                                const nextParams = new URLSearchParams(searchParams);
+                                if (e.target.value) {
+                                    nextParams.set("search", e.target.value);
+                                } else {
+                                    nextParams.delete("search");
+                                }
+                                setSearchParams(nextParams);
                             }}
                             placeholder="Search by quiz title or description..."
                             className={styles.searchInput}
@@ -281,8 +280,9 @@ const BrowseQuizzes = () => {
                             <button
                                 className={styles.clearBtn}
                                 onClick={() => {
-                                    setSearchQuery("");
-                                    setSearchParams({});
+                                    const nextParams = new URLSearchParams(searchParams);
+                                    nextParams.delete("search");
+                                    setSearchParams(nextParams);
                                 }}
                                 aria-label="Clear search"
                             >

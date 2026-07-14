@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router";
 
+// date-fns
+import { format } from "date-fns";
+
 // redux
 import { fetchAttemptById, selectCurrentAttempt, fetchMyAttempts, selectMyAttempts } from "../../../redux/slices/attemptsSlice";
 
@@ -48,10 +51,11 @@ const AttemptDetail = () => {
     }, [attemptId, dispatch]);
 
     useEffect(() => {
-        if (attempt?.quiz_id) {
-            dispatch(fetchMyAttempts({ quizId: attempt.quiz_id, page: 1, pageSize: 50 }));
+        const quizId = attempt?.quiz_id || attempt?.quiz?.id;
+        if (quizId) {
+            dispatch(fetchMyAttempts({ quizId, page: 1, pageSize: 50 }));
         }
-    }, [attempt?.quiz_id, dispatch]);
+    }, [attempt?.quiz_id, attempt?.quiz?.id, dispatch]);
 
     if (!attempt) {
         return (
@@ -149,7 +153,7 @@ const AttemptDetail = () => {
                 <div>
                     <h1 className="h1">{attempt.quiz?.title || "Quiz Detail"}</h1>
                     <p className="text-secondary text-sm">
-                        Attempt taken on {new Date(attempt.submitted_at || attempt.started_at).toLocaleString()}
+                        Attempt taken on {format(new Date(attempt.submitted_at || attempt.started_at), "PPpp")}
                     </p>
                 </div>
                 <span className={`scoreBadge ${attempt.passed ? "scorePass" : "scoreFail"}`} style={{ fontSize: "var(--text-lg)", padding: "var(--space-2) var(--space-4)" }}>
@@ -194,7 +198,7 @@ const AttemptDetail = () => {
                                 <XAxis dataKey="name" />
                                 <YAxis unit="s" />
                                 <Tooltip />
-                                <Bar dataKey="Seconds" fill="var(--blue-500)" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="Seconds" fill="var(--color-accent, #3b82f6)" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>

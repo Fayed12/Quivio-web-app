@@ -121,7 +121,6 @@ const StudentDashboard = () => {
             const d = new Date();
             d.setDate(today.getDate() - i);
             const label = d.toLocaleDateString(undefined, { weekday: "narrow" });
-            const dateStr = d.toDateString();
             
             const active = attempts.some(a => {
                 if (!a.submitted_at) return false;

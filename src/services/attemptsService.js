@@ -84,7 +84,7 @@ export async function getAttemptForTaking(attemptId) {
     .from('attempts')
     .select(`
       *,
-      attempt_answers(question_id, selected_option_id)
+      attempt_answers(question_id, selected_option_id, time_spent_secs)
     `)
     .eq('id', attemptId)
     .eq('uid', user.id)
@@ -104,7 +104,7 @@ export async function getAttemptById(id) {
     supabase
       .from('attempts')
       .select(`
-        *,
+        *, quiz_id,
         quiz:quizzes(id, title, passing_score, time_limit_minutes),
         attempt_answers(
           id, question_id, selected_option_id, is_correct, points_awarded, time_spent_secs,
@@ -216,6 +216,32 @@ export async function saveAnswer({ attempt_id, question_id, selected_option_id, 
       )
       .select()
       .single()
+  );
+}
+
+// ─────────────────────────────────────────────
+// POST/PATCH: Batch-save ALL answers before submission
+// Request : { attempt_id, answers: { [question_id]: selected_option_id } }
+// Response: upserted rows
+// ─────────────────────────────────────────────
+export async function saveAllAnswers({ attempt_id, answers }) {
+  const now = new Date().toISOString();
+  const rows = Object.entries(answers)
+    .filter(([qId, optId]) => qId && optId)
+    .map(([question_id, selected_option_id]) => ({
+      attempt_id,
+      question_id,
+      selected_option_id,
+      answered_at: now,
+    }));
+
+  if (rows.length === 0) return { data: [], error: null };
+
+  return handleQuery(
+    supabase
+      .from('attempt_answers')
+      .upsert(rows, { onConflict: 'attempt_id,question_id' })
+      .select()
   );
 }
 

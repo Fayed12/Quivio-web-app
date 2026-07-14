@@ -94,6 +94,14 @@ export const submitAttemptThunk = createAsyncThunk(
     },
 );
 
+export const saveAllAnswersThunk = createAsyncThunk(
+    "attempts/saveAllAnswers",
+    async ({ attempt_id, answers, timeSpent }, { rejectWithValue }) => {
+        const { data, error } = await svc.saveAllAnswers({ attempt_id, answers, timeSpent });
+        return error ? rejectWithValue(error) : data;
+    },
+);
+
 
 export const fetchMyStats = createAsyncThunk(
     "attempts/fetchStats",
@@ -181,6 +189,7 @@ const slice = createSlice({
                 s.active = payload;
                 s.timeRemaining = payload.time_remaining_secs;
                 s.flagged = payload.flagged_questions ?? [];
+                s.currentIndex = payload.current_question_order ?? 0;
                 const answerMap = {};
                 (payload.attempt_answers ?? []).forEach((a) => {
                     answerMap[a.question_id] = a.selected_option_id;

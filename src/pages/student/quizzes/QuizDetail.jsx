@@ -22,7 +22,9 @@ import {
     FiBookmark,
     FiBookOpen,
     FiUser,
-    FiInfo
+    FiInfo,
+    FiClock,
+    FiEdit3
 } from "react-icons/fi";
 
 // local
@@ -72,7 +74,7 @@ const QuizDetail = () => {
             promise,
             {
                 pending: isBookmarked ? "Removing bookmark..." : "Adding bookmark...",
-                success: isBookmarked ? "Bookmark removed successfully! ✨" : "Quiz bookmarked successfully! 🔖",
+                success: isBookmarked ? "Bookmark removed successfully!" : "Quiz bookmarked successfully!",
                 error: isBookmarked ? "Failed to update bookmark." : "Failed to add bookmark."
             },
             {
@@ -164,7 +166,7 @@ const QuizDetail = () => {
                         className={styles.categoryIcon}
                         style={{ color: quiz.category?.color || "var(--color-accent)" }}
                     >
-                        {quiz.category?.icon || "📝"}
+                        {quiz.category?.icon || <FiEdit3 />}
                     </span>
                     <div className={styles.titleArea}>
                         <h1 className="h1 styles.title">{quiz.title}</h1>
@@ -192,8 +194,8 @@ const QuizDetail = () => {
                     <span className="scoreBadge" style={{ background: "var(--color-accent-light)", color: "var(--text-accent)", padding: "4px 10px ", borderRadius: "6px"  }}>
                         Difficulty: {quiz.difficulty}
                     </span>
-                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", padding: "4px 10px ", borderRadius: "6px"  }}>
-                        ⏱ {quiz.time_limit_minutes || "Untimed"} minutes
+                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", padding: "4px 10px ", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px" }}>
+                        <FiClock /> {quiz.time_limit_minutes || "Untimed"} minutes
                     </span>
                     <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", padding: "4px 10px ", borderRadius: "6px"  }}>
                         {quiz.question_count || 0} questions

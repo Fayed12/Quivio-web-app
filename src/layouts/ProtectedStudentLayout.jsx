@@ -34,6 +34,7 @@ const ProtectedStudentLayout = () => {
     const isInitializing = useSelector(selectIsInitializing);
     const mustChangePwd = useSelector(selectMustChangePassword);
     const profile = useSelector(selectProfile);
+    const location = useLocation();
     
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -229,7 +230,6 @@ const ProtectedStudentLayout = () => {
     };
 
     // Detect quiz-taking route — hide sidebar & topbar during exam
-    const location = useLocation();
     const isQuizTaking = /\/student\/quiz\/[^/]+\/take/.test(location.pathname);
 
     const currentMarginLeft = isQuizTaking

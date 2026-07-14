@@ -1,7 +1,9 @@
 // react
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate, useSearchParams } from "react-router";
+
+
 
 // redux
 import { fetchQuizById, selectCurrentQuiz } from "../../../redux/slices/quizzesSlice";
@@ -18,6 +20,7 @@ import {
     setAnswerLocal,
     setFlaggedLocal,
     saveAnswerThunk,
+    saveAllAnswersThunk,
     toggleFlagThunk,
     updateProgressThunk,
     submitAttemptThunk,
@@ -28,13 +31,27 @@ import {
 import MainButton from "../../../components/ui/button/MainButton";
 import { toast } from "react-toastify";
 
+// sweetalert2
+import Swal from "sweetalert2";
+
 // react-icons
 import {
     FiFlag,
     FiHelpCircle,
-    FiAlertCircle,
     FiCheckSquare,
-    FiClock
+    FiClock,
+    FiAlertTriangle,
+    FiXCircle,
+    FiCheckCircle,
+    FiLoader,
+    FiFolder,
+    FiEdit3,
+    FiChevronRight,
+    FiAlertCircle,
+    FiSave,
+    FiWifiOff,
+    FiArrowLeft,
+    FiArrowRight
 } from "react-icons/fi";
 
 // howler
@@ -44,30 +61,36 @@ import { Howl } from "howler";
 import styles from "./QuizTaking.module.css";
 import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
 
-// Initialize sounds using Howler
-const selectSound = new Howl({ src: ["https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav"], html5: true, volume: 0.4 });
-const nextSound = new Howl({ src: ["https://assets.mixkit.co/active_storage/sfx/2571/2571-84.wav"], html5: true, volume: 0.3 });
-const flagSound = new Howl({ src: ["https://assets.mixkit.co/active_storage/sfx/893/893-84.wav"], html5: true, volume: 0.4 });
-const hintSound = new Howl({ src: ["https://assets.mixkit.co/active_storage/sfx/2019/2019-84.wav"], html5: true, volume: 0.5 });
-const tickSound = new Howl({ src: ["https://assets.mixkit.co/active_storage/sfx/1004/1004-84.wav"], html5: true, volume: 0.2 });
-const submitSound = new Howl({ src: ["https://assets.mixkit.co/active_storage/sfx/1435/1435-84.wav"], html5: true, volume: 0.6 });
+// Initialize sounds using Howler with reliable free URLs
+const selectSound = new Howl({ src: ["/sounds/select.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.4, preload: true });
+const nextSound = new Howl({ src: ["/sounds/next.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.3, preload: true });
+const flagSound = new Howl({ src: ["/sounds/flag.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.4, preload: true });
+const hintSound = new Howl({ src: ["/sounds/hint.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.5, preload: true });
+const tickSound = new Howl({ src: ["/sounds/tick.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.2, preload: true });
+const submitSound = new Howl({ src: ["/sounds/submit.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.6, preload: true });
+
+// Safe play wrapper — silently catch errors if sound files are missing
+const safePlay = (sound) => {
+    try { sound.play(); } catch { /* ignore sound errors */ }
+};
 
 // Seeded shuffle function for consistency across page refreshes
+// Fixed: uses unsigned right shift (>>> 0) to prevent negative values from JS % operator
 const seededShuffle = (array, seed) => {
-    let m = 0x80000000; 
+    let m = 0x80000000; // 2^31
     let a = 1103515245;
     let c = 12345;
-    
+
+    // Hash the seed string into a positive integer
     let hash = 0;
     for (let i = 0; i < seed.length; i++) {
-        hash = (hash << 5) - hash + seed.charCodeAt(i);
-        hash |= 0;
+        hash = ((hash << 5) - hash + seed.charCodeAt(i)) >>> 0; // unsigned
     }
     let state = hash;
 
     const nextRandom = () => {
-        state = (a * state + c) % m;
-        return state / m;
+        state = ((a * state + c) >>> 0) % m; // unsigned to prevent negative values
+        return Math.abs(state) / m;
     };
 
     const copy = [...array];
@@ -99,8 +122,30 @@ const QuizTaking = () => {
     const attemptLoading = useSelector(s => s.attempts.loading);
     const attemptError = useSelector(s => s.attempts.error);
 
-    // Local states
-    const [shuffledQuestions, setShuffledQuestions] = useState([]);
+    // Derive shuffledQuestions via useMemo to avoid synchronous setStates in useEffect and cascading renders
+    const shuffledQuestions = useMemo(() => {
+        if (!quiz?.quiz_questions || !attemptId) return [];
+
+        let questionsList = quiz.quiz_questions
+            .map(qq => qq.question)
+            .filter(q => q && q.id && q.question_text && (q.question_options?.length > 0 || isTrueFalseType(q.question_type)));
+
+        if (quiz.shuffle_questions) {
+            questionsList = seededShuffle(questionsList, attemptId);
+        }
+
+        // Shuffle options if enabled
+        return questionsList.map(q => {
+            if (quiz.shuffle_answers && q.question_options) {
+                return {
+                    ...q,
+                    question_options: seededShuffle(q.question_options, attemptId + q?.id)
+                };
+            }
+            return q;
+        });
+    }, [quiz, attemptId]);
+
     const [showHint, setShowHint] = useState(false);
     const [isNavigatorOpen, setIsNavigatorOpen] = useState(false);
     const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -109,29 +154,56 @@ const QuizTaking = () => {
     // Auto-save indicators
     const [saveStatus, setSaveStatus] = useState("saved"); // "saved" | "saving" | "saving_local" | "error"
 
+    // Ref to track cumulative time spent per question (questionId -> seconds)
+    const timeSpentRef = useRef({});
+
     // Ref to prevent double auto-submit
     const autoSubmittedRef = useRef(false);
+
+    // Initialize timeSpentRef from activeAttempt.attempt_answers when loaded
+    useEffect(() => {
+        if (activeAttempt?.attempt_answers) {
+            const initialTimeSpent = {};
+            activeAttempt.attempt_answers.forEach(ans => {
+                if (ans.question_id) {
+                    initialTimeSpent[ans.question_id] = ans.time_spent_secs ?? 0;
+                }
+            });
+            timeSpentRef.current = initialTimeSpent;
+        }
+    }, [activeAttempt]);
 
     // Handle Auto-Submit when timer expires
     const handleAutoSubmit = useCallback(async () => {
         if (autoSubmittedRef.current) return;
         autoSubmittedRef.current = true;
 
-        submitSound.play();
+        const attemptId = activeAttempt?.id;
+
+        safePlay(submitSound);
         setShowTimesUpModal(true);
 
-        const res = await dispatch(submitAttemptThunk(activeAttempt?.id));
+        // Save ALL answers before submitting
+        if (attemptId && Object.keys(answers).length > 0) {
+            await dispatch(saveAllAnswersThunk({
+                attempt_id: attemptId,
+                answers,
+                timeSpent: timeSpentRef.current
+            }));
+        }
+
+        const res = await dispatch(submitAttemptThunk(attemptId));
         if (submitAttemptThunk.fulfilled.match(res)) {
             // Short delay so the user sees the "Time's Up" message
             setTimeout(() => {
-                navigate(`/student/quiz/${quizId}/results/${activeAttempt?.id}`);
+                navigate(`/student/quiz/${quizId}/results/${attemptId}`);
             }, 2500);
         } else {
             toast.error("Auto submit failed. Trying local recovery.");
             setShowTimesUpModal(false);
             autoSubmittedRef.current = false;
         }
-    }, [activeAttempt?.id, dispatch, navigate, quizId]);
+    }, [activeAttempt, answers, dispatch, navigate, quizId]);
 
     const containerRef = useRef(null);
 
@@ -151,31 +223,7 @@ const QuizTaking = () => {
         };
     }, [quizId, attemptId, dispatch]);
 
-    // Handle Shuffling with consistency + filter invalid questions
-    useEffect(() => {
-        if (quiz?.quiz_questions && attemptId) {
-            let questionsList = quiz.quiz_questions
-                .map(qq => qq.question)
-                .filter(q => q && q.id && q.question_text && (q.question_options?.length > 0 || isTrueFalseType(q.question_type)));
 
-            if (quiz.shuffle_questions) {
-                questionsList = seededShuffle(questionsList, attemptId);
-            }
-
-            // Shuffle options if enabled
-            const processed = questionsList.map(q => {
-                if (quiz.shuffle_answers && q.question_options) {
-                    return {
-                        ...q,
-                        question_options: seededShuffle(q.question_options, attemptId + q?.id)
-                    };
-                }
-                return q;
-            });
-
-            setShuffledQuestions(processed);
-        }
-    }, [quiz, attemptId]);
 
     // Browser lockdown: block tab/window close
     useEffect(() => {
@@ -188,6 +236,36 @@ const QuizTaking = () => {
         return () => window.removeEventListener("beforeunload", handleBeforeUnload);
     }, []);
 
+    // SweetAlert2: block keyboard reload shortcuts (F5, Ctrl+R, Ctrl+Shift+R)
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            const isReload =
+                e.key === "F5" ||
+                (e.ctrlKey && e.key === "r") ||
+                (e.ctrlKey && e.shiftKey && e.key === "R");
+
+            if (isReload) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                Swal.fire({
+                    icon: "warning",
+                    title: "Cannot Reload",
+                    text: "You are currently taking a quiz. Reloading the page may disrupt your progress. Please submit your quiz first.",
+                    confirmButtonText: "Continue Quiz",
+                    confirmButtonColor: "var(--color-accent, #6366f1)",
+                    allowOutsideClick: true,
+                    customClass: {
+                        popup: "swal-quiz-popup"
+                    }
+                });
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown, true);
+        return () => window.removeEventListener("keydown", handleKeyDown, true);
+    }, []);
+
     // Browser lockdown: block browser back/forward navigation
     useEffect(() => {
         // Push an extra history entry so we can intercept the back button
@@ -196,7 +274,14 @@ const QuizTaking = () => {
         const handlePopState = () => {
             // Re-push to stay on the page
             window.history.pushState(null, "", window.location.href);
-            toast.warning("You cannot leave the quiz. Please submit your answers first.", { toastId: "back-blocked" });
+            Swal.fire({
+                icon: "warning",
+                title: "Cannot Leave",
+                text: "You cannot leave the quiz. Please submit your answers first.",
+                confirmButtonText: "Continue Quiz",
+                confirmButtonColor: "var(--color-accent, #6366f1)",
+                allowOutsideClick: true,
+            });
         };
 
         window.addEventListener("popstate", handlePopState);
@@ -211,9 +296,15 @@ const QuizTaking = () => {
             const nextTime = timeRemaining - 1;
             dispatch(setTimeRemaining(nextTime));
 
+            // Increment time spent on the current active question by 1 second
+            const currentQuestionId = shuffledQuestions[currentIndex]?.id;
+            if (currentQuestionId) {
+                timeSpentRef.current[currentQuestionId] = (timeSpentRef.current[currentQuestionId] || 0) + 1;
+            }
+
             // Tick sound warning if < 5 mins (300 secs), tick every 10s
             if (nextTime < 300 && nextTime > 0 && nextTime % 10 === 0) {
-                tickSound.play();
+                safePlay(tickSound);
             }
 
             // Trigger auto-submit when timer hits 0
@@ -224,7 +315,7 @@ const QuizTaking = () => {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [timeRemaining, dispatch, handleAutoSubmit]);
+    }, [timeRemaining, dispatch, handleAutoSubmit, shuffledQuestions, currentIndex]);
 
     // 2-second auto-save cycle
     useEffect(() => {
@@ -241,16 +332,17 @@ const QuizTaking = () => {
                     time_remaining_secs: timeRemaining
                 }));
 
-                // Save answers to database
+                // Save current question's answer to database
                 const currentQuestion = shuffledQuestions[currentIndex];
                 const selectedOptionId = answers[currentQuestion?.id];
+                const accumulatedTime = timeSpentRef.current[currentQuestion?.id] || 0;
                 
                 if (selectedOptionId && currentQuestion?.id) {
                     await dispatch(saveAnswerThunk({
                         attempt_id: activeAttempt?.id,
                         question_id: currentQuestion?.id,
                         selected_option_id: selectedOptionId,
-                        time_spent_secs: 2
+                        time_spent_secs: accumulatedTime
                     }));
                 }
 
@@ -272,10 +364,24 @@ const QuizTaking = () => {
 
 
 
-    // Manual Submit Action
+    // Manual Submit Action — save ALL answers first, then submit
     const handleManualSubmit = async () => {
-        submitSound.play();
+        safePlay(submitSound);
         setShowSubmitModal(false);
+
+        // Batch-save all answers to DB before submitting
+        if (activeAttempt?.id && Object.keys(answers).length > 0) {
+            const saveRes = await dispatch(saveAllAnswersThunk({
+                attempt_id: activeAttempt.id,
+                answers,
+                timeSpent: timeSpentRef.current
+            }));
+            if (saveAllAnswersThunk.rejected.match(saveRes)) {
+                toast.error("Failed to save answers. Please try again.");
+                return;
+            }
+        }
+
         const res = await dispatch(submitAttemptThunk(activeAttempt?.id));
         if (submitAttemptThunk.fulfilled.match(res)) {
             toast.success("Quiz submitted successfully!");
@@ -287,7 +393,7 @@ const QuizTaking = () => {
 
     // Navigator actions
     const handleSelectOption = (optionId) => {
-        selectSound.play();
+        safePlay(selectSound);
         const currentQuestion = shuffledQuestions[currentIndex];
         dispatch(setAnswerLocal({
             question_id: currentQuestion?.id,
@@ -305,7 +411,7 @@ const QuizTaking = () => {
             return;
         }
 
-        flagSound.play();
+        safePlay(flagSound);
         const isFlagged = flagged.includes(questionId);
 
         // Optimistic local update
@@ -330,7 +436,7 @@ const QuizTaking = () => {
 
     const handleNext = () => {
         if (currentIndex < shuffledQuestions.length - 1) {
-            nextSound.play();
+            safePlay(nextSound);
             dispatch(setCurrentIndex(currentIndex + 1));
             setShowHint(false);
         }
@@ -338,7 +444,7 @@ const QuizTaking = () => {
 
     const handlePrevious = () => {
         if (currentIndex > 0) {
-            nextSound.play();
+            safePlay(nextSound);
             dispatch(setCurrentIndex(currentIndex - 1));
             setShowHint(false);
         }
@@ -348,7 +454,7 @@ const QuizTaking = () => {
     if (!attemptId) {
         return (
             <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "100vh", gap: "var(--space-3)" }}>
-                <span style={{ fontSize: "2rem" }}>⚠️</span>
+                <FiAlertTriangle style={{ fontSize: "2rem", color: "var(--color-warning)" }} />
                 <p style={{ color: "var(--text-secondary)" }}>No attempt ID found. Please start the quiz from the quiz detail page.</p>
                 <MainButton variant="primary" onClick={() => navigate(`/student/quizzes/${quizId}`)}>
                     Go to Quiz Detail
@@ -361,7 +467,7 @@ const QuizTaking = () => {
     if (attemptError && !activeAttempt) {
         return (
             <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "100vh", gap: "var(--space-3)" }}>
-                <span style={{ fontSize: "2rem" }}>❌</span>
+                <FiXCircle style={{ fontSize: "2rem", color: "var(--color-danger)" }} />
                 <p style={{ color: "var(--text-danger)" }}>Failed to load attempt: {typeof attemptError === 'string' ? attemptError : 'Unknown error'}</p>
                 <MainButton variant="primary" onClick={() => navigate(`/student/quizzes/${quizId}`)}>
                     Go Back
@@ -375,9 +481,18 @@ const QuizTaking = () => {
             <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "100vh", color: "var(--text-secondary)", gap: "var(--space-3)" }}>
                 <div>Initializing attempt...</div>
                 <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", textAlign: "center" }}>
-                    <div>Quiz loaded: {quiz ? '✅' : '⏳'} {quiz ? `(${quiz.quiz_questions?.length ?? 0} questions)` : ''}</div>
-                    <div>Attempt loaded: {activeAttempt ? '✅' : attemptLoading ? '⏳ Loading...' : '❌ Not loaded'}</div>
-                    <div>Questions ready: {shuffledQuestions.length > 0 ? '✅' : '⏳'}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        {quiz ? <FiCheckCircle style={{ color: "var(--color-success)" }} /> : <FiLoader style={{ animation: "spin 1s linear infinite" }} />}
+                        Quiz loaded {quiz ? `(${quiz.quiz_questions?.length ?? 0} questions)` : ''}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        {activeAttempt ? <FiCheckCircle style={{ color: "var(--color-success)" }} /> : attemptLoading ? <FiLoader style={{ animation: "spin 1s linear infinite" }} /> : <FiXCircle style={{ color: "var(--color-danger)" }} />}
+                        Attempt {activeAttempt ? 'loaded' : attemptLoading ? 'loading...' : 'not loaded'}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        {shuffledQuestions.length > 0 ? <FiCheckCircle style={{ color: "var(--color-success)" }} /> : <FiLoader style={{ animation: "spin 1s linear infinite" }} />}
+                        Questions ready
+                    </div>
                     {attemptError && <div style={{ color: "var(--text-danger)" }}>Error: {String(attemptError)}</div>}
                 </div>
             </div>
@@ -408,7 +523,8 @@ const QuizTaking = () => {
             <div className={styles.minimalTopbar}>
                 <div className={styles.topbarLeft}>
                     <span className={styles.quizTitle}>
-                        📝 {quiz?.title || "Quiz"}
+                        <FiEdit3 style={{ marginRight: "6px", verticalAlign: "middle" }} />
+                        {quiz?.title || "Quiz"}
                     </span>
                     <span className={styles.questionCounter}>
                         Question {currentIndex + 1} of {totalQuestions}
@@ -465,12 +581,12 @@ const QuizTaking = () => {
                             {currentQuestion?.hint ? (
                                 <button
                                     onClick={() => {
-                                        hintSound.play();
+                                        safePlay(hintSound);
                                         setShowHint(!showHint);
                                     }}
                                     className={styles.hintBtn}
                                 >
-                                    💡 Hint
+                                    <FiHelpCircle style={{ marginRight: "4px", verticalAlign: "middle" }} /> Hint
                                 </button>
                             ) : (
                                 <span className="text-xs text-muted" title="No hint available">No hint</span>
@@ -506,7 +622,7 @@ const QuizTaking = () => {
 
                                     return (
                                         <div
-                                            key={opt.id}
+                                            key={`tf-${tfOpt}`}
                                             onClick={() => handleSelectOption(opt?.id)}
                                             className={`${styles.optionCard} ${styles.tfCard} ${isSelected ? styles.optionSelected : ""}`}
                                         >
@@ -520,11 +636,11 @@ const QuizTaking = () => {
                             </div>
                         ) : (
                             <div className={styles.optionsStack}>
-                                {(currentQuestion?.question_options || []).map((opt) => {
+                                {(currentQuestion?.question_options || []).map((opt, optIdx) => {
                                     const isSelected = answers[currentQuestion?.id] === opt?.id;
                                     return (
                                         <div
-                                            key={opt?.id}
+                                            key={opt?.id || `opt-${optIdx}`}
                                             onClick={() => handleSelectOption(opt?.id)}
                                             className={`${styles.optionCard} ${isSelected ? styles.optionSelected : ""}`}
                                         >
@@ -549,13 +665,13 @@ const QuizTaking = () => {
                     onClick={handlePrevious}
                     disabled={currentIndex === 0}
                 >
-                    ← Previous
+                    <FiArrowLeft style={{ marginRight: "4px" }} /> Previous
                 </MainButton>
 
                 <div className={styles.autoSaveIndicator}>
-                    {saveStatus === "saved" && "✓ Saved to cloud"}
-                    {saveStatus === "saving" && "Saving..."}
-                    {saveStatus === "saving_local" && "⚠️ Offline: saved locally"}
+                    {saveStatus === "saved" && <><FiSave style={{ marginRight: "4px", color: "var(--color-success)" }} /> Saved to cloud</>}
+                    {saveStatus === "saving" && <><FiLoader style={{ marginRight: "4px", animation: "spin 1s linear infinite" }} /> Saving...</>}
+                    {saveStatus === "saving_local" && <><FiWifiOff style={{ marginRight: "4px", color: "var(--color-warning)" }} /> Offline: saved locally</>}
                 </div>
 
                 <div className={styles.bottomNavActions}>
@@ -574,7 +690,7 @@ const QuizTaking = () => {
                         onClick={handleNext}
                         disabled={currentIndex === totalQuestions - 1 || !answers[currentQuestion?.id]}
                     >
-                        Next →
+                        Next <FiArrowRight style={{ marginLeft: "4px" }} />
                     </MainButton>
                 </div>
             </div>
@@ -586,7 +702,7 @@ const QuizTaking = () => {
                         className={styles.navigatorToggle}
                         onClick={() => setIsNavigatorOpen(!isNavigatorOpen)}
                     >
-                        {isNavigatorOpen ? "→" : "📂"}
+                        {isNavigatorOpen ? <FiChevronRight /> : <FiFolder />}
                     </div>
                     <div className={`${styles.drawer} ${isNavigatorOpen ? styles.drawerOpen : ""}`}>
                         <h4 className="h5">Question Navigator</h4>
@@ -594,18 +710,18 @@ const QuizTaking = () => {
                             {shuffledQuestions.map((q, idx) => {
                                 const isCurrent = idx === currentIndex;
                                 const isAnswered = !!answers[q?.id];
-                                const isFlagged = flagged.includes(q?.id);
+                                const isFlaggedQ = flagged.includes(q?.id);
 
                                 let boxClass = styles.navigatorBox;
                                 if (isCurrent) boxClass += ` ${styles.boxCurrent}`;
                                 if (isAnswered) boxClass += ` ${styles.boxAnswered}`;
-                                if (isFlagged) boxClass += ` ${styles.boxFlagged}`;
+                                if (isFlaggedQ) boxClass += ` ${styles.boxFlagged}`;
 
                                 return (
                                     <div
-                                        key={q?.id}
+                                        key={q?.id || `nav-${idx}`}
                                         onClick={() => {
-                                            nextSound.play();
+                                            safePlay(nextSound);
                                             dispatch(setCurrentIndex(idx));
                                             setIsNavigatorOpen(false);
                                         }}
@@ -649,8 +765,8 @@ const QuizTaking = () => {
                         <div className="text-sm text-secondary flex flex-col gap-2">
                             <div>Answered: <strong>{answeredCount} / {totalQuestions}</strong></div>
                             {totalQuestions - answeredCount > 0 && (
-                                <div style={{ color: "var(--color-warning-hover)" }}>
-                                    ⚠️ Unanswered: <strong>{totalQuestions - answeredCount}</strong>
+                                <div style={{ color: "var(--color-warning-hover)", display: "flex", alignItems: "center", gap: "4px" }}>
+                                    <FiAlertCircle /> Unanswered: <strong>{totalQuestions - answeredCount}</strong>
                                 </div>
                             )}
                             <div>Flagged for review: <strong>{flagged.length}</strong></div>
