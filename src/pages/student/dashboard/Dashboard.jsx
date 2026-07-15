@@ -209,7 +209,7 @@ const StudentDashboard = () => {
             </div>
 
             {/* Stats Row */}
-            <div className="stats-row">
+            <div className="stats-row" data-tour="dashboard-stats">
                 <div className={styles.card}>
                     <div className="flex items-center gap-3">
                         <div style={{ background: "var(--blue-50)", padding: "10px", borderRadius: "50%", display: "flex" }}>
@@ -264,7 +264,7 @@ const StudentDashboard = () => {
                 {/* Left Column */}
                 <div className="flex flex-col gap-6">
                     {/* Assigned Quizzes Pending */}
-                    <div className={styles.card}>
+                    <div className={styles.card} data-tour="dashboard-assigned">
                         <div className={styles.cardTitle}>
                             <span>Assigned Quizzes Pending</span>
                             {assignments.length > 0 && (
@@ -308,7 +308,7 @@ const StudentDashboard = () => {
                     </div>
 
                     {/* Recent Activity Feed */}
-                    <div className={styles.card}>
+                    <div className={styles.card} data-tour="dashboard-recent">
                         <div className={styles.cardTitle}>Recent Activity</div>
                         <div className={styles.activityList}>
                             {attempts.length === 0 ? (
@@ -351,7 +351,7 @@ const StudentDashboard = () => {
                     </div>
 
                     {/* Performance by Category */}
-                    <div className={styles.card}>
+                    <div className={styles.card} data-tour="dashboard-category">
                         <div className={styles.cardTitle}>Performance by Category</div>
                         <div className="flex flex-col gap-4">
                             {categoryPerformance.length === 0 ? (
@@ -386,7 +386,7 @@ const StudentDashboard = () => {
                 {/* Right Column */}
                 <div className="flex flex-col gap-6">
                     {/* XP & Level Card */}
-                    <div className={`${styles.card} ${styles.xpCard}`}>
+                    <div className={`${styles.card} ${styles.xpCard}`} data-tour="dashboard-xp">
                         <div className="flex justify-between items-center">
                             <span className="h3" style={{ color: "var(--color-xp)" }}>
                                 Level {currentLevel}
@@ -405,7 +405,7 @@ const StudentDashboard = () => {
                     </div>
 
                     {/* Streak Widget */}
-                    <div className={styles.card}>
+                    <div className={styles.card} data-tour="dashboard-streak">
                         <div className={styles.cardTitle}>
                             <span>Streak Widget</span>
                             <span style={{ fontSize: "1.2rem", display: "flex", alignItems: "center", gap: "4px" }}>
@@ -427,7 +427,7 @@ const StudentDashboard = () => {
                     </div>
 
                     {/* Recent Achievements */}
-                    <div className={styles.card}>
+                    <div className={styles.card} data-tour="dashboard-achievements">
                         <div className={styles.cardTitle}>Recent Achievements</div>
                         <div className="flex flex-col gap-3">
                             {achievements.length === 0 ? (

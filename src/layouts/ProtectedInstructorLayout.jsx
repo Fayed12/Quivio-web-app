@@ -31,7 +31,9 @@ const ProtectedInstructorLayout = () => {
 
     // States for collapsible and mobile sidebar
     const [isCollapsed, setIsCollapsed] = useState(() => {
-        return localStorage.getItem("instructor-sidebar-collapsed") === "true";
+        const saved = localStorage.getItem("instructor-sidebar-collapsed");
+        if (saved !== null) return saved === "true";
+        return typeof window !== "undefined" ? window.innerWidth <= 1024 : false;
     });
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(
@@ -156,13 +158,21 @@ const ProtectedInstructorLayout = () => {
     // Track mobile viewport resizing
     useEffect(() => {
         const handleResize = () => {
-            const mobile = window.innerWidth <= 768;
+            const width = window.innerWidth;
+            const mobile = width <= 768;
             setIsMobile(mobile);
-            if (!mobile) {
-                setIsMobileOpen(false); // Close drawer if resizing to desktop
+            if (mobile) {
+                setIsMobileOpen(false); // Close drawer if resizing to mobile
+            } else if (width <= 1024) {
+                setIsCollapsed(true); // Auto collapse on tablet viewports
+            } else {
+                // Restore saved preference on larger screens
+                const saved = localStorage.getItem("instructor-sidebar-collapsed");
+                setIsCollapsed(saved === "true");
             }
         };
         window.addEventListener("resize", handleResize);
+        handleResize(); // run initially on mount
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 

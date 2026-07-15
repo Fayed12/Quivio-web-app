@@ -290,7 +290,7 @@ const router = createBrowserRouter([
                     },
                     {
                         path: "*",
-                        element: <Navigate to="dashboard" replace />,
+                        element: <Navigate to="/student/dashboard" replace />,
                     }
                 ],
             },
@@ -430,7 +430,7 @@ const router = createBrowserRouter([
                     },
                     {
                         path: "*",
-                        element: <Navigate to="dashboard" replace />,
+                        element: <Navigate to="/instructor/dashboard" replace />,
                     }
                 ],
             },

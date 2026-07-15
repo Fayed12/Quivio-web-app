@@ -82,6 +82,9 @@
     color: var(--text-muted);
     padding-left: var(--space-3);
     margin-bottom: var(--space-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sectionDivider {

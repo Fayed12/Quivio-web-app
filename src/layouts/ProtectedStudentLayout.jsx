@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from "react";
 // react-router
 import { Navigate, Outlet, useNavigate, useLocation } from "react-router";
 
+// react-joyride
+import { Joyride } from "react-joyride";
+
 // redux
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -41,10 +44,13 @@ const ProtectedStudentLayout = () => {
 
     // Local state to track if student skipped password change prompt in this session
     const [showPrompt, setShowPrompt] = useState(false);
+    const [runGuide, setRunGuide] = useState(false);
     
     // States for collapsible and mobile sidebar
     const [isCollapsed, setIsCollapsed] = useState(() => {
-        return localStorage.getItem("student-sidebar-collapsed") === "true";
+        const saved = localStorage.getItem("student-sidebar-collapsed");
+        if (saved !== null) return saved === "true";
+        return typeof window !== "undefined" ? window.innerWidth <= 1024 : false;
     });
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(
@@ -58,15 +64,152 @@ const ProtectedStudentLayout = () => {
     // Track mobile viewport resizing
     useEffect(() => {
         const handleResize = () => {
-            const mobile = window.innerWidth <= 768;
+            const width = window.innerWidth;
+            const mobile = width <= 768;
             setIsMobile(mobile);
-            if (!mobile) {
-                setIsMobileOpen(false); // Close drawer if resizing to desktop
+            if (mobile) {
+                setIsMobileOpen(false); // Close drawer if resizing to mobile
+            } else if (width <= 1024) {
+                setIsCollapsed(true); // Auto collapse on tablet viewports
+            } else {
+                // Restore saved preference on larger screens
+                const saved = localStorage.getItem("student-sidebar-collapsed");
+                setIsCollapsed(saved === "true");
             }
         };
         window.addEventListener("resize", handleResize);
+        handleResize(); // run initially on mount
         return () => window.removeEventListener("resize", handleResize);
     }, []);
+
+    const isHome =
+        location.pathname === "/student/dashboard" ||
+        location.pathname === "/student" ||
+        location.pathname === "/student/";
+
+    const homeSteps = [
+        {
+            target: "body",
+            content:
+                "Welcome to the Quivio Student Tour! Let's show you how to navigate your dashboard and quizzes.",
+            placement: "center",
+        },
+        {
+            target: '[data-tour="sidebar-dashboard"]',
+            content:
+                "Dashboard: Your central hub. View your streak, total quizzes taken, achievements, and statistics.",
+        },
+        {
+            target: '[data-tour="sidebar-quizzes"]',
+            content:
+                "Browse Quizzes: Explore public quizzes from the community, filter by categories, and test your knowledge.",
+        },
+        {
+            target: '[data-tour="sidebar-attempts"]',
+            content:
+                "My Attempts: View your historical quiz scores, response breakdown keys, and completion certificates.",
+        },
+        {
+            target: '[data-tour="sidebar-progress"]',
+            content:
+                "Progress: Visual charts showing score trends, pass/fail ratios, and subject mastery levels over time.",
+        },
+        {
+            target: '[data-tour="sidebar-leaderboard"]',
+            content:
+                "Leaderboard: Compare your XP score rankings and check your position against other students globally.",
+        },
+        {
+            target: '[data-tour="sidebar-bookmarks"]',
+            content:
+                "Bookmarks: Quick access to important quizzes you've saved for future practice.",
+        },
+        {
+            target: '[data-tour="sidebar-achievements"]',
+            content:
+                "Achievements: Earned badge awards for streaks, perfect scores, fast completions, and key learning milestones.",
+        },
+        {
+            target: '[data-tour="sidebar-notifications"]',
+            content:
+                "Notifications: Keep track of new quiz assignments from rooms and system alerts.",
+        },
+        {
+            target: '[data-tour="sidebar-profile"]',
+            content:
+                "Profile: Update your account details, profile picture, change password, and notification preferences.",
+        },
+        {
+            target: '[data-tour="dashboard-stats"]',
+            content:
+                "Learning KPIs: View your total quiz attempts, average accuracy rate, best scores, and current learning streak.",
+        },
+        {
+            target: '[data-tour="dashboard-assigned"]',
+            content:
+                "Pending Assignments: Active quizzes distributed by instructors to your classrooms that are waiting for you to complete.",
+        },
+        {
+            target: '[data-tour="dashboard-recent"]',
+            content:
+                "Recent Attempts: Access your last five quiz submissions to review details or see scores.",
+        },
+        {
+            target: '[data-tour="dashboard-category"]',
+            content:
+                "Category performance: Track your knowledge levels across subjects like Math, Science, and Languages.",
+        },
+        {
+            target: '[data-tour="dashboard-xp"]',
+            content:
+                "Level & XP progress: Gain Experience Points (XP) by submitting quizzes and level up your rank.",
+        },
+        {
+            target: '[data-tour="dashboard-streak"]',
+            content:
+                "Streak calendar: Keep your daily learning streak alive by attempting at least one quiz every day.",
+        },
+        {
+            target: '[data-tour="dashboard-achievements"]',
+            content:
+                "Recent Badges: Displays your recently earned achievement awards and tiers.",
+        },
+    ];
+
+    const pageSteps = [
+        {
+            target: "h1",
+            content:
+                "Workspace Header: Displays current workspace title and breadcrumb path.",
+        },
+        {
+            target: "main",
+            content:
+                "Main Content Area: Where you browse, answer quiz questions, view detailed progress, or review attempts.",
+        },
+        {
+            target: '[data-tour="topbar-search"]',
+            content:
+                "Global Search Bar: Instantly search assigned quizzes or public quizzes by name or topic.",
+        },
+        {
+            target: '[data-tour="topbar-actions"]',
+            content:
+                "System Actions: Toggle theme, read notifications, reload the page, or start the tour guide again.",
+        },
+    ];
+
+    const rawSteps = isHome ? homeSteps : pageSteps;
+    const steps = isMobile
+        ? rawSteps.filter((s) => !s.target.includes?.("sidebar-"))
+        : rawSteps;
+
+    const handleJoyrideCallback = (data) => {
+        const { status } = data;
+        if (["finished", "skipped"].includes(status)) {
+            setRunGuide(false);
+        }
+    };
 
     // Prevent scrolling on mobile when sidebar drawer is open
     useEffect(() => {
@@ -242,6 +385,44 @@ const ProtectedStudentLayout = () => {
 
     return (
         <div className={styles.appShell}>
+            {/* Joyride Tour Guide */}
+            <Joyride
+                run={runGuide}
+                steps={steps}
+                continuous={true}
+                showSkipButton={true}
+                showProgress={true}
+                callback={handleJoyrideCallback}
+                disableOverlay={false}
+                disableOverlayClose={true}
+                spotlightClicks={false}
+                disableScrolling={false}
+                scrollOffset={100}
+                styles={{
+                    options: {
+                        primaryColor: "var(--color-accent)",
+                        textColor: "var(--text-primary)",
+                        backgroundColor: "var(--bg-surface)",
+                        arrowColor: "var(--bg-surface)",
+                        zIndex: 50000,
+                    },
+                    overlay: {
+                        backgroundColor: "rgba(0, 0, 0, 0.7)",
+                        zIndex: 10000,
+                    },
+                    spotlight: {
+                        borderRadius: "var(--radius-md)",
+                        zIndex: 20000,
+                    },
+                    tooltip: {
+                        borderRadius: "var(--radius-lg)",
+                        fontSize: "var(--text-sm)",
+                        fontFamily: "var(--font-sans)",
+                        zIndex: 20001,
+                    },
+                }}
+            />
+
             {/* Moving background circles */}
             {!isQuizTaking && <StudentMovingBackground />}
 
@@ -268,6 +449,7 @@ const ProtectedStudentLayout = () => {
                     <StudentTopbar
                         onToggleSidebar={handleToggleSidebar}
                         onToggleMobileSidebar={() => setIsMobileOpen(!isMobileOpen)}
+                        onStartGuide={() => setRunGuide(true)}
                         style={{
                             left: currentMarginLeft,
                             width: `calc(100% - ${currentMarginLeft})`,
