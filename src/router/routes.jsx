@@ -70,7 +70,8 @@ const RedirectIfAuth = ({ children }) => {
     if (isAuth && role) {
         // Exception: If student goes to /register directly, let them see the Blocked card page
         const isStudentRegister = role === "student" && window.location.pathname === "/register";
-        if (!isStudentRegister) {
+        const isForgotPassword = window.location.pathname === "/forgot-password";
+        if (!isStudentRegister && !isForgotPassword) {
             return <Navigate to={role === "instructor" ? "/instructor/dashboard" : "/student/dashboard"} replace />;
         }
     }
