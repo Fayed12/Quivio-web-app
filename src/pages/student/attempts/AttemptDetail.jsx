@@ -41,7 +41,8 @@ const AttemptDetail = () => {
 
     // Entrance Animation
     usePageAnimation(containerRef, {
-        ready: !!attempt
+        ready: !!attempt,
+        staggerSelector: "[data-animate]"
     });
 
     useEffect(() => {
@@ -138,7 +139,7 @@ const AttemptDetail = () => {
     return (
         <div ref={containerRef} className={styles.container}>
             {/* Breadcrumb Header */}
-            <div style={{ borderBottom: "1px solid var(--border-default)", paddingBottom: "var(--space-3)" }}>
+            <div data-animate style={{ borderBottom: "1px solid var(--border-default)", paddingBottom: "var(--space-3)" }}>
                 <button
                     onClick={() => navigate("/student/attempts")}
                     className="btn btn--ghost btn--sm"
@@ -149,7 +150,7 @@ const AttemptDetail = () => {
             </div>
 
             {/* Title Area */}
-            <div className={styles.titleRow}>
+            <div data-animate className={styles.titleRow}>
                 <div>
                     <h1 className="h1">{attempt.quiz?.title || "Quiz Detail"}</h1>
                     <p className="text-secondary text-sm">
@@ -163,7 +164,7 @@ const AttemptDetail = () => {
 
             {/* Comparison card if applicable */}
             {comparison && (
-                <div className={styles.card}>
+                <div data-animate className={styles.card}>
                     <h4 className="h5 flex items-center gap-2 text-primary">
                         <FiTrendingUp style={{ color: "var(--color-accent)" }} /> Comparison to previous attempt
                     </h4>
@@ -189,7 +190,7 @@ const AttemptDetail = () => {
             {/* Charts Section */}
             <div className={styles.chartGrid}>
                 {/* Time spent chart */}
-                <div className={styles.chartCard}>
+                <div data-animate className={styles.chartCard}>
                     <span className={styles.chartTitle}>Time spent per question</span>
                     <div style={{ width: "100%", height: 260 }}>
                         <ResponsiveContainer width="100%" height="100%">
@@ -205,7 +206,7 @@ const AttemptDetail = () => {
                 </div>
 
                 {/* Tag Accuracy Chart */}
-                <div className={styles.chartCard}>
+                <div data-animate className={styles.chartCard}>
                     <span className={styles.chartTitle}>Correctness by tag/topic</span>
                     <div style={{ width: "100%", height: 260 }}>
                         <ResponsiveContainer width="100%" height="100%">
@@ -225,7 +226,7 @@ const AttemptDetail = () => {
 
             {/* Question Breakdown List */}
             <div className="flex flex-col gap-4">
-                <h3 className="h3">Detailed Question Breakdown</h3>
+                <h3 data-animate className="h3">Detailed Question Breakdown</h3>
 
                 {(attempt.attempt_answers || []).map((ans, idx) => {
                     const isExpanded = !!expandedQuestion[ans.id];
@@ -235,6 +236,7 @@ const AttemptDetail = () => {
                     return (
                         <div
                             key={ans.id}
+                            data-animate
                             className={`${styles.reviewRow} ${ans.is_correct ? styles.correctRow : styles.incorrectRow}`}
                         >
                             <div 

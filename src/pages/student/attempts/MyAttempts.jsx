@@ -7,11 +7,13 @@ import { useNavigate } from "react-router";
 import { format, compareDesc, compareAsc } from "date-fns";
 
 // redux
-import { fetchMyAttempts, fetchMyStats, selectMyAttempts, selectMyStats } from "../../../redux/slices/attemptsSlice";
+import { fetchMyAttempts, fetchMyStats, selectMyAttempts, selectMyStats, selectAttemptsLoading } from "../../../redux/slices/attemptsSlice";
 import { fetchCategories, selectCategories } from "../../../redux/slices/categoriesSlice";
 
 // components
 import MainButton from "../../../components/ui/button/MainButton";
+import CustomSelect from "../../../components/ui/select/CustomSelect";
+import LoadingSpinner from "../../../components/ui/loading-Spinner/loadingSpinner";
 
 // react-icons
 import {
@@ -20,7 +22,10 @@ import {
     FiXCircle,
     FiAward,
     FiSearch,
-    FiEye
+    FiEye,
+    FiX,
+    FiChevronLeft,
+    FiChevronRight
 } from "react-icons/fi";
 
 // local
@@ -34,6 +39,7 @@ const MyAttempts = () => {
     const attempts = useSelector(selectMyAttempts) || [];
     const stats = useSelector(selectMyStats);
     const categories = useSelector(selectCategories) || [];
+    const loading = useSelector(selectAttemptsLoading);
 
     const containerRef = useRef(null);
 
@@ -47,7 +53,8 @@ const MyAttempts = () => {
 
     // Entrance Animation
     usePageAnimation(containerRef, {
-        ready: attempts.length > 0
+        ready: !loading,
+        staggerSelector: "[data-animate]"
     });
 
     useEffect(() => {
@@ -108,23 +115,48 @@ const MyAttempts = () => {
     const startIndex = (currentPage - 1) * pageSize;
     const paginatedAttempts = filteredAttempts.slice(startIndex, startIndex + pageSize);
 
+    // Dynamic Pagination Window helper
+    const getPageNumbers = () => {
+        const pages = [];
+        const delta = 1;
+        const left = currentPage - delta;
+        const right = currentPage + delta;
+        
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= left && i <= right)) {
+                pages.push(i);
+            } else if (pages[pages.length - 1] !== "...") {
+                pages.push("...");
+            }
+        }
+        return pages;
+    };
+
     // Stats calculations
     const completedAttemptsCount = attempts.filter(a => a.status === "completed").length;
     const passedCount = attempts.filter(a => a.passed).length;
     const failedCount = completedAttemptsCount - passedCount;
     const averageScore = stats?.avg_score ? Math.round(stats.avg_score) : 0;
 
+    if (loading && attempts.length === 0) {
+        return (
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh", flexDirection: "column", gap: "1rem" }}>
+                <LoadingSpinner size="lg" label="Loading attempt history..." />
+            </div>
+        );
+    }
+
     return (
         <div ref={containerRef} className={styles.attemptsContainer}>
             {/* Page Header */}
-            <div style={{ borderBottom: "1px solid var(--border-default)", paddingBottom: "var(--space-4)" }}>
+            <div data-animate style={{ borderBottom: "1px solid var(--border-default)", paddingBottom: "var(--space-4)" }}>
                 <h1 className="h1">My Attempts</h1>
                 <p className="text-sm text-secondary">Review your quiz attempts, scores, and detailed correctness summaries.</p>
             </div>
 
             {/* Summary Stats Row */}
             <div className="stats-row">
-                <div className={styles.card}>
+                <div data-animate className={styles.statsCard}>
                     <div className="flex items-center gap-3">
                         <div style={{ background: "var(--blue-50)", padding: "10px", borderRadius: "50%", display: "flex" }}>
                             <FiBookOpen style={{ color: "var(--blue-600)" }} />
@@ -135,7 +167,7 @@ const MyAttempts = () => {
                         </div>
                     </div>
                 </div>
-                <div className={styles.card}>
+                <div data-animate className={styles.statsCard}>
                     <div className="flex items-center gap-3">
                         <div style={{ background: "var(--green-50)", padding: "10px", borderRadius: "50%", display: "flex" }}>
                             <FiCheckCircle style={{ color: "var(--green-600)" }} />
@@ -146,7 +178,7 @@ const MyAttempts = () => {
                         </div>
                     </div>
                 </div>
-                <div className={styles.card}>
+                <div data-animate className={styles.statsCard}>
                     <div className="flex items-center gap-3">
                         <div style={{ background: "var(--red-50)", padding: "10px", borderRadius: "50%", display: "flex" }}>
                             <FiXCircle style={{ color: "var(--red-600)" }} />
@@ -157,7 +189,7 @@ const MyAttempts = () => {
                         </div>
                     </div>
                 </div>
-                <div className={styles.card}>
+                <div data-animate className={styles.statsCard}>
                     <div className="flex items-center gap-3">
                         <div style={{ background: "var(--violet-50)", padding: "10px", borderRadius: "50%", display: "flex" }}>
                             <FiAward style={{ color: "var(--violet-600)" }} />
@@ -171,10 +203,9 @@ const MyAttempts = () => {
             </div>
 
             {/* Filters Row */}
-            <div className={styles.card}>
+            <div data-animate className={`${styles.card} ${styles.filtersCard}`}>
                 <div className={styles.filterBar}>
-                    <div className="flex flex-1 gap-2" style={{ minWidth: "260px" }}>
-                        <FiSearch style={{ alignSelf: "center", color: "var(--text-muted)", marginLeft: "var(--space-2)" }} />
+                    <div className={styles.searchWrapper}>
                         <input
                             type="text"
                             value={searchQuery}
@@ -185,50 +216,66 @@ const MyAttempts = () => {
                             placeholder="Search by quiz name..."
                             className={styles.filterInput}
                         />
+                        <FiSearch className={styles.searchIcon} />
+                        {searchQuery && (
+                            <button
+                                className={styles.clearIconBtn}
+                                onClick={() => {
+                                    setSearchQuery("");
+                                    setCurrentPage(1);
+                                }}
+                            >
+                                <FiX />
+                            </button>
+                        )}
                     </div>
 
-                    <select
+                    <CustomSelect
+                        options={[
+                            { value: "All", label: "All Categories" },
+                            ...categories.map(cat => ({ value: cat.id, label: cat.name }))
+                        ]}
                         value={selectedCategory}
-                        onChange={(e) => {
-                            setSelectedCategory(e.target.value);
+                        onChange={(val) => {
+                            setSelectedCategory(val || "All");
                             setCurrentPage(1);
                         }}
+                        placeholder="All Categories"
                         className={styles.filterSelect}
-                    >
-                        <option value="All">All Categories</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                    </select>
+                    />
 
-                    <select
+                    <CustomSelect
+                        options={[
+                            { value: "All", label: "All Results" },
+                            { value: "Passed", label: "Passed" },
+                            { value: "Failed", label: "Failed" }
+                        ]}
                         value={selectedStatus}
-                        onChange={(e) => {
-                            setSelectedStatus(e.target.value);
+                        onChange={(val) => {
+                            setSelectedStatus(val || "All");
                             setCurrentPage(1);
                         }}
+                        placeholder="All Results"
                         className={styles.filterSelect}
-                    >
-                        <option value="All">All Results</option>
-                        <option value="Passed">Passed</option>
-                        <option value="Failed">Failed</option>
-                    </select>
+                    />
 
-                    <select
+                    <CustomSelect
+                        options={[
+                            { value: "newest", label: "Sort: Newest First" },
+                            { value: "oldest", label: "Sort: Oldest First" },
+                            { value: "highest", label: "Sort: Highest Score" },
+                            { value: "lowest", label: "Sort: Lowest Score" }
+                        ]}
                         value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
+                        onChange={(val) => setSortBy(val || "newest")}
+                        placeholder="Sort By"
                         className={styles.filterSelect}
-                    >
-                        <option value="newest">Newest First</option>
-                        <option value="oldest">Oldest First</option>
-                        <option value="highest">Highest Score</option>
-                        <option value="lowest">Lowest Score</option>
-                    </select>
+                    />
                 </div>
             </div>
 
             {/* Attempts Table */}
-            <div className={styles.card}>
+            <div data-animate className={`${styles.card} ${styles.tableCard}`}>
                 {paginatedAttempts.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "2rem", color: "var(--text-secondary)" }}>
                         No quiz attempts found matching your filters.
@@ -283,31 +330,44 @@ const MyAttempts = () => {
                         {totalPages > 1 && (
                             <div className={styles.paginationRow}>
                                 <span className="text-xs text-secondary">
-                                    Showing {startIndex + 1}–{Math.min(startIndex + pageSize, totalItems)} of {totalItems} attempts
+                                    Showing <strong>{startIndex + 1}</strong>–<strong>{Math.min(startIndex + pageSize, totalItems)}</strong> of <strong>{totalItems}</strong> attempts
                                 </span>
-                                <div className="flex gap-2">
+                                <div className="flex gap-1 items-center">
                                     <button
                                         className={styles.pageBtn}
                                         disabled={currentPage === 1}
-                                        onClick={() => setCurrentPage(prev => prev - 1)}
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        aria-label="Previous Page"
                                     >
-                                        Prev
+                                        <FiChevronLeft />
                                     </button>
-                                    {Array.from({ length: totalPages }, (_, idx) => (
-                                        <button
-                                            key={idx + 1}
-                                            onClick={() => setCurrentPage(idx + 1)}
-                                            className={`${styles.pageBtn} ${currentPage === idx + 1 ? styles.pageBtnActive : ""}`}
-                                        >
-                                            {idx + 1}
-                                        </button>
-                                    ))}
+                                    
+                                    {getPageNumbers().map((page, idx) => {
+                                        if (page === "...") {
+                                            return (
+                                                <span key={`dots-${idx}`} className={styles.paginationDots}>
+                                                    ...
+                                                </span>
+                                            );
+                                        }
+                                        return (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`${styles.pageBtn} ${currentPage === page ? styles.pageBtnActive : ""}`}
+                                            >
+                                                {page}
+                                            </button>
+                                        );
+                                    })}
+                                    
                                     <button
                                         className={styles.pageBtn}
                                         disabled={currentPage === totalPages}
-                                        onClick={() => setCurrentPage(prev => prev + 1)}
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        aria-label="Next Page"
                                     >
-                                        Next
+                                        <FiChevronRight />
                                     </button>
                                 </div>
                             </div>

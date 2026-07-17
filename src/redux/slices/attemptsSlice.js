@@ -254,4 +254,5 @@ export const selectCurrentIndex = (s) => s.attempts.currentIndex;
 export const selectTimeRemaining = (s) => s.attempts.timeRemaining;
 export const selectMyStats = (s) => s.attempts.stats;
 export const selectSubmitting = (s) => s.attempts.submitting;
+export const selectAttemptsLoading = (s) => s.attempts.loading;
 export default slice.reducer;

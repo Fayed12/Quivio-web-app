@@ -14,6 +14,12 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+    transition: transform var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-slow);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .titleRow {
@@ -45,6 +51,12 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+    transition: transform var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-slow);
+}
+
+.chartCard:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .chartTitle {
@@ -109,6 +121,19 @@
     gap: var(--space-3);
 }
 
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 800px;
+    }
+}
+
 .reviewBody {
     padding: 0 var(--space-4) var(--space-4) var(--space-4);
     display: flex;
@@ -117,6 +142,8 @@
     border-top: 1px solid var(--border-subtle);
     padding-top: var(--space-3);
     margin-left: 28px;
+    animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    overflow: hidden;
 }
 
 .selectedCorrect {

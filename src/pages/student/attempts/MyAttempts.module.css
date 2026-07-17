@@ -11,6 +11,22 @@
     border-radius: var(--radius-lg);
     padding: var(--space-5);
     box-shadow: var(--shadow-sm);
+    transition: background-color var(--transition-slow);
+}
+
+.statsCard {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-slow);
+    cursor: default;
+}
+
+.statsCard:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
 }
 
 .filterBar {
@@ -18,30 +34,87 @@
     flex-wrap: wrap;
     gap: var(--space-3);
     align-items: center;
+    width: 100%;
+}
+
+.searchWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1.5;
+    min-width: 260px;
+}
+
+.searchIcon {
+    position: absolute;
+    left: var(--space-3);
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color var(--transition-base);
+}
+
+.clearIconBtn {
+    position: absolute;
+    right: var(--space-3);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-1);
+    border-radius: var(--radius-full);
+    transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+.clearIconBtn:hover {
+    background-color: var(--bg-surface-3);
+    color: var(--text-primary);
 }
 
 .filterInput {
-    flex: 1;
-    min-width: 200px;
+    width: 100%;
     height: 40px;
+    background-color: var(--bg-surface-2);
     border: 1px solid var(--border-default);
-    background: var(--bg-surface);
-    color: var(--text-primary);
-    padding: 0 var(--space-3);
     border-radius: var(--radius-md);
+    padding: 0 var(--space-8) 0 2.25rem;
     font-size: var(--text-sm);
+    color: var(--text-primary);
     outline: none;
+    transition: border-color var(--transition-base), background-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.filterInput:focus {
+    border-color: var(--color-accent);
+    background-color: var(--bg-surface);
+    box-shadow: 0 0 0 3px var(--blue-100);
+}
+
+.filterInput:focus + .searchIcon {
+    color: var(--color-accent);
 }
 
 .filterSelect {
+    flex: 1;
+    min-width: 170px;
     height: 40px;
+    background-color: var(--bg-surface-2);
     border: 1px solid var(--border-default);
-    background: var(--bg-surface);
-    color: var(--text-primary);
-    padding: 0 var(--space-3);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
+    color: var(--text-primary);
+    cursor: pointer;
     outline: none;
+    transition: border-color var(--transition-base), background-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.filterSelect:focus,
+.filterSelect:focus-within {
+    border-color: var(--color-accent);
+    background-color: var(--bg-surface);
+    box-shadow: 0 0 0 3px var(--blue-100);
 }
 
 .tableWrapper {
@@ -64,14 +137,31 @@
     border-bottom: 1px solid var(--border-default);
 }
 
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.attemptsTable tbody tr {
+    animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 .attemptsTable td {
     padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-subtle);
     color: var(--text-secondary);
+    transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .attemptsTable tr:hover td {
     background: var(--bg-surface-2);
+    color: var(--text-primary);
 }
 
 .paginationRow {
@@ -85,19 +175,53 @@
     background: var(--bg-surface);
     border: 1px solid var(--border-default);
     color: var(--text-secondary);
-    padding: var(--space-1) var(--space-3);
+    min-width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
     cursor: pointer;
+    transition: background-color var(--transition-base), border-color var(--transition-base), color var(--transition-base), transform var(--transition-fast), box-shadow var(--transition-base);
+}
+
+.pageBtn:hover:not(:disabled) {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background-color: var(--bg-surface-2);
+    transform: translateY(-1px);
 }
 
 .pageBtnActive {
-    background: var(--color-accent);
-    color: white;
-    border-color: var(--color-accent);
+    background: var(--color-accent) !important;
+    color: white !important;
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
 }
 
 .pageBtn:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
+}
+
+.paginationDots {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+}
+
+.filtersCard {
+    position: relative;
+    z-index: 10;
+}
+
+.tableCard {
+    position: relative;
+    z-index: 1;
 }
