@@ -1,6 +1,9 @@
 // react
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
+
+// components
+import CustomSelect from "../../../components/ui/select/CustomSelect";
 
 // redux
 import {
@@ -17,6 +20,7 @@ import { selectProfile } from "../../../redux/slices/authSlice";
 
 // react-icons
 import { FiSearch } from "react-icons/fi";
+import { FaCrown, FaMedal, FaFire } from "react-icons/fa";
 
 // gsap
 import { gsap } from "gsap";
@@ -32,7 +36,8 @@ const Leaderboard = () => {
     const globalBoard = useSelector(selectGlobalLeaderboard) || [];
     const monthlyBoard = useSelector(selectMonthlyLeaderboard) || [];
     const categoryBoard = useSelector(selectCategoryLeaderboard) || [];
-    const categories = useSelector(selectCategories) || [];
+    const categoriesData = useSelector(selectCategories);
+    const categories = useMemo(() => categoriesData || [], [categoriesData]);
 
     const containerRef = useRef(null);
     const podiumRef = useRef(null);
@@ -63,16 +68,42 @@ const Leaderboard = () => {
     // Set first category when loading categories
     useEffect(() => {
         if (categories.length > 0 && !selectedCategoryId) {
-            setSelectedCategoryId(categories[0].id);
+            const firstId = categories[0].id;
+            const timer = setTimeout(() => {
+                setSelectedCategoryId(firstId);
+            }, 0);
+            return () => clearTimeout(timer);
         }
     }, [categories, selectedCategoryId]);
 
     // Select correct list based on active tab
     const getActiveLeaderboard = () => {
-        if (activeTab === "global") return globalBoard;
-        if (activeTab === "monthly") return monthlyBoard;
-        if (activeTab === "category") return categoryBoard;
-        return [];
+        const board = activeTab === "global" ? globalBoard
+                    : activeTab === "monthly" ? monthlyBoard
+                    : activeTab === "category" ? categoryBoard
+                    : [];
+
+        return board.map((entry, index) => {
+            let xp = 0;
+            if (activeTab === "global") {
+                xp = entry.global_score ?? entry.profile?.xp ?? entry.xp ?? 0;
+            } else if (activeTab === "monthly") {
+                xp = entry.global_score ?? entry.profile?.xp ?? entry.xp ?? 0;
+            } else if (activeTab === "category") {
+                xp = entry.global_score ?? entry.profile?.xp ?? entry.xp ?? 0;
+            }
+
+            const quizzes_completed = entry.quizzes_passed ?? entry.total_attempts ?? entry.attempt_count ?? entry.quizzes_completed ?? 0;
+            const streak = entry.current_streak ?? entry.profile?.streak ?? entry.streak ?? 0;
+
+            return {
+                ...entry,
+                xp,
+                quizzes_completed,
+                streak,
+                rank: index + 1
+            };
+        });
     };
 
     const activeLeaderboard = getActiveLeaderboard();
@@ -117,8 +148,8 @@ const Leaderboard = () => {
     if (podiumList[0]) orderedPodium.push({ ...podiumList[0], rank: 1 });
     if (podiumList[2]) orderedPodium.push({ ...podiumList[2], rank: 3 });
 
-    // Table List (ranks 4+)
-    const tableList = filteredLeaderboard.slice(3);
+    // Table List (show all ranks in the table)
+    const tableList = filteredLeaderboard;
 
     // Current student sticky banner stats
     const getMyCurrentRankDetails = () => {
@@ -178,15 +209,13 @@ const Leaderboard = () => {
                 </div>
 
                 {activeTab === "category" && categories.length > 0 && (
-                    <select
+                    <CustomSelect
+                        options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
                         value={selectedCategoryId}
-                        onChange={(e) => setSelectedCategoryId(e.target.value)}
-                        className={styles.categorySelect}
-                    >
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                    </select>
+                        onChange={(val) => setSelectedCategoryId(val)}
+                        placeholder="Select category..."
+                        className={styles.categorySelectWrapper}
+                    />
                 )}
             </div>
 
@@ -209,8 +238,8 @@ const Leaderboard = () => {
 
                         return (
                             <div key={entry.uid} className={styles.podiumColumn}>
-                                {isFirst && <div className={styles.crownIcon}>👑</div>}
-                                {!isFirst && <div className={styles.crownIcon} style={{ visibility: "hidden" }}>🥇</div>}
+                                {isFirst && <div className={styles.crownIcon}><FaCrown style={{ color: "#FBBF24", fontSize: "1.5rem" }} /></div>}
+                                {!isFirst && <div className={styles.crownIcon} style={{ visibility: "hidden" }}><FaMedal /></div>}
                                 <img
                                     src={avatar}
                                     alt={name}
@@ -255,12 +284,12 @@ const Leaderboard = () => {
                                     <th>XP</th>
                                     <th>Quizzes Done</th>
                                     <th>Streak</th>
-                                    <th>Trend</th>
+                                    <th>Avg Score</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {tableList.map((entry, idx) => {
-                                    const rankNum = idx + 4;
+                                    const rankNum = entry.rank || (idx + 1);
                                     const name = entry.profile?.full_name || entry.full_name || "Student";
                                     const avatar = entry.profile?.avatar_url || entry.avatar_url || "https://api.dicebear.com/7.x/adventurer/svg?seed=Quivio";
                                     const isMe = entry.uid === currentProfile?.uid;
@@ -270,17 +299,25 @@ const Leaderboard = () => {
                                             key={entry.uid}
                                             className={isMe ? styles.highlightRow : ""}
                                         >
-                                            <td className="font-semibold">#{rankNum}</td>
+                                            <td className="font-semibold">
+                                                {rankNum === 1 ? <FaMedal style={{ color: "#F59E0B", fontSize: "1.1rem" }} />
+                                                 : rankNum === 2 ? <FaMedal style={{ color: "#94A3B8", fontSize: "1.1rem" }} />
+                                                 : rankNum === 3 ? <FaMedal style={{ color: "#B45309", fontSize: "1.1rem" }} />
+                                                 : `#${rankNum}`}
+                                            </td>
                                             <td className={styles.studentCell}>
                                                 <img src={avatar} alt={name} className={styles.avatar} />
                                                 <span className="font-medium">{name}</span>
                                             </td>
-                                            <td className="font-semibold">{entry.xp || entry.total_xp || 0}</td>
-                                            <td>{entry.quizzes_completed || entry.quizzes_taken || 0}</td>
-                                            <td>🔥 {entry.profile?.streak || entry.streak || 0}d</td>
+                                            <td className="font-semibold">{entry.xp}</td>
+                                            <td>{entry.quizzes_completed}</td>
                                             <td>
-                                                <span style={{ color: "var(--color-success)" }}>▲</span>
+                                                <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-1)" }}>
+                                                    <FaFire style={{ color: "#EF4444" }} />
+                                                    <span>{entry.streak}d</span>
+                                                </div>
                                             </td>
+                                            <td className="font-semibold">{entry.avg_score ?? 0}%</td>
                                         </tr>
                                     );
                                 })}

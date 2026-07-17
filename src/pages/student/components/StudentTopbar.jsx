@@ -472,7 +472,11 @@ const StudentTopbar = ({ onToggleSidebar, onToggleMobileSidebar, onStartGuide, s
                         aria-label="Profile actions"
                     >
                         <div className={styles.avatar}>
-                            {getInitials(profile?.full_name)}
+                            {profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt={profile.full_name || "Avatar"} className={styles.avatarImg} />
+                            ) : (
+                                getInitials(profile?.full_name)
+                            )}
                         </div>
                         <span className={styles.profileName}>
                             {profile?.full_name?.split(" ")[0] || "Student"}

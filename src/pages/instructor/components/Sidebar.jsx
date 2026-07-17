@@ -149,9 +149,13 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                     <div className={styles.userCard}>
                         <div 
                             className={styles.avatar} 
-                            style={{ backgroundColor: getAvatarColor(profile?.full_name) }}
+                            style={profile?.avatar_url ? {} : { backgroundColor: getAvatarColor(profile?.full_name) }}
                         >
-                            {profile?.full_name?.charAt(0).toUpperCase() || "I"}
+                            {profile?.avatar_url ? (
+                                <img src={profile.avatar_url} alt={profile.full_name || "Avatar"} className={styles.avatarImg} />
+                            ) : (
+                                profile?.full_name?.charAt(0).toUpperCase() || "I"
+                            )}
                         </div>
                         {!isCollapsed && (
                             <div className={styles.userInfo}>

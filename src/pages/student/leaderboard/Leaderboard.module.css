@@ -49,6 +49,10 @@
     outline: none;
 }
 
+.categorySelectWrapper {
+    width: 200px;
+}
+
 /* Podium UI (Top 3) */
 .podiumContainer {
     display: flex;
