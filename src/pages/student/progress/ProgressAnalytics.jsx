@@ -10,8 +10,7 @@ import { selectProfile } from "../../../redux/slices/authSlice";
 // components
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Legend,
-    BarChart, Bar
+    BarChart, Bar, ReferenceLine
 } from "recharts";
 
 // react-icons
@@ -19,8 +18,10 @@ import {
     FiZap,
     FiAward,
     FiCheckCircle,
-    FiActivity
+    FiActivity,
+    FiBookOpen
 } from "react-icons/fi";
+import { FaCrown } from "react-icons/fa";
 
 // local
 import styles from "./ProgressAnalytics.module.css";
@@ -38,7 +39,8 @@ const ProgressAnalytics = () => {
 
     // Entrance Animation
     usePageAnimation(containerRef, {
-        ready: attempts.length > 0
+        ready: true,
+        staggerSelector: "[data-animate]"
     });
 
     useEffect(() => {
@@ -113,22 +115,22 @@ const ProgressAnalytics = () => {
 
     // Category master status helpers
     const getMasteryStatus = (score) => {
-        if (score >= 90) return { label: "Master 👑", class: styles.masteryGold };
-        if (score >= 75) return { label: "Competent 🏅", class: styles.masterySilver };
-        return { label: "Needs Practice 📚", class: styles.masteryBronze };
+        if (score >= 90) return { label: "Master", icon: <FaCrown style={{ fontSize: "12px" }} />, class: styles.masteryGold };
+        if (score >= 75) return { label: "Competent", icon: <FiAward style={{ fontSize: "12px" }} />, class: styles.masterySilver };
+        return { label: "Needs Practice", icon: <FiBookOpen style={{ fontSize: "12px" }} />, class: styles.masteryBronze };
     };
 
     return (
         <div ref={containerRef} className={styles.progressContainer}>
             {/* Page Header */}
-            <div style={{ borderBottom: "1px solid var(--border-default)", paddingBottom: "var(--space-4)" }}>
+            <div data-animate style={{ borderBottom: "1px solid var(--border-default)", paddingBottom: "var(--space-4)" }}>
                 <h1 className="h1">Progress & Analytics</h1>
                 <p className="text-sm text-secondary">Analyze your learning patterns, quiz score progression, and category mastery logs.</p>
             </div>
 
             {/* Top Cards Row */}
-            <div className="stats-row">
-                <div className={`${styles.card} ${styles.levelCard}`}>
+            <div className={styles.statsGrid}>
+                <div data-animate className={`${styles.card} ${styles.levelCard}`}>
                     <div className="flex justify-between items-center">
                         <span className="h4 flex items-center gap-1" style={{ color: "var(--color-xp)", margin: 0 }}>
                             <FiZap /> Level {currentLevel}
@@ -141,7 +143,7 @@ const ProgressAnalytics = () => {
                     <span className="text-xs text-muted">{Math.max(0, nextThreshold - currentXp)} XP to next level</span>
                 </div>
 
-                <div className={styles.card}>
+                <div data-animate className={styles.card}>
                     <div className="flex items-center gap-3">
                         <div style={{ background: "var(--blue-50)", padding: "10px", borderRadius: "50%", display: "flex" }}>
                             <FiCheckCircle style={{ color: "var(--blue-600)" }} />
@@ -153,7 +155,7 @@ const ProgressAnalytics = () => {
                     </div>
                 </div>
 
-                <div className={styles.card}>
+                <div data-animate className={styles.card}>
                     <div className="flex items-center gap-3">
                         <div style={{ background: "var(--green-50)", padding: "10px", borderRadius: "50%", display: "flex" }}>
                             <FiAward style={{ color: "var(--green-600)" }} />
@@ -165,7 +167,7 @@ const ProgressAnalytics = () => {
                     </div>
                 </div>
 
-                <div className={styles.card}>
+                <div data-animate className={styles.card}>
                     <div className="flex items-center gap-3">
                         <div style={{ background: "var(--orange-50)", padding: "10px", borderRadius: "50%", display: "flex" }}>
                             <FiActivity style={{ color: "var(--orange-600)" }} />
@@ -179,7 +181,7 @@ const ProgressAnalytics = () => {
             </div>
 
             {/* Recharts Analytics Panel */}
-            <div className={styles.card}>
+            <div data-animate className={styles.card}>
                 <div className={styles.tabsHeader}>
                     <button
                         onClick={() => setActiveTab("overall")}
@@ -229,15 +231,37 @@ const ProgressAnalytics = () => {
                             </div>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <RadarChart outerRadius={90} data={masteryChartData}>
-                                    <PolarGrid />
-                                    <PolarAngleAxis dataKey="name" />
-                                    <PolarRadiusAxis angle={30} domain={[0, 100]} />
-                                    <Radar name="Your Avg Score" dataKey="Score" stroke="var(--color-accent)" fill="var(--color-accent)" fillOpacity={0.3} />
-                                    <Radar name="Passing Threshold" dataKey="Passing" stroke="var(--color-danger)" fill="var(--color-danger)" fillOpacity={0.05} />
-                                    <Legend />
-                                    <Tooltip />
-                                </RadarChart>
+                                <BarChart
+                                    layout="vertical"
+                                    data={masteryChartData}
+                                    margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="var(--border-subtle)" />
+                                    <XAxis type="number" domain={[0, 100]} stroke="var(--text-secondary)" unit="%" />
+                                    <YAxis type="category" dataKey="name" stroke="var(--text-secondary)" width={90} tickLine={false} axisLine={false} />
+                                    <Tooltip
+                                        contentStyle={{
+                                            background: "var(--bg-surface)",
+                                            borderColor: "var(--border-default)",
+                                            borderRadius: "var(--radius-md)",
+                                            color: "var(--text-primary)"
+                                        }}
+                                        formatter={(value) => [`${value}%`, 'Your Average Score']}
+                                    />
+                                    <Bar dataKey="Score" fill="var(--color-accent)" radius={[0, 4, 4, 0]} maxBarSize={24} />
+                                    <ReferenceLine
+                                        x={70}
+                                        stroke="var(--color-danger)"
+                                        strokeDasharray="4 4"
+                                        label={{
+                                            value: 'Passing (70%)',
+                                            position: 'top',
+                                            fill: 'var(--color-danger)',
+                                            fontSize: 10,
+                                            fontWeight: 'bold'
+                                        }}
+                                    />
+                                </BarChart>
                             </ResponsiveContainer>
                         )
                     ) : (
@@ -256,20 +280,20 @@ const ProgressAnalytics = () => {
 
             {/* Category mastery list cards */}
             <div className="flex flex-col gap-4">
-                <h3 className="h3">Performance by Category</h3>
+                <h3 data-animate className="h3">Performance by Category</h3>
                 
                 {masteryChartData.length === 0 ? (
-                    <div className="text-secondary text-sm">No category details found. Complete a quiz to get mastery logs.</div>
+                    <div data-animate className="text-secondary text-sm">No category details found. Complete a quiz to get mastery logs.</div>
                 ) : (
                     <div className={styles.categoryGrid}>
                         {masteryChartData.map(cat => {
                             const status = getMasteryStatus(cat.Score);
                             return (
-                                <div key={cat.name} className={styles.categoryCard}>
+                                <div data-animate key={cat.name} className={styles.categoryCard}>
                                     <div className="flex justify-between items-start">
                                         <h4 className="h5 text-primary" style={{ margin: 0 }}>{cat.name}</h4>
-                                        <span className={`${styles.masteryBadge} ${status.class}`}>
-                                            {status.label}
+                                        <span className={`${styles.masteryBadge} ${status.class} flex items-center gap-1`}>
+                                            {status.icon} <span>{status.label}</span>
                                         </span>
                                     </div>
                                     <div className="text-xs text-muted" style={{ marginTop: "4px" }}>
