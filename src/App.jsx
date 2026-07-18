@@ -121,58 +121,6 @@ function RealtimeProvider() {
         });
     }, []);
 
-    // ── Certificate issued handler ───────────────────────────────────────────
-    const handleCertificateIssued = useCallback(async (cert) => {
-        console.info("[Certificate issued]", cert);
-        
-        let quizTitle = "Quiz";
-        try {
-            const { data, error } = await supabase
-                .from("quizzes")
-                .select("title")
-                .eq("id", cert.quiz_id)
-                .single();
-            if (!error && data) {
-                quizTitle = data.title;
-            }
-        } catch (err) {
-            console.error("Error fetching quiz title for certificate:", err);
-        }
-
-        const isDark = document.documentElement.classList.contains("dark");
-        Swal.fire({
-            title: `<span style="color: var(--color-success, #10b981); font-weight: 800; font-family: var(--font-sans, sans-serif);">Certificate Earned!</span>`,
-            html: `
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; margin-top: 1rem; font-family: var(--font-sans, sans-serif);">
-                    <div style="font-size: 5rem; line-height: 1; filter: drop-shadow(0 10px 15px rgba(16, 185, 129, 0.3));">🎓</div>
-                    <div style="text-align: center;">
-                        <h4 style="margin: 0 0 0.5rem 0; color: ${isDark ? "#f8fafc" : "#0f172a"}; font-size: 1.25rem; font-weight: 700;">Congratulations!</h4>
-                        <p style="margin: 0; color: ${isDark ? "#94a3b8" : "#475569"}; font-size: 0.875rem; line-height: 1.5; max-width: 20rem; margin: 0 auto;">
-                            You have successfully completed <strong style="color: var(--color-success, #10b981);">${quizTitle}</strong> with a score of <strong>${cert.score}%</strong>!
-                        </p>
-                    </div>
-                    <div style="font-size: 0.75rem; color: ${isDark ? "#64748b" : "#94a3b8"}; margin-top: 0.5rem;">
-                        Certificate Code: <code style="background: ${isDark ? "#334155" : "#f1f5f9"}; color: ${isDark ? "#cbd5e1" : "#334155"}; padding: 0.25rem 0.5rem; border-radius: 4px; font-family: var(--font-mono, monospace);">${cert.certificate_code}</code>
-                    </div>
-                </div>
-            `,
-            background: isDark ? "#1e293b" : "#ffffff",
-            showCancelButton: true,
-            confirmButtonText: "View Certificate PDF",
-            cancelButtonText: "Close",
-            confirmButtonColor: "var(--color-success, #10b981)",
-            cancelButtonColor: isDark ? "#475569" : "#94a3b8",
-            buttonsStyling: true,
-            customClass: {
-                popup: "premium-swal-popup"
-            }
-        }).then((result) => {
-            if (result.isConfirmed && cert.pdf_url) {
-                window.open(cert.pdf_url, "_blank");
-            }
-        });
-    }, []);
-
     // ── Mount all hooks ──────────────────────────────────────────────────────
     useRealtimeProfiles();
     useRealtimeNotifications({ onNew: handleNewNotification });
@@ -180,7 +128,7 @@ function RealtimeProvider() {
     useRealtimeLeaderboard();
     useRealtimeUserAchievements({ onUnlock: handleAchievementUnlock });
     useRealtimeAssignments();
-    useRealtimeCertificates({ onIssued: handleCertificateIssued });
+    useRealtimeCertificates();
     useRealtimeCategories();
 
     return null;

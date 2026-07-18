@@ -15,29 +15,74 @@ import { fetchStudentAssignments, selectStudentAssignments } from "../../../redu
 
 // components
 import MainButton from "../../../components/ui/button/MainButton";
+import CustomSelect from "../../../components/ui/select/CustomSelect";
 import { toast } from "react-toastify";
 
 // react-icons
+import * as FiIcons from "react-icons/fi";
 import {
     FiSearch,
     FiGrid,
     FiList,
     FiBookmark,
     FiClock,
-    FiAward,
     FiChevronDown,
     FiChevronUp,
     FiFilter,
     FiX,
     FiCheck,
     FiFolder,
-    FiBookOpen
+    FiBookOpen,
+    FiStar,
+    FiArrowRight,
+    FiCalendar
 } from "react-icons/fi";
 
 // local
 import styles from "./BrowseQuizzes.module.css";
 import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
 import { useRealtimeQuizzes } from "../../../hooks/useRealtimeQuizzes";
+
+// Helper to safely format a date using date-fns
+const formatDateSafe = (dateString, formatPattern = "MMM d, yyyy") => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+        return "N/A";
+    }
+    return format(date, formatPattern);
+};
+
+// Helper to render category icon dynamically
+const renderCategoryIcon = (iconName, className) => {
+    const IconComponent = FiIcons[iconName] || FiBookOpen;
+    return <IconComponent className={className} />;
+};
+
+// Helper to render custom cover image for card
+const renderCustomCover = (quiz, bannerCol) => {
+    return (
+        <div className={styles.customCoverImage} style={{ 
+            background: `linear-gradient(135deg, ${bannerCol} 0%, var(--bg-surface-2) 100%)` 
+        }}>
+            <div className={styles.gridOverlay} />
+            <div className={styles.categoryIconInBanner}>
+                {renderCategoryIcon(quiz.category?.icon)}
+            </div>
+        </div>
+    );
+};
+
+// Helper to render custom thumbnail for list row
+const renderCustomThumbnail = (quiz, bulletCol) => {
+    return (
+        <div className={styles.customRowThumbnail} style={{
+            background: `linear-gradient(135deg, ${bulletCol} 0%, var(--bg-surface-2) 100%)`
+        }}>
+            {renderCategoryIcon(quiz.category?.icon, styles.rowThumbnailIcon)}
+        </div>
+    );
+};
 
 const BrowseQuizzes = () => {
     const dispatch = useDispatch();
@@ -74,6 +119,11 @@ const BrowseQuizzes = () => {
     const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
     const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
     const [togglingBookmarkId, setTogglingBookmarkId] = useState(null);
+    const [imageErrors, setImageErrors] = useState({});
+    
+    const handleImageError = (quizId) => {
+        setImageErrors(prev => ({ ...prev, [quizId]: true }));
+    };
     
     // Search input derived directly from URL search params
     const searchQuery = searchParams.get("search") || "";
@@ -171,9 +221,9 @@ const BrowseQuizzes = () => {
 
         // Date locks
         const now = new Date();
-        const isAvailableFromDate = !quiz.available_from || new Date(quiz.available_from) <= now;
-        const countdown = !isAvailableFromDate 
-            ? format(new Date(quiz.available_from), "PP") 
+        const isAvailableFromDate = !quiz.available_from || (new Date(quiz.available_from).getTime() && new Date(quiz.available_from) <= now);
+        const countdown = !isAvailableFromDate && quiz.available_from
+            ? formatDateSafe(quiz.available_from, "PP") 
             : null;
 
         return {
@@ -394,26 +444,26 @@ const BrowseQuizzes = () => {
                             return (
                                 <span key={catId} className={styles.chip}>
                                     Category: {name}
-                                    <button onClick={() => handleCategoryToggle(catId)} className={styles.chipClearBtn}>&times;</button>
+                                    <button onClick={() => handleCategoryToggle(catId)} className={styles.chipClearBtn} aria-label={`Clear category ${name}`}><FiX /></button>
                                 </span>
                             );
                         })}
                         {selectedDifficulty !== "All" && (
                             <span className={styles.chip}>
                                 Difficulty: {selectedDifficulty}
-                                <button onClick={() => setSelectedDifficulty("All")} className={styles.chipClearBtn}>&times;</button>
+                                <button onClick={() => setSelectedDifficulty("All")} className={styles.chipClearBtn} aria-label="Clear difficulty filter"><FiX /></button>
                             </span>
                         )}
                         {maxTime < 120 && (
                             <span className={styles.chip}>
-                                Time limit &le; {maxTime}m
-                                <button onClick={() => setMaxTime(120)} className={styles.chipClearBtn}>&times;</button>
+                                Time limit ≤ {maxTime}m
+                                <button onClick={() => setMaxTime(120)} className={styles.chipClearBtn} aria-label="Clear time limit filter"><FiX /></button>
                             </span>
                         )}
                         {selectedStatus !== "All" && (
                             <span className={styles.chip}>
                                 Status: {selectedStatus}
-                                <button onClick={() => setSelectedStatus("All")} className={styles.chipClearBtn}>&times;</button>
+                                <button onClick={() => setSelectedStatus("All")} className={styles.chipClearBtn} aria-label="Clear status filter"><FiX /></button>
                             </span>
                         )}
                         <button onClick={handleClearFilters} className={styles.clearAllLink}>
@@ -429,16 +479,17 @@ const BrowseQuizzes = () => {
                     Showing <strong>{filteredQuizzes.length}</strong> quizzes
                 </span>
                 <div className={styles.toolbarActions}>
-                    <select
+                    <CustomSelect
+                        options={[
+                            { value: "published_at", label: "Newest" },
+                            { value: "attempt_count", label: "Most Popular" },
+                            { value: "avg_score", label: "Highest Rated" },
+                            { value: "title", label: "A–Z" }
+                        ]}
                         value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
+                        onChange={setSortBy}
                         className={styles.sortSelect}
-                    >
-                        <option value="published_at">Newest</option>
-                        <option value="attempt_count">Most Popular</option>
-                        <option value="avg_score">Highest Rated</option>
-                        <option value="title">A–Z</option>
-                    </select>
+                    />
 
                     <div className="flex gap-1" style={{ background: "var(--bg-surface-2)", padding: "2px", borderRadius: "var(--radius-md)" }}>
                         <button
@@ -482,9 +533,19 @@ const BrowseQuizzes = () => {
                                 key={quiz.id} 
                                 className={`${styles.quizCard} ${details.isCompleted ? styles.mutedCard : ""}`}
                             >
-                                {/* Category banner */}
-                                <div className={styles.cardBanner} style={{ backgroundColor: bannerCol }}>
-                                    <span className={styles.categoryIconInBanner}><FiBookOpen /></span>
+                                {/* Cover Image or Custom Banner */}
+                                <div className={styles.cardBanner}>
+                                    {quiz.cover_image_url && !imageErrors[quiz.id] ? (
+                                        <img 
+                                            src={quiz.cover_image_url} 
+                                            alt={quiz.title} 
+                                            className={styles.cardImage} 
+                                            onError={() => handleImageError(quiz.id)}
+                                        />
+                                    ) : (
+                                        renderCustomCover(quiz, bannerCol)
+                                    )}
+                                    
                                     <button 
                                         onClick={(e) => handleBookmarkToggle(e, quiz.id)}
                                         className={`${styles.bookmarkBtn} ${bookmarkedIds[quiz.id] ? styles.bookmarkActive : ""} ${togglingBookmarkId === quiz.id ? styles.bookmarkToggling : ""}`}
@@ -525,7 +586,7 @@ const BrowseQuizzes = () => {
                                     <h3 className={styles.quizTitle} title={quiz.title}>{quiz.title}</h3>
                                     
                                     <div className={styles.ratingRow}>
-                                        <FiAward className={styles.ratingStar} />
+                                        <FiStar className={styles.ratingStar} />
                                         <span>
                                             {quiz.avg_score ? `${Math.round(quiz.avg_score)}%` : "No ratings"}
                                         </span>
@@ -533,15 +594,20 @@ const BrowseQuizzes = () => {
                                         <span>{quiz.attempt_count || 0} attempts</span>
                                     </div>
 
+                                    <div className={styles.publishRow}>
+                                        <FiCalendar className={styles.calendarIcon} />
+                                        <span>Published: {formatDateSafe(quiz.published_at || quiz.created_at)}</span>
+                                    </div>
+
                                     <div className={styles.badgesRow}>
-                                        <span className="scoreBadge" style={{ background: quiz.difficulty?.toLowerCase() === "easy" ? "var(--bg-success-mid)" : quiz.difficulty?.toLowerCase() === "medium" ? "var(--bg-warning-mid)" : "var(--bg-danger-mid)", color: quiz.difficulty?.toLowerCase() === "easy" ? "var(--text-success)" : quiz.difficulty?.toLowerCase() === "medium" ? "var(--text-warning)" : "var(--text-danger)" }}>
+                                        <span className={`${styles.difficultyBadge} ${styles[quiz.difficulty?.toLowerCase() || 'medium']}`}>
                                             {quiz.difficulty}
                                         </span>
-                                        <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                                        <span className={styles.metaBadge}>
                                             <FiClock /> {quiz.time_limit_minutes || "Untimed"}m
                                         </span>
-                                        <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
-                                            {quiz.question_count || 0} Qs
+                                        <span className={styles.metaBadge}>
+                                            <FiBookOpen /> {quiz.question_count || 0} Qs
                                         </span>
                                     </div>
 
@@ -554,7 +620,8 @@ const BrowseQuizzes = () => {
                                             disabled={details.isLocked || !details.isAvailableFromDate}
                                             title={details.isLocked ? "Maximum attempts reached" : ""}
                                         >
-                                            {details.activeAttempt ? "Resume →" : "Start →"}
+                                            {details.activeAttempt ? "Resume" : "Start"}
+                                            <FiArrowRight style={{ marginLeft: "4px", display: "inline-block" }} />
                                         </MainButton>
                                     </div>
                                 </div>
@@ -571,21 +638,46 @@ const BrowseQuizzes = () => {
                         return (
                             <div key={quiz.id} className={styles.quizRow}>
                                 <div className={styles.rowLeft}>
-                                    <span className={styles.rowCategoryDot} style={{ backgroundColor: bulletCol }} />
-                                    <span className={styles.rowTitle} title={quiz.title}>{quiz.title}</span>
+                                    <div className={styles.rowThumbnail}>
+                                        {quiz.cover_image_url && !imageErrors[quiz.id] ? (
+                                            <img 
+                                                src={quiz.cover_image_url} 
+                                                alt={quiz.title} 
+                                                className={styles.rowImage} 
+                                                onError={() => handleImageError(quiz.id)}
+                                            />
+                                        ) : (
+                                            renderCustomThumbnail(quiz, bulletCol)
+                                        )}
+                                    </div>
+                                    <div className={styles.rowTitleDesc}>
+                                        <span className={styles.rowTitle} title={quiz.title}>{quiz.title}</span>
+                                        <div className={styles.rowMetaInfo}>
+                                            <span className={styles.rowCategoryName} style={{ color: bulletCol }}>
+                                                {quiz.category?.name || "Uncategorized"}
+                                            </span>
+                                            <span className={styles.rowMetaSeparator}>•</span>
+                                            <span className={styles.rowAttemptsText}>{quiz.attempt_count || 0} attempts</span>
+                                            <span className={styles.rowMetaSeparator}>•</span>
+                                            <span className={styles.rowDateText}>
+                                                Published: {formatDateSafe(quiz.published_at || quiz.created_at)}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className={styles.rowRight}>
-                                    <span className="scoreBadge" style={{ background: quiz.difficulty?.toLowerCase() === "easy" ? "var(--bg-success-mid)" : quiz.difficulty?.toLowerCase() === "medium" ? "var(--bg-warning-mid)" : "var(--bg-danger-mid)", color: quiz.difficulty?.toLowerCase() === "easy" ? "var(--text-success)" : quiz.difficulty?.toLowerCase() === "medium" ? "var(--text-warning)" : "var(--text-danger)" }}>
+                                    <span className={`${styles.difficultyBadge} ${styles[quiz.difficulty?.toLowerCase() || 'medium']}`}>
                                         {quiz.difficulty}
                                     </span>
-                                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "4px" }}>
+                                    <span className={styles.metaBadge}>
                                         <FiClock /> {quiz.time_limit_minutes || "Untimed"}m
                                     </span>
-                                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)" }}>
-                                        {quiz.question_count || 0} Qs
+                                    <span className={styles.metaBadge}>
+                                        <FiBookOpen /> {quiz.question_count || 0} Qs
                                     </span>
-                                    <span className="text-xs text-secondary" style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-                                        ★ {quiz.avg_score ? Math.round(quiz.avg_score) : "No rating"}
+                                    <span className={styles.rowRating}>
+                                        <FiStar className={styles.ratingStar} />
+                                        <span>{quiz.avg_score ? `${Math.round(quiz.avg_score)}%` : "No rating"}</span>
                                     </span>
                                     <MainButton
                                         variant="outline"
@@ -593,7 +685,8 @@ const BrowseQuizzes = () => {
                                         onClick={() => navigate(`/student/quizzes/${quiz.id}`)}
                                         disabled={details.isLocked || !details.isAvailableFromDate}
                                     >
-                                        Start →
+                                        {details.activeAttempt ? "Resume" : "Start"}
+                                        <FiArrowRight style={{ marginLeft: "4px", display: "inline-block" }} />
                                     </MainButton>
                                 </div>
                             </div>

@@ -6,13 +6,20 @@ import { useParams, useNavigate } from "react-router";
 // date-fns
 import { format } from "date-fns";
 
+// react-pdf
+import { pdf } from "@react-pdf/renderer";
+import CertificatePDF from "../profile/CertificatePDF";
+
 // redux
 import { fetchAttemptById, selectCurrentAttempt } from "../../../redux/slices/attemptsSlice";
 import { fetchMyCertificates, selectMyCertificates } from "../../../redux/slices/certificatesSlice";
+import { selectUser } from "../../../redux/slices/authSlice";
+import { fetchMyProfile, selectMyProfile } from "../../../redux/slices/profilesSlice";
 
 // components
 import MainButton from "../../../components/ui/button/MainButton";
 import { toast } from "react-toastify";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // react-icons
 import {
@@ -21,11 +28,9 @@ import {
     FiX,
     FiChevronDown,
     FiChevronUp,
-    FiRotateCcw,
     FiBookOpen,
     FiArrowLeft,
     FiDownload,
-    FiLink,
     FiZap,
     FiAward,
     FiFileText
@@ -89,6 +94,8 @@ const QuizResults = () => {
 
     const attempt = useSelector(selectCurrentAttempt);
     const certificates = useSelector(selectMyCertificates);
+    const user = useSelector(selectUser);
+    const profile = useSelector(selectMyProfile);
 
     // Local states
     const [animatedScore, setAnimatedScore] = useState(0);
@@ -102,13 +109,15 @@ const QuizResults = () => {
 
     // Entrance Animation
     usePageAnimation(containerRef, {
-        ready: !!attempt
+        ready: !!attempt,
+        staggerSelector: `.${styles.staggerItem}`
     });
 
     useEffect(() => {
         if (attemptId) {
             dispatch(fetchAttemptById(attemptId));
             dispatch(fetchMyCertificates());
+            dispatch(fetchMyProfile());
         }
     }, [attemptId, dispatch]);
 
@@ -142,8 +151,17 @@ const QuizResults = () => {
 
     if (!attempt) {
         return (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh", color: "var(--text-secondary)" }}>
-                Loading attempt results...
+            <div style={{ 
+                display: "flex", 
+                flexDirection: "column",
+                justifyContent: "center", 
+                alignItems: "center", 
+                minHeight: "60vh", 
+                color: "var(--text-secondary)",
+                gap: "var(--space-4)"
+            }}>
+                <CircularProgress size={40} style={{ color: "var(--color-accent)" }} />
+                <div>Loading attempt results...</div>
             </div>
         );
     }
@@ -157,26 +175,32 @@ const QuizResults = () => {
     };
 
     // Find certificate for this attempt if exists
-    const cert = (certificates || []).find(c => c.quiz?.id === quizId);
-
-    const handleCopyVerifyLink = () => {
-        if (cert) {
-            const link = `${window.location.origin}/verify/${cert.certificate_code}`;
-            navigator.clipboard.writeText(link);
-            toast.success("Verification link copied to clipboard!");
-        }
-    };
+    const cert = (certificates || []).find(c => c.quiz?.id === quizId || c.quiz_id === quizId);
 
     const handleDownloadCert = async () => {
-        if (!cert?.pdf_url) return;
+        if (!cert) return;
         setLoadingCert(true);
         try {
-            // Since PDF storage URL is direct, we can open it in new tab or download
-            window.open(cert.pdf_url, "_blank");
-            toast.success("Opening certificate PDF...");
+            toast.info("Generating certificate PDF...");
+            
+            // Render document to blob
+            const doc = <CertificatePDF cert={cert} profileName={profile?.full_name || user?.email || "Student"} />;
+            const blob = await pdf(doc).toBlob();
+            
+            // Create object URL and download
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `Certificate_${cert.quiz?.title?.replace(/\s+/g, "_") || "Completion"}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            toast.success("Certificate downloaded successfully!");
         } catch (err) {
-            console.error(err);
-            toast.error("Failed to load certificate link.");
+            console.error("PDF generation failed:", err);
+            toast.error("Could not generate certificate PDF. Please try again.");
         } finally {
             setLoadingCert(false);
         }
@@ -195,74 +219,102 @@ const QuizResults = () => {
 
     return (
         <div ref={containerRef} className={styles.resultsLayout}>
-            {/* Page Header Breadcrumb */}
-            <div className="flex justify-between items-center" style={{ borderBottom: "1px solid var(--border-default)", paddingBottom: "var(--space-3)" }}>
-                <button
-                    onClick={() => navigate("/student/quizzes")}
-                    className="btn btn--ghost btn--sm"
-                    style={{ display: "flex", alignItems: "center", gap: "4px" }}
-                >
-                    <FiArrowLeft /> Back to Browse
-                </button>
-            </div>
-
-            {/* Results Hero Card */}
-            <div 
-                ref={heroCardRef}
-                className={`${styles.heroCard} ${attempt.passed ? styles.passHero : styles.failHero}`}
-            >
-                <div className={styles.gaugeContainer}>
-                    <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
-                        <circle
-                            cx="60"
-                            cy="60"
-                            r="50"
-                            stroke="var(--border-default)"
-                            strokeWidth="10"
-                            fill="transparent"
-                        />
-                        <circle
-                            cx="60"
-                            cy="60"
-                            r="50"
-                            stroke={attempt.passed ? "var(--color-success)" : "var(--color-danger)"}
-                            strokeWidth="10"
-                            fill="transparent"
-                            strokeDasharray={314}
-                            strokeDashoffset={314 - (314 * animatedScore) / 100}
-                            style={{ transition: "stroke-dashoffset 0.1s ease-out" }}
-                        />
-                    </svg>
-                    <div className={styles.gaugeText}>{animatedScore}%</div>
+            {/* Modern Page Header & Results Overview with animated opening */}
+            <div className={`${styles.pageHeader} ${styles.staggerItem}`}>
+                <div className={styles.headerTop}>
+                    <button
+                        onClick={() => navigate("/student/quizzes")}
+                        className={styles.backBtn}
+                    >
+                        <FiArrowLeft /> Back to Browse
+                    </button>
+                    <span className={styles.breadcrumbDivider}>/</span>
+                    <span className={styles.breadcrumbCurrent}>Quiz Results</span>
                 </div>
-
-                <h1 className={`${styles.heroHeading} ${attempt.passed ? styles.passHeading : styles.failHeading}`}>
-                    {attempt.passed ? <><FiAward style={{ marginRight: "8px", verticalAlign: "middle" }} /> Passed!</> : <><FiX style={{ marginRight: "8px", verticalAlign: "middle" }} /> Failed</>}
-                </h1>
-
-                <h3 className="h3" style={{ margin: 0 }}>{attempt.quiz?.title}</h3>
                 
-                <p className="text-xs text-muted" style={{ marginTop: "-4px" }}>
-                    Completed on {format(new Date(attempt.submitted_at || attempt.started_at), "PPpp")}
-                </p>
+                <div className={styles.headerMain}>
+                    <div className={styles.headerInfo}>
+                        <h1 className={styles.quizTitle}>{attempt.quiz?.title || "Quiz"}</h1>
+                        <p className={styles.completionDate}>
+                            Completed on {format(new Date(attempt.submitted_at || attempt.started_at), "PPpp")}
+                        </p>
+                        
+                        <div className={styles.heroStats}>
+                            <div className={`${styles.statusBadge} ${attempt.passed ? styles.passedBadge : styles.failedBadge}`}>
+                                {attempt.passed ? <FiAward /> : <FiX />}
+                                {attempt.passed ? "Passed" : "Failed"}
+                            </div>
+                            <span className={styles.statChip}>
+                                <FiClock /> Time Spent: {formatTimeSpent(attempt.time_spent_secs)}
+                            </span>
+                            <span className={styles.statChip} style={{ borderLeft: "3px solid var(--color-success)" }}>
+                                <FiCheck style={{ color: "var(--color-success)" }} /> {correctCount} Correct
+                            </span>
+                            <span className={styles.statChip} style={{ borderLeft: "3px solid var(--color-danger)" }}>
+                                <FiX style={{ color: "var(--color-danger)" }} /> {wrongCount} Incorrect
+                            </span>
+                        </div>
+                    </div>
 
-                {/* Stat Chips */}
-                <div className={styles.statChips}>
-                    <span className={styles.statChip}>
-                        <FiClock /> Time Spent: {formatTimeSpent(attempt.time_spent_secs)}
-                    </span>
-                    <span className={styles.statChip} style={{ borderColor: "var(--border-success)" }}>
-                        <FiCheck style={{ color: "var(--color-success)" }} /> Correct: {correctCount}
-                    </span>
-                    <span className={styles.statChip} style={{ borderColor: "var(--border-danger)" }}>
-                        <FiX style={{ color: "var(--color-danger)" }} /> Incorrect: {wrongCount}
-                    </span>
+                    <div className={styles.headerGaugeSection} ref={heroCardRef}>
+                        <div className={styles.gaugeContainer}>
+                            <svg width="100" height="100" viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
+                                <circle
+                                    cx="60"
+                                    cy="60"
+                                    r="50"
+                                    stroke="var(--bg-surface-3)"
+                                    strokeWidth="10"
+                                    fill="transparent"
+                                />
+                                <circle
+                                    cx="60"
+                                    cy="60"
+                                    r="50"
+                                    stroke={attempt.passed ? "var(--color-success)" : "var(--color-danger)"}
+                                    strokeWidth="10"
+                                    fill="transparent"
+                                    strokeDasharray={314}
+                                    strokeDashoffset={314 - (314 * animatedScore) / 100}
+                                    style={{ transition: "stroke-dashoffset 0.1s ease-out" }}
+                                />
+                            </svg>
+                            <div className={styles.gaugeText}>{animatedScore}%</div>
+                        </div>
+                    </div>
                 </div>
+
+                {/* Certificate Banner Card inside Page Header if passed */}
+                {attempt.passed && cert && (
+                    <div className={styles.headerCertCard}>
+                        <div className={styles.certIconWrapper}>
+                            <FiFileText className={styles.certAwardIcon} />
+                        </div>
+                        <div className={styles.certInfo}>
+                            <h3>Certificate Issued</h3>
+                            <p>Congratulations! You passed this quiz and earned a verified certificate of completion.</p>
+                            <div className={styles.certCode}>
+                                Certificate Code: <code>{cert.certificate_code}</code>
+                            </div>
+                        </div>
+                        <div className={styles.certActions}>
+                            <MainButton
+                                variant="primary"
+                                size="sm"
+                                onClick={handleDownloadCert}
+                                isLoading={loadingCert}
+                                style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                            >
+                                <FiDownload /> Download Certificate
+                            </MainButton>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* XP and Level Up Panel */}
             {attempt.xp_earned > 0 && (
-                <div className={styles.xpEarnedCard}>
+                <div className={`${styles.xpEarnedCard} ${styles.staggerItem}`}>
                     <div className="flex items-center gap-3">
                         <span className={styles.xpBadge}>
                             <FiZap /> +{attempt.xp_earned} XP
@@ -274,41 +326,8 @@ const QuizResults = () => {
                 </div>
             )}
 
-            {/* Certificate Section */}
-            {attempt.passed && cert && (
-                <div className={styles.certificateCard}>
-                    <div className={styles.certThumb} role="img" aria-label="Certificate Badge">
-                        <FiFileText style={{ fontSize: "2rem", color: "var(--color-accent)" }} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                        <h4 className="h4 text-primary" style={{ margin: 0 }}>Certificate Issued</h4>
-                        <p className="text-secondary text-xs" style={{ marginTop: "4px" }}>
-                            Congratulations! You passed this quiz and earned a verified certificate.
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={handleCopyVerifyLink}
-                            className="btn btn--outline btn--sm"
-                            style={{ display: "flex", alignItems: "center", gap: "6px" }}
-                        >
-                            <FiLink /> Copy verify link
-                        </button>
-                        <MainButton
-                            variant="primary"
-                            size="sm"
-                            onClick={handleDownloadCert}
-                            isLoading={loadingCert}
-                            style={{ display: "flex", alignItems: "center", gap: "6px" }}
-                        >
-                            <FiDownload /> Download Certificate
-                        </MainButton>
-                    </div>
-                </div>
-            )}
-
             {/* Answer Review Section */}
-            <div className={styles.reviewSection}>
+            <div className={`${styles.reviewSection} ${styles.staggerItem}`}>
                 <h3 className="h3">Answer Review</h3>
                 
                 {(attempt.attempt_answers || []).map((ans, idx) => {
@@ -385,16 +404,9 @@ const QuizResults = () => {
             </div>
 
             {/* Action Row */}
-            <div className={styles.actionsRow}>
+            <div className={`${styles.actionsRow} ${styles.staggerItem}`}>
                 <MainButton
                     variant="primary"
-                    size="md"
-                    onClick={() => navigate(`/student/quizzes/${quizId}`)}
-                >
-                    <FiRotateCcw /> Retake Quiz
-                </MainButton>
-                <MainButton
-                    variant="secondary"
                     size="md"
                     onClick={() => navigate("/student/attempts")}
                 >

@@ -3,8 +3,6 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate, useSearchParams } from "react-router";
 
-
-
 // redux
 import { fetchQuizById, selectCurrentQuiz } from "../../../redux/slices/quizzesSlice";
 import {
@@ -30,9 +28,13 @@ import {
 // components
 import MainButton from "../../../components/ui/button/MainButton";
 import { toast } from "react-toastify";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // sweetalert2
 import Swal from "sweetalert2";
+
+// Howler
+import { Howler } from "howler";
 
 // react-icons
 import {
@@ -51,7 +53,10 @@ import {
     FiSave,
     FiWifiOff,
     FiArrowLeft,
-    FiArrowRight
+    FiArrowRight,
+    FiVolume2,
+    FiVolumeX,
+    FiLock
 } from "react-icons/fi";
 
 // howler
@@ -119,7 +124,6 @@ const QuizTaking = () => {
     const currentIndex = useSelector(selectCurrentIndex) || 0;
     const timeRemaining = useSelector(selectTimeRemaining);
     const submitting = useSelector(selectSubmitting);
-    const attemptLoading = useSelector(s => s.attempts.loading);
     const attemptError = useSelector(s => s.attempts.error);
 
     // Derive shuffledQuestions via useMemo to avoid synchronous setStates in useEffect and cascading renders
@@ -150,9 +154,22 @@ const QuizTaking = () => {
     const [isNavigatorOpen, setIsNavigatorOpen] = useState(false);
     const [showSubmitModal, setShowSubmitModal] = useState(false);
     const [showTimesUpModal, setShowTimesUpModal] = useState(false);
+
+    // Guide Card & Audio Mute state
+    const [showGuide, setShowGuide] = useState(true);
+    const [guideCountdown, setGuideCountdown] = useState(5);
+    const [isMuted, setIsMuted] = useState(false);
     
     // Auto-save indicators
     const [saveStatus, setSaveStatus] = useState("saved"); // "saved" | "saving" | "saving_local" | "error"
+
+    const timeRemainingRef = useRef(timeRemaining);
+    const currentIndexRef = useRef(currentIndex);
+    const answersRef = useRef(answers);
+
+    useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
+    useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
+    useEffect(() => { answersRef.current = answers; }, [answers]);
 
     // Ref to track cumulative time spent per question (questionId -> seconds)
     const timeSpentRef = useRef({});
@@ -209,7 +226,7 @@ const QuizTaking = () => {
 
     // Entrance Animation
     usePageAnimation(containerRef, {
-        ready: shuffledQuestions.length > 0
+        ready: shuffledQuestions.length > 0 && !showGuide
     });
 
     // Mount loads
@@ -225,99 +242,95 @@ const QuizTaking = () => {
 
 
 
-    // Browser lockdown: block tab/window close
+    // Guide Card Countdown Effect
     useEffect(() => {
-        const handleBeforeUnload = (e) => {
-            e.preventDefault();
-            e.returnValue = "You are in the middle of a quiz. Your progress may be lost if you leave.";
-            return e.returnValue;
+        if (!showGuide || guideCountdown <= 0) return;
+
+        const interval = setInterval(() => {
+            setGuideCountdown(prev => prev - 1);
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [showGuide, guideCountdown]);
+
+
+
+    // Keyboard Navigation Arrow Listener
+    useEffect(() => {
+        if (showGuide) return;
+        
+        const handleArrowKeys = (e) => {
+            if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+            if (e.key === "ArrowLeft") {
+                if (currentIndex > 0) {
+                    safePlay(nextSound);
+                    dispatch(setCurrentIndex(currentIndex - 1));
+                    setShowHint(false);
+                }
+            } else if (e.key === "ArrowRight") {
+                if (currentIndex < shuffledQuestions.length - 1) {
+                    safePlay(nextSound);
+                    dispatch(setCurrentIndex(currentIndex + 1));
+                    setShowHint(false);
+                }
+            }
         };
-        window.addEventListener("beforeunload", handleBeforeUnload);
-        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-    }, []);
 
-    // SweetAlert2: block keyboard reload shortcuts (F5, Ctrl+R, Ctrl+Shift+R)
+        window.addEventListener("keydown", handleArrowKeys);
+        return () => window.removeEventListener("keydown", handleArrowKeys);
+    }, [showGuide, currentIndex, shuffledQuestions.length, dispatch]);
+
+    // Anti-cheat exit listener (visibilitychange and blur)
     useEffect(() => {
-        const handleKeyDown = (e) => {
-            const isReload =
-                e.key === "F5" ||
-                (e.ctrlKey && e.key === "r") ||
-                (e.ctrlKey && e.shiftKey && e.key === "R");
+        if (showGuide || !activeAttempt) return;
 
-            if (isReload) {
-                e.preventDefault();
-                e.stopPropagation();
-
+        const handleSecurityExit = async () => {
+            if (autoSubmittedRef.current) return;
+            autoSubmittedRef.current = true;
+            
+            const attemptId = activeAttempt?.id;
+            if (attemptId) {
+                await dispatch(saveAllAnswersThunk({
+                    attempt_id: attemptId,
+                    answers: answersRef.current,
+                    timeSpent: timeSpentRef.current
+                }));
+                await dispatch(submitAttemptThunk(attemptId));
+                
                 Swal.fire({
-                    icon: "warning",
-                    title: "Cannot Reload",
-                    text: "You are currently taking a quiz. Reloading the page may disrupt your progress. Please submit your quiz first.",
-                    confirmButtonText: "Continue Quiz",
-                    confirmButtonColor: "var(--color-accent, #6366f1)",
-                    allowOutsideClick: true,
-                    customClass: {
-                        popup: "swal-quiz-popup"
-                    }
+                    icon: "error",
+                    title: "Quiz Terminated",
+                    text: "Exam terminated due to window blur or tab switch. Your progress was automatically submitted.",
+                    confirmButtonText: "OK",
+                    confirmButtonColor: "#ef4444"
+                }).then(() => {
+                    navigate(`/student/quiz/${quizId}/results/${attemptId}`);
                 });
             }
         };
 
-        window.addEventListener("keydown", handleKeyDown, true);
-        return () => window.removeEventListener("keydown", handleKeyDown, true);
-    }, []);
-
-    // Browser lockdown: block browser back/forward navigation
-    useEffect(() => {
-        // Push an extra history entry so we can intercept the back button
-        window.history.pushState(null, "", window.location.href);
-
-        const handlePopState = () => {
-            // Re-push to stay on the page
-            window.history.pushState(null, "", window.location.href);
-            Swal.fire({
-                icon: "warning",
-                title: "Cannot Leave",
-                text: "You cannot leave the quiz. Please submit your answers first.",
-                confirmButtonText: "Continue Quiz",
-                confirmButtonColor: "var(--color-accent, #6366f1)",
-                allowOutsideClick: true,
-            });
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                handleSecurityExit();
+            }
         };
 
-        window.addEventListener("popstate", handlePopState);
-        return () => window.removeEventListener("popstate", handlePopState);
-    }, []);
+        const handleWindowBlur = () => {
+            handleSecurityExit();
+        };
 
-    // Countdown Timer logic
-    useEffect(() => {
-        if (timeRemaining === null || timeRemaining <= 0) return;
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("blur", handleWindowBlur);
 
-        const interval = setInterval(() => {
-            const nextTime = timeRemaining - 1;
-            dispatch(setTimeRemaining(nextTime));
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("blur", handleWindowBlur);
+        };
+    }, [showGuide, activeAttempt, navigate, quizId, dispatch]);
 
-            // Increment time spent on the current active question by 1 second
-            const currentQuestionId = shuffledQuestions[currentIndex]?.id;
-            if (currentQuestionId) {
-                timeSpentRef.current[currentQuestionId] = (timeSpentRef.current[currentQuestionId] || 0) + 1;
-            }
 
-            // Tick sound warning if < 5 mins (300 secs), tick every 10s
-            if (nextTime < 300 && nextTime > 0 && nextTime % 10 === 0) {
-                safePlay(tickSound);
-            }
-
-            // Trigger auto-submit when timer hits 0
-            if (nextTime <= 0) {
-                clearInterval(interval);
-                handleAutoSubmit();
-            }
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, [timeRemaining, dispatch, handleAutoSubmit, shuffledQuestions, currentIndex]);
-
-    // 2-second auto-save cycle
+    // Fixed Auto-save cycle (every 3 seconds) that doesn't clear on every tick
     useEffect(() => {
         if (!activeAttempt || shuffledQuestions.length === 0) return;
 
@@ -325,16 +338,18 @@ const QuizTaking = () => {
             setSaveStatus("saving");
             
             try {
-                // Update time remaining in DB
+                const cIdx = currentIndexRef.current;
+                const tRem = timeRemainingRef.current;
+                const ans = answersRef.current;
+
                 await dispatch(updateProgressThunk({
                     id: activeAttempt?.id,
-                    current_question_order: currentIndex,
-                    time_remaining_secs: timeRemaining
+                    current_question_order: cIdx,
+                    time_remaining_secs: tRem
                 }));
 
-                // Save current question's answer to database
-                const currentQuestion = shuffledQuestions[currentIndex];
-                const selectedOptionId = answers[currentQuestion?.id];
+                const currentQuestion = shuffledQuestions[cIdx];
+                const selectedOptionId = ans[currentQuestion?.id];
                 const accumulatedTime = timeSpentRef.current[currentQuestion?.id] || 0;
                 
                 if (selectedOptionId && currentQuestion?.id) {
@@ -349,18 +364,146 @@ const QuizTaking = () => {
                 setSaveStatus("saved");
             } catch (err) {
                 console.error("Auto save failed, writing to localStorage:", err);
-                // Save locally
                 localStorage.setItem(`attempt_backup:${activeAttempt?.id}`, JSON.stringify({
-                    answers,
-                    timeRemaining,
-                    currentIndex
+                    answers: answersRef.current,
+                    timeRemaining: timeRemainingRef.current,
+                    currentIndex: currentIndexRef.current
                 }));
                 setSaveStatus("saving_local");
             }
-        }, 2000);
+        }, 3000);
 
         return () => clearInterval(interval);
-    }, [activeAttempt, shuffledQuestions, currentIndex, answers, timeRemaining, dispatch]);
+    }, [activeAttempt, shuffledQuestions, dispatch]);
+
+    // Countdown Timer logic (with showGuide check)
+    useEffect(() => {
+        if (timeRemaining === null || timeRemaining <= 0 || showGuide) return;
+
+        const interval = setInterval(() => {
+            const nextTime = timeRemaining - 1;
+            dispatch(setTimeRemaining(nextTime));
+
+            const currentQuestionId = shuffledQuestions[currentIndex]?.id;
+            if (currentQuestionId) {
+                timeSpentRef.current[currentQuestionId] = (timeSpentRef.current[currentQuestionId] || 0) + 1;
+            }
+
+            if (nextTime < 300 && nextTime > 0 && nextTime % 10 === 0) {
+                safePlay(tickSound);
+            }
+
+            if (nextTime <= 0) {
+                clearInterval(interval);
+                handleAutoSubmit();
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [timeRemaining, dispatch, handleAutoSubmit, shuffledQuestions, currentIndex, showGuide]);
+
+    // Security and exit interceptors
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            e.preventDefault();
+            e.returnValue = "You are in the middle of a quiz. Your progress may be lost if you leave.";
+            return e.returnValue;
+        };
+
+        const handlePreventReload = (e) => {
+            const isReload =
+                e.key === "F5" ||
+                (e.ctrlKey && e.key === "r") ||
+                (e.ctrlKey && e.shiftKey && e.key === "R") ||
+                (e.metaKey && e.key === "r");
+
+            if (isReload) {
+                e.preventDefault();
+                e.stopPropagation();
+                Swal.fire({
+                    icon: "warning",
+                    title: "Reload Disabled",
+                    text: "Refreshing the browser is blocked during active quiz sessions to protect your attempt data.",
+                    confirmButtonText: "Return to Quiz",
+                    confirmButtonColor: "var(--color-accent, #6366f1)"
+                });
+            }
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        window.addEventListener("keydown", handlePreventReload, true);
+        return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
+            window.removeEventListener("keydown", handlePreventReload, true);
+        };
+    }, []);
+
+    useEffect(() => {
+        window.history.pushState(null, "", window.location.href);
+
+        const handlePopState = () => {
+            window.history.pushState(null, "", window.location.href);
+            Swal.fire({
+                icon: "warning",
+                title: "Navigation Locked",
+                text: "Browser navigation back/forward is disabled during the exam. Please use the submit button to complete the quiz.",
+                confirmButtonText: "Resume Quiz",
+                confirmButtonColor: "var(--color-accent, #6366f1)"
+            });
+        };
+
+        window.addEventListener("popstate", handlePopState);
+        return () => window.removeEventListener("popstate", handlePopState);
+    }, []);
+
+    // Input copy/paste/contextmenu lockdowns
+    useEffect(() => {
+        if (showGuide) return;
+
+        const preventDefault = (e) => e.preventDefault();
+        const preventRightClick = (e) => {
+            e.preventDefault();
+            toast.warn("Context menu (right-click) is disabled.", { toastId: "right-click-block" });
+        };
+
+        const handleLockdownKeys = (e) => {
+            if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) {
+                e.preventDefault();
+                toast.warn("Context menu is disabled.", { toastId: "context-menu-block" });
+            }
+            if (
+                e.key === "F12" ||
+                (e.ctrlKey && e.shiftKey && e.key === "I") ||
+                (e.metaKey && e.altKey && e.key === "i")
+            ) {
+                e.preventDefault();
+                toast.error("Developer tools are disabled.", { toastId: "devtools-block" });
+            }
+            if (
+                (e.ctrlKey || e.metaKey) &&
+                (e.key === "c" || e.key === "v" || e.key === "x" || e.key === "a")
+            ) {
+                e.preventDefault();
+                toast.error("Copy, paste, and text selection are disabled during the quiz.", { toastId: "shortcuts-block" });
+            }
+        };
+
+        document.addEventListener("copy", preventDefault);
+        document.addEventListener("paste", preventDefault);
+        document.addEventListener("selectstart", preventDefault);
+        document.addEventListener("dragstart", preventDefault);
+        document.addEventListener("contextmenu", preventRightClick);
+        window.addEventListener("keydown", handleLockdownKeys, true);
+
+        return () => {
+            document.removeEventListener("copy", preventDefault);
+            document.removeEventListener("paste", preventDefault);
+            document.removeEventListener("selectstart", preventDefault);
+            document.removeEventListener("dragstart", preventDefault);
+            document.removeEventListener("contextmenu", preventRightClick);
+            window.removeEventListener("keydown", handleLockdownKeys, true);
+        };
+    }, [showGuide]);
 
 
 
@@ -478,22 +621,109 @@ const QuizTaking = () => {
 
     if (shuffledQuestions.length === 0 || !activeAttempt) {
         return (
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "100vh", color: "var(--text-secondary)", gap: "var(--space-3)" }}>
-                <div>Initializing attempt...</div>
-                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-muted)", textAlign: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        {quiz ? <FiCheckCircle style={{ color: "var(--color-success)" }} /> : <FiLoader style={{ animation: "spin 1s linear infinite" }} />}
-                        Quiz loaded {quiz ? `(${quiz.quiz_questions?.length ?? 0} questions)` : ''}
+            <div style={{ 
+                display: "flex", 
+                flexDirection: "column", 
+                justifyContent: "center", 
+                alignItems: "center", 
+                minHeight: "100vh", 
+                color: "var(--text-secondary)", 
+                gap: "var(--space-4)",
+                background: "var(--bg-app)"
+            }}>
+                <CircularProgress size={50} style={{ color: "var(--color-accent)" }} />
+                <div style={{ fontSize: "var(--text-md)", fontWeight: "var(--fw-semibold)", color: "var(--text-primary)" }}>
+                    Initializing attempt...
+                </div>
+                {attemptError && (
+                    <div style={{ color: "var(--text-danger)", marginTop: "var(--space-2)" }}>
+                        Error: {String(attemptError)}
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        {activeAttempt ? <FiCheckCircle style={{ color: "var(--color-success)" }} /> : attemptLoading ? <FiLoader style={{ animation: "spin 1s linear infinite" }} /> : <FiXCircle style={{ color: "var(--color-danger)" }} />}
-                        Attempt {activeAttempt ? 'loaded' : attemptLoading ? 'loading...' : 'not loaded'}
+                )}
+            </div>
+        );
+    }
+
+    if (showGuide) {
+        return (
+            <div className={styles.guideContainer}>
+                <div className={styles.guideCard}>
+                    <div className={styles.guideHeader}>
+                        <div className={styles.lockIconWrapper}>
+                            <FiLock className={styles.guideAlertIcon} />
+                        </div>
+                        <h2>Quiz Security & Rules Check</h2>
+                        <p className={styles.guideSubtitle}>Please read the rules carefully before starting the exam.</p>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                        {shuffledQuestions.length > 0 ? <FiCheckCircle style={{ color: "var(--color-success)" }} /> : <FiLoader style={{ animation: "spin 1s linear infinite" }} />}
-                        Questions ready
+
+                    <div className={styles.guideBody}>
+                        <div className={styles.ruleItem}>
+                            <div className={styles.ruleIconWrapper} style={{ background: "rgba(239, 68, 68, 0.08)", color: "#ef4444" }}>
+                                <FiXCircle />
+                            </div>
+                            <div className={styles.ruleContent}>
+                                <h4>
+                                    Anti-Cheat Lockdown
+                                </h4>
+                                <p>Exiting the browser tab, switching windows, or minimizing will instantly **auto-submit and terminate** your quiz attempt.</p>
+                            </div>
+                        </div>
+
+                        <div className={styles.ruleItem}>
+                            <div className={styles.ruleIconWrapper} style={{ background: "rgba(245, 158, 11, 0.08)", color: "#f59e0b" }}>
+                                <FiClock />
+                            </div>
+                            <div className={styles.ruleContent}>
+                                <h4>
+                                    Strict Time Limit
+                                </h4>
+                                <p>Your remaining time is tracked in real-time. If the countdown reaches zero, your progress will be auto-submitted.</p>
+                            </div>
+                        </div>
+
+                        <div className={styles.ruleItem}>
+                            <div className={styles.ruleIconWrapper} style={{ background: "rgba(59, 130, 246, 0.08)", color: "#3b82f6" }}>
+                                <FiAlertTriangle />
+                            </div>
+                            <div className={styles.ruleContent}>
+                                <h4>
+                                    Lockdown Features Active
+                                </h4>
+                                <p>Right-click, text selection, copy, and paste are strictly disabled. Page reloading is blocked during taking.</p>
+                            </div>
+                        </div>
+
+                        <div className={styles.ruleItem}>
+                            <div className={styles.ruleIconWrapper} style={{ background: "rgba(16, 185, 129, 0.08)", color: "#10b981" }}>
+                                <FiCheckCircle />
+                            </div>
+                            <div className={styles.ruleContent}>
+                                <h4>
+                                    Arrow Key Navigation
+                                </h4>
+                                <p>You can use the **Left & Right Arrow keys** on your keyboard to navigate between questions seamlessly.</p>
+                            </div>
+                        </div>
                     </div>
-                    {attemptError && <div style={{ color: "var(--text-danger)" }}>Error: {String(attemptError)}</div>}
+
+                    <div className={styles.guideFooter}>
+                        <div className={styles.countdownProgressContainer}>
+                            <div className={styles.countdownProgressBar} style={{ width: `${(guideCountdown / 5) * 100}%` }} />
+                        </div>
+                        <div className={styles.guideFooterActions}>
+                            <span className={styles.countdownText}>
+                                {guideCountdown > 0 ? `Unlocking in ${guideCountdown}s...` : "Quiz unlocked!"}
+                            </span>
+                            <MainButton
+                                variant="primary"
+                                onClick={() => setShowGuide(false)}
+                                disabled={guideCountdown > 0}
+                                style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                            >
+                                Let's Begin <FiArrowRight />
+                            </MainButton>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -514,11 +744,24 @@ const QuizTaking = () => {
         return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
+    const getTimerColorClass = () => {
+        if (timeRemaining === null) return "";
+        if (timeRemaining <= 60) return styles.timerUrgent;
+        if (timeRemaining <= 300) return styles.timerWarning;
+        return styles.timerSafe;
+    };
+
+    const handleAudioToggle = () => {
+        const newMute = !isMuted;
+        setIsMuted(newMute);
+        Howler.mute(newMute);
+    };
+
     // Check if current question is T/F
     const isCurrentTF = isTrueFalseType(currentQuestion?.question_type);
 
     return (
-        <div ref={containerRef} className={styles.takingLayout}>
+        <div ref={containerRef} className={styles.takingLayout} style={{ userSelect: "none", WebkitUserSelect: "none" }}>
             {/* Top Bar */}
             <div className={styles.minimalTopbar}>
                 <div className={styles.topbarLeft}>
@@ -532,9 +775,19 @@ const QuizTaking = () => {
                 </div>
                 
                 <div className={styles.topbarRight}>
-                    <div className={`${styles.timer} ${timeRemaining < 300 ? styles.timerUrgent : ""}`}>
+                    <button 
+                        onClick={handleAudioToggle} 
+                        className={styles.audioBtn}
+                        title={isMuted ? "Unmute sounds" : "Mute sounds"}
+                    >
+                        {isMuted ? <FiVolumeX /> : <FiVolume2 />}
+                    </button>
+                    
+                    <div className={`${styles.timer} ${getTimerColorClass()}`}>
+                        <FiClock style={{ animation: timeRemaining < 60 ? "pulse 1s infinite" : "none" , display:"inline"}} />
                         {formatTime(timeRemaining)}
                     </div>
+                    
                     <MainButton
                         variant="primary"
                         size="sm"
@@ -613,7 +866,6 @@ const QuizTaking = () => {
                         {isCurrentTF ? (
                             <div className={styles.tfSplit}>
                                 {["True", "False"].map((tfOpt) => {
-                                    // True/False matches question option matching tfOpt text
                                     const opt = (currentQuestion?.question_options || []).find(
                                         o => o.option_text?.toLowerCase() === tfOpt.toLowerCase()
                                     ) || { id: tfOpt, option_text: tfOpt };
@@ -664,14 +916,28 @@ const QuizTaking = () => {
                     size="md"
                     onClick={handlePrevious}
                     disabled={currentIndex === 0}
+                    style={{ display: "flex", alignItems: "center", gap: "6px" }}
                 >
-                    <FiArrowLeft style={{ marginRight: "4px" }} /> Previous
+                    <FiArrowLeft /> Previous
                 </MainButton>
 
                 <div className={styles.autoSaveIndicator}>
-                    {saveStatus === "saved" && <><FiSave style={{ marginRight: "4px", color: "var(--color-success)" }} /> Saved to cloud</>}
-                    {saveStatus === "saving" && <><FiLoader style={{ marginRight: "4px", animation: "spin 1s linear infinite" }} /> Saving...</>}
-                    {saveStatus === "saving_local" && <><FiWifiOff style={{ marginRight: "4px", color: "var(--color-warning)" }} /> Offline: saved locally</>}
+                    {saveStatus === "saved" && (
+                        <div className={styles.savedBadge}>
+                            <span className={styles.pulsingGreenDot} />
+                            <FiSave className={styles.saveIcon} /> Saved to cloud
+                        </div>
+                    )}
+                    {saveStatus === "saving" && (
+                        <div className={styles.savingBadge}>
+                            <FiLoader className={styles.spinIcon} /> Saving...
+                        </div>
+                    )}
+                    {saveStatus === "saving_local" && (
+                        <div className={styles.offlineBadge}>
+                            <FiWifiOff className={styles.warnIcon} /> Offline: saved locally
+                        </div>
+                    )}
                 </div>
 
                 <div className={styles.bottomNavActions}>
@@ -684,14 +950,28 @@ const QuizTaking = () => {
                         <span>Flag</span>
                     </button>
 
-                    <MainButton
-                        variant="primary"
-                        size="md"
-                        onClick={handleNext}
-                        disabled={currentIndex === totalQuestions - 1 || !answers[currentQuestion?.id]}
-                    >
-                        Next <FiArrowRight style={{ marginLeft: "4px" }} />
-                    </MainButton>
+                    {currentIndex === totalQuestions - 1 ? (
+                        <MainButton
+                            variant="primary"
+                            size="md"
+                            onClick={() => setShowSubmitModal(true)}
+                            disabled={submitting}
+                            isLoading={submitting}
+                            style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                        >
+                            Submit Quiz <FiCheckSquare />
+                        </MainButton>
+                    ) : (
+                        <MainButton
+                            variant="primary"
+                            size="md"
+                            onClick={handleNext}
+                            disabled={!answers[currentQuestion?.id]}
+                            style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                        >
+                            Next <FiArrowRight />
+                        </MainButton>
+                    )}
                 </div>
             </div>
 

@@ -55,6 +55,7 @@ export async function getStudentAssignments({ page = 1, pageSize = 12 } = {}) {
             `
       id, due_date, note, created_at,
       quiz:quizzes(id, title, difficulty, time_limit_minutes, passing_score, question_count,
+        cover_image_url, attempt_count, avg_score, published_at, created_at,
         category:categories(id, name, icon, color))
     `,
             { count: "exact" },

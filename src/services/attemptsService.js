@@ -224,7 +224,7 @@ export async function saveAnswer({ attempt_id, question_id, selected_option_id, 
 // Request : { attempt_id, answers: { [question_id]: selected_option_id } }
 // Response: upserted rows
 // ─────────────────────────────────────────────
-export async function saveAllAnswers({ attempt_id, answers }) {
+export async function saveAllAnswers({ attempt_id, answers, timeSpent }) {
   const now = new Date().toISOString();
   const rows = Object.entries(answers)
     .filter(([qId, optId]) => qId && optId)
@@ -232,6 +232,7 @@ export async function saveAllAnswers({ attempt_id, answers }) {
       attempt_id,
       question_id,
       selected_option_id,
+      time_spent_secs: timeSpent?.[question_id] ?? 0,
       answered_at: now,
     }));
 

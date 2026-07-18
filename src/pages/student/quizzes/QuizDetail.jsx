@@ -17,6 +17,7 @@ import { Rating } from "@mui/material";
 import { toast } from "react-toastify";
 
 // react-icons
+import * as FiIcons from "react-icons/fi";
 import {
     FiChevronLeft,
     FiBookmark,
@@ -24,12 +25,45 @@ import {
     FiUser,
     FiInfo,
     FiClock,
-    FiEdit3
+    FiStar,
+    FiArrowRight,
+    FiAward,
+    FiUserCheck
 } from "react-icons/fi";
 
 // local
 import styles from "./QuizDetail.module.css";
 import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+
+// Helper to safely format dates
+const formatDateSafe = (dateString, formatPattern = "MMM d, yyyy") => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+        return "N/A";
+    }
+    return format(date, formatPattern);
+};
+
+// Helper to render category icon dynamically
+const renderCategoryIcon = (iconName, className) => {
+    const IconComponent = FiIcons[iconName] || FiBookOpen;
+    return <IconComponent className={className} />;
+};
+
+// Helper to render custom cover image fallback
+const renderCustomCover = (quiz, bannerCol) => {
+    return (
+        <div className={styles.customCoverImage} style={{ 
+            background: `linear-gradient(135deg, ${bannerCol} 0%, var(--bg-surface-2) 100%)` 
+        }}>
+            <div className={styles.gridOverlay} />
+            <div className={styles.categoryIconInBanner}>
+                {renderCategoryIcon(quiz.category?.icon)}
+            </div>
+        </div>
+    );
+};
 
 const QuizDetail = () => {
     const { quizId } = useParams();
@@ -44,7 +78,8 @@ const QuizDetail = () => {
 
     // Entrance Animation
     usePageAnimation(containerRef, {
-        ready: !!quiz
+        ready: !!quiz,
+        staggerSelector: `.${styles.animateIn}`
     });
 
     useEffect(() => {
@@ -61,6 +96,11 @@ const QuizDetail = () => {
     // Bookmark status
     const isBookmarked = bookmarks.some(b => b.quiz?.id === quizId);
     const [isTogglingBookmark, setIsTogglingBookmark] = useState(false);
+    const [imageErrors, setImageErrors] = useState({});
+
+    const handleImageError = (id) => {
+        setImageErrors(prev => ({ ...prev, [id]: true }));
+    };
 
     const handleBookmarkToggle = async () => {
         if (isTogglingBookmark) return;
@@ -120,8 +160,11 @@ const QuizDetail = () => {
 
     if (!quiz) {
         return (
-            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh", color: "var(--text-secondary)" }}>
-                Loading quiz details...
+            <div className={styles.loadingContainer}>
+                <div className={styles.spinnerWrapper}>
+                    <div className={styles.spinner} />
+                    <span className={styles.loadingText}>Loading quiz details...</span>
+                </div>
             </div>
         );
     }
@@ -154,55 +197,90 @@ const QuizDetail = () => {
                     className="btn btn--outline btn--sm"
                     style={{ display: "flex", alignItems: "center", gap: "6px", opacity: isTogglingBookmark ? 0.7 : 1 }}
                 >
-                    <FiBookmark fill={isBookmarked ? "var(--color-accent)" : "none"} />
+                    <FiBookmark fill={isBookmarked ? "var(--color-accent)" : "none"} style={{ color: isBookmarked ? "var(--color-accent)" : "inherit" }} />
                     {isBookmarked ? "Bookmarked" : "Bookmark"}
                 </button>
             </div>
 
             {/* Hero Section */}
-            <div className={styles.heroSection}>
-                <div className={styles.heroHeader}>
-                    <span 
-                        className={styles.categoryIcon}
-                        style={{ color: quiz.category?.color || "var(--color-accent)" }}
-                    >
-                        {quiz.category?.icon || <FiEdit3 />}
-                    </span>
-                    <div className={styles.titleArea}>
-                        <h1 className="h1 styles.title">{quiz.title}</h1>
-                        <div className={styles.metaRow}>
-                            <span className="flex items-center gap-1"><FiUser /> By: Instructor</span>
-                            <span>·</span>
-                            <span className="flex items-center gap-1"><FiBookOpen /> Category: {quiz.category?.name || "General"}</span>
+            <div className={`${styles.heroSection} ${styles.animateIn}`}>
+                <div className={styles.heroLayout}>
+                    {/* Left Column: Cover Image / Dynamic Cover */}
+                    <div className={styles.heroCoverWrapper}>
+                        {quiz.cover_image_url && !imageErrors[quiz.id] ? (
+                            <img 
+                                src={quiz.cover_image_url} 
+                                alt={quiz.title} 
+                                className={styles.heroCoverImage} 
+                                onError={() => handleImageError(quiz.id)}
+                            />
+                        ) : (
+                            renderCustomCover(quiz, quiz.category?.color || "var(--blue-500)")
+                        )}
+                    </div>
+
+                    {/* Right Column: Title and Details */}
+                    <div className={styles.heroContent}>
+                        <div className={styles.heroHeaderInfo}>
+                            <div className={styles.categoryNameRow}>
+                                <span className={styles.categoryBadge} style={{ 
+                                    backgroundColor: `${quiz.category?.color || "var(--blue-500)"}15`,
+                                    color: quiz.category?.color || "var(--blue-500)"
+                                }}>
+                                    {quiz.category?.icon ? renderCategoryIcon(quiz.category.icon, styles.categoryIconMini) : <FiBookOpen className={styles.categoryIconMini} />}
+                                    {quiz.category?.name || "General"}
+                                </span>
+                            </div>
+                            
+                            <h1 className={styles.quizTitle} title={quiz.title}>{quiz.title}</h1>
+                            
+                            {/* Instructor Profile */}
+                            <div className={styles.instructorProfile}>
+                                {quiz.instructor?.avatar_url ? (
+                                    <img src={quiz.instructor.avatar_url} alt={quiz.instructor.full_name} className={styles.instructorAvatar} />
+                                ) : (
+                                    <div className={styles.instructorFallback}>
+                                        <FiUser />
+                                    </div>
+                                )}
+                                <div className={styles.instructorInfo}>
+                                    <span className={styles.instructorLabel}>Created By</span>
+                                    <span className={styles.instructorName}>{quiz.instructor?.full_name || "Instructor"}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className={styles.heroFooterInfo}>
+                            <div className="flex items-center gap-3">
+                                <Rating 
+                                    value={quiz.avg_score ? (quiz.avg_score / 20) : 0} 
+                                    precision={0.5} 
+                                    readOnly 
+                                    size="small"
+                                />
+                                <span className="text-xs text-secondary" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                    <FiStar className={styles.ratingStarIcon} /> <strong>{quiz.avg_score ? `${Math.round(quiz.avg_score)}%` : "Not rated"}</strong> Avg Score
+                                    <span>·</span>
+                                    <strong>{quiz.attempt_count || 0}</strong> attempts
+                                </span>
+                            </div>
+
+                            <div className={styles.heroBadgesRow}>
+                                <span className={`${styles.difficultyBadge} ${styles[quiz.difficulty?.toLowerCase() || 'medium']}`}>
+                                    {quiz.difficulty}
+                                </span>
+                                <span className={styles.metaBadge}>
+                                    <FiClock /> {quiz.time_limit_minutes || "Untimed"} min
+                                </span>
+                                <span className={styles.metaBadge}>
+                                    <FiBookOpen /> {quiz.question_count || 0} Qs
+                                </span>
+                                <span className={styles.metaBadgePass}>
+                                    <FiAward /> Passing score: {quiz.passing_score || 70}%
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <Rating 
-                        value={quiz.avg_score ? (quiz.avg_score / 20) : 0} 
-                        precision={0.5} 
-                        readOnly 
-                        size="small"
-                    />
-                    <span className="text-xs text-secondary">
-                        {quiz.avg_score ? `${Math.round(quiz.avg_score)}% Average` : "Not rated yet"} · {quiz.attempt_count || 0} attempts
-                    </span>
-                </div>
-
-                <div className={styles.badgesRow} style={{ marginTop: "var(--space-2)" }}>
-                    <span className="scoreBadge" style={{ background: "var(--color-accent-light)", color: "var(--text-accent)", padding: "4px 10px ", borderRadius: "6px"  }}>
-                        Difficulty: {quiz.difficulty}
-                    </span>
-                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", padding: "4px 10px ", borderRadius: "6px", display: "flex", alignItems: "center", gap: "4px" }}>
-                        <FiClock /> {quiz.time_limit_minutes || "Untimed"} minutes
-                    </span>
-                    <span className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", padding: "4px 10px ", borderRadius: "6px"  }}>
-                        {quiz.question_count || 0} questions
-                    </span>
-                    <span className="scoreBadge" style={{ background: "var(--bg-success-mid)", color: "var(--text-success)", padding: "4px 10px ", borderRadius: "6px"  }}>
-                        {quiz.passing_score || 70}% passing score
-                    </span>
                 </div>
             </div>
 
@@ -211,7 +289,7 @@ const QuizDetail = () => {
                 {/* Left Column */}
                 <div className={styles.leftCol}>
                     {/* About */}
-                    <div className={styles.sectionCard}>
+                    <div className={`${styles.sectionCard} ${styles.animateIn}`}>
                         <h3 className={styles.sectionTitle}>About this quiz</h3>
                         <p className="text-secondary" style={{ lineHeight: "var(--leading-normal)" }}>
                             {quiz.description || "No description provided for this quiz."}
@@ -221,7 +299,7 @@ const QuizDetail = () => {
                                 <div className="text-xs text-muted" style={{ marginBottom: "var(--space-2)" }}>Topics covered:</div>
                                 <div className={styles.badgesRow}>
                                     {quiz.tags.map(tag => (
-                                        <span key={tag} className="scoreBadge" style={{ background: "var(--bg-surface-2)", color: "var(--text-secondary)", padding: "4px 10px ", borderRadius: "6px" }}>
+                                        <span key={tag} className={styles.tagBadge}>
                                             #{tag}
                                         </span>
                                     ))}
@@ -232,7 +310,7 @@ const QuizDetail = () => {
 
                     {/* Sample Question Preview */}
                     {sampleQuestion && (
-                        <div className={styles.sectionCard}>
+                        <div className={`${styles.sectionCard} ${styles.animateIn}`}>
                             <h3 className={styles.sectionTitle}>Sample question preview</h3>
                             <div className={styles.sampleQuestion}>
                                 <div className="text-sm font-semibold text-primary" style={{ marginBottom: "var(--space-2)" }}>
@@ -263,7 +341,7 @@ const QuizDetail = () => {
 
                     {/* Attempt History */}
                     {completedAttempts.length > 0 && (
-                        <div className={styles.sectionCard}>
+                        <div className={`${styles.sectionCard} ${styles.animateIn}`}>
                             <h3 className={styles.sectionTitle}>Attempt History</h3>
                             <div className={styles.historyTableWrapper}>
                                 <table className={styles.historyTable}>
@@ -281,10 +359,10 @@ const QuizDetail = () => {
                                         {completedAttempts.map((att, idx) => (
                                             <tr key={att.id}>
                                                 <td>{completedAttempts.length - idx}</td>
-                                                <td>{format(new Date(att.submitted_at), "PP")}</td>
+                                                <td>{formatDateSafe(att.submitted_at, "PP")}</td>
                                                 <td className="font-semibold">{Math.round(att.score)}%</td>
                                                 <td>
-                                                    <span className={`scoreBadge ${att.passed ? styles.scorePass : styles.scoreFail}`}>
+                                                    <span className={`${styles.resultBadge} ${att.passed ? styles.scorePass : styles.scoreFail}`}>
                                                         {att.passed ? "Passed" : "Failed"}
                                                     </span>
                                                 </td>
@@ -310,8 +388,10 @@ const QuizDetail = () => {
                 {/* Right Column */}
                 <div className={styles.rightCol}>
                     {/* Action Card */}
-                    <div className={`${styles.sectionCard} ${styles.actionCard}`}>
-                        <h3 className="h3 text-primary">Ready to learn?</h3>
+                    <div className={`${styles.sectionCard} ${styles.actionCard} ${styles.animateIn}`}>
+                        <h3 className="h3 text-primary" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <FiUserCheck style={{ fontSize: "1.3rem", color: "var(--color-accent)" }} /> Ready to learn?
+                        </h3>
                         
                         <div className={styles.actionStats}>
                             {completedAttempts.length > 0 && (
@@ -345,14 +425,16 @@ const QuizDetail = () => {
                             className="btn--full"
                             onClick={handleStartQuiz}
                             disabled={isLocked && !activeAttempt}
+                            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
                         >
-                            {activeAttempt ? "Resume Attempt →" : "Start Quiz →"}
+                            {activeAttempt ? "Resume Attempt" : "Start Quiz"}
+                            <FiArrowRight />
                         </MainButton>
                     </div>
 
                     {/* Stats Panel */}
-                    <div className={`${styles.sectionCard} ${styles.statsPanel}`}>
-                        <h4 className="h5">Global Performance</h4>
+                    <div className={`${styles.sectionCard} ${styles.statsPanel} ${styles.animateIn}`}>
+                        <h4 className="h5" style={{ display: "flex", alignItems: "center", gap: "6px" }}><FiAward style={{ color: "var(--color-accent)" }} /> Global Performance</h4>
                         
                         <div className={styles.statRow}>
                             <span className={styles.statVal}>
@@ -366,7 +448,7 @@ const QuizDetail = () => {
 
                         <div className={styles.statRow}>
                             <span className={styles.statVal}>
-                                {quiz.pass_rate ? `${Math.round(quiz.pass_rate * 100)}%` : "—"}
+                                {quiz.pass_rate ? `${quiz.pass_rate > 1 ? Math.round(quiz.pass_rate) : Math.round(quiz.pass_rate * 100)}%` : "—"}
                             </span>
                             <div className={styles.statLabel}>
                                 Pass Rate

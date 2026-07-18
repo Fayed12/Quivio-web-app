@@ -1,10 +1,9 @@
-
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 
 const styles = StyleSheet.create({
     page: {
         padding: 30,
-        backgroundColor: "#FAF9F5",
+        backgroundColor: "#F8FAFC", // Modern slate-white background
         height: "100%",
         display: "flex",
         flexDirection: "column",
@@ -13,11 +12,11 @@ const styles = StyleSheet.create({
     },
     outerBorder: {
         borderWidth: 4,
-        borderColor: "#D4AF37",
+        borderColor: "#2563EB", // Quivio brand accent blue
         borderStyle: "solid",
         width: "100%",
         height: "100%",
-        padding: 5,
+        padding: 6,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -25,11 +24,11 @@ const styles = StyleSheet.create({
     },
     innerBorder: {
         borderWidth: 1,
-        borderColor: "#D4AF37",
+        borderColor: "#93C5FD", // Light accent blue inner border
         borderStyle: "solid",
         width: "100%",
         height: "100%",
-        padding: 30,
+        padding: 35,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -42,22 +41,22 @@ const styles = StyleSheet.create({
     academyName: {
         fontSize: 14,
         fontFamily: "Helvetica-Bold",
-        color: "#1E293B",
+        color: "#1E3A8A", // Deep blue
         letterSpacing: 6,
         textTransform: "uppercase",
     },
     dividerGold: {
         width: 80,
         height: 2,
-        backgroundColor: "#D4AF37",
+        backgroundColor: "#2563EB",
         marginTop: 6,
         marginBottom: 6,
     },
     certTitle: {
         fontSize: 32,
-        fontFamily: "Times-Bold",
-        color: "#1E293B",
-        letterSpacing: 2,
+        fontFamily: "Helvetica-Bold", // Clean, modern sans-serif
+        color: "#0F172A",
+        letterSpacing: 1,
         textTransform: "uppercase",
         textAlign: "center",
         marginVertical: 10,
@@ -65,16 +64,16 @@ const styles = StyleSheet.create({
     certSubText: {
         fontSize: 11,
         fontFamily: "Helvetica-Oblique",
-        color: "#64748B",
+        color: "#475569",
         marginBottom: 12,
     },
     recipientName: {
         fontSize: 28,
-        fontFamily: "Times-Bold",
-        color: "#B45309",
+        fontFamily: "Helvetica-Bold",
+        color: "#2563EB", // Accent blue for recipient name
         textAlign: "center",
         borderBottomWidth: 1,
-        borderBottomColor: "#CBD5E1",
+        borderBottomColor: "#E2E8F0",
         paddingBottom: 6,
         minWidth: 320,
         marginBottom: 15,
@@ -90,11 +89,11 @@ const styles = StyleSheet.create({
     },
     quizTitle: {
         fontFamily: "Helvetica-Bold",
-        color: "#1E293B",
+        color: "#0F172A",
     },
     scoreHighlight: {
         fontFamily: "Helvetica-Bold",
-        color: "#16A34A",
+        color: "#16A34A", // Success green for high score compatibility
     },
     footerContainer: {
         flexDirection: "row",
@@ -108,15 +107,15 @@ const styles = StyleSheet.create({
         width: 160,
     },
     sigValue: {
-        fontSize: 12,
-        fontFamily: "Times-Bold",
-        color: "#334155",
+        fontSize: 11,
+        fontFamily: "Helvetica-Bold",
+        color: "#1E293B",
         marginBottom: 4,
     },
     sigLine: {
         width: "100%",
         height: 1,
-        backgroundColor: "#94A3B8",
+        backgroundColor: "#CBD5E1",
         marginBottom: 4,
     },
     sigLabel: {
@@ -133,8 +132,8 @@ const styles = StyleSheet.create({
         height: 70,
         borderRadius: 35,
         borderWidth: 2,
-        borderColor: "#D4AF37",
-        backgroundColor: "#FEF3C7",
+        borderColor: "#2563EB",
+        backgroundColor: "#EFF6FF", // Light accent blue seal fill
         position: "relative",
     },
     sealInnerCircle: {
@@ -143,14 +142,14 @@ const styles = StyleSheet.create({
         borderRadius: 29,
         borderWidth: 1,
         borderStyle: "dashed",
-        borderColor: "#D4AF37",
+        borderColor: "#2563EB",
         alignItems: "center",
         justifyContent: "center",
     },
     sealText: {
         fontSize: 7,
         fontFamily: "Helvetica-Bold",
-        color: "#B45309",
+        color: "#1E3A8A",
         textAlign: "center",
     },
     credBlock: {
@@ -160,7 +159,7 @@ const styles = StyleSheet.create({
     credValue: {
         fontSize: 9,
         fontFamily: "Courier-Bold",
-        color: "#B45309",
+        color: "#1E3A8A",
         marginBottom: 5,
     },
     credLabel: {

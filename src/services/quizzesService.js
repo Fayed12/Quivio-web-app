@@ -65,6 +65,7 @@ export async function getAssignedQuizzes({ page = 1, pageSize = 12 } = {}) {
       quiz:quizzes(
         id, title, description, cover_image_url, difficulty,
         time_limit_minutes, passing_score, question_count, status,
+        attempt_count, avg_score, published_at, created_at,
         category:categories(id, name, icon, color)
       )
     `, { count: 'exact' })
@@ -90,6 +91,7 @@ export async function getQuizById(id) {
       .select(`
         *,
         category:categories(id, name, icon, color),
+        instructor:profiles!instructor_uid(uid, full_name, avatar_url),
         quiz_questions(
           id, display_order, points_override,
           question:questions(

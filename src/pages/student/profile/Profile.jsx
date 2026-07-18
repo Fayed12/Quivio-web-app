@@ -44,7 +44,6 @@ import {
     FiBarChart2,
     FiAward,
     FiDownload,
-    FiLink,
     FiCamera,
     FiMail,
     FiShield,
@@ -221,11 +220,6 @@ const StudentProfile = () => {
         }
     };
 
-    const handleCopyVerifyLink = (code) => {
-        const link = `${window.location.origin}/verify/${code}`;
-        navigator.clipboard.writeText(link);
-        toast.success("Verification link copied!");
-    };
 
     if (!profile) {
         return <div className={styles.loading}>Loading student specifications...</div>;
@@ -646,13 +640,7 @@ const StudentProfile = () => {
                                             </div>
 
                                             <div className={styles.certActionsRow}>
-                                                <button
-                                                    onClick={() => handleCopyVerifyLink(c.certificate_code)}
-                                                    className={styles.copyLinkBtn}
-                                                    title="Copy verification link"
-                                                >
-                                                    <FiLink />
-                                                </button>
+
                                                 <MainButton
                                                     variant="primary"
                                                     size="sm"
