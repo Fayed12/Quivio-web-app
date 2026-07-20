@@ -14,6 +14,7 @@ import leaderboardReducer    from './slices/leaderboardSlice';
 import certificatesReducer   from './slices/certificatesSlice';
 import announcementsReducer  from './slices/announcementsSlice';
 import instructorStudentsReducer from './slices/instructorStudentsSlice';
+import chatReducer from "./slices/chatSlice"
 import themeReducer from "./slices/themeSLice"
 
 
@@ -37,6 +38,7 @@ const store = configureStore({
     certificates:       certificatesReducer,
     announcements:      announcementsReducer,
     instructorStudents: instructorStudentsReducer,
+    chat:               chatReducer,
     theme:              themeReducer,
   },
 });
