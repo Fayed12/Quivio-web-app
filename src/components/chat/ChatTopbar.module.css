@@ -1,0 +1,143 @@
+.topbar {
+  height: 64px;
+  background-color: var(--bg-surface, #FFFFFF);
+  border-bottom: 1px solid var(--border-color, #E2E8F0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-4);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.backButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md, 8px);
+  background-color: var(--bg-app, #F8FAFC);
+  color: var(--text-secondary, #475569);
+  border: 1px solid var(--border-color, #E2E8F0);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backButton:hover {
+  background-color: var(--blue-50, #EFF6FF);
+  color: var(--blue-600, #2563EB);
+  border-color: var(--blue-200, #BFDBFE);
+}
+
+.userCardClickable {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-md, 8px);
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+.userCardClickable:hover {
+  background-color: var(--bg-app, #F8FAFC);
+}
+
+.avatarWrapper {
+  position: relative;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--fw-semibold, 600);
+  font-size: var(--text-md, 1rem);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.06));
+}
+
+.statusDot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-surface, #FFFFFF);
+  background-color: var(--color-success, #16A34A);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userName {
+  font-size: var(--text-base, 0.9375rem);
+  font-weight: var(--fw-semibold, 600);
+  color: var(--text-primary, #0F172A);
+  line-height: var(--leading-tight, 1.2);
+}
+
+.userMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #94A3B8);
+}
+
+.roleChip {
+  font-size: 0.6875rem;
+  font-weight: var(--fw-medium, 500);
+  text-transform: capitalize;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs, 4px);
+  background-color: var(--blue-50, #EFF6FF);
+  color: var(--blue-700, #1D4ED8);
+}
+
+.rightSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.actionButton {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md, 8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary, #475569);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: var(--bg-app, #F8FAFC);
+  color: var(--blue-600, #2563EB);
+  border-color: var(--border-color, #E2E8F0);
+}
+
+@media (max-width: 768px) {
+  .backButton {
+    display: flex;
+  }
+}

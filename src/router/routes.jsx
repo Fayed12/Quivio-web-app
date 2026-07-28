@@ -46,6 +46,7 @@ const Leaderboard = lazy(() => import("../pages/student/leaderboard/Leaderboard"
 const Bookmarks = lazy(() => import("../pages/student/bookmarks/Bookmarks"));
 const StudentNotifications = lazy(() => import("../pages/student/notifications/Notifications"));
 const StudentProfile = lazy(() => import("../pages/student/profile/Profile"));
+const StudentChatPage = lazy(() => import("../pages/student/studentChat/ChatPage"));
 
 // Lazy-loaded instructor pages
 const MyQuizzes = lazy(() => import("../pages/instructor/quizzes/MyQuizzes"));
@@ -61,6 +62,8 @@ const Categories = lazy(() => import("../pages/instructor/categories/Categories"
 const Certificates = lazy(() => import("../pages/instructor/certificates/Certificates"));
 const Notifications = lazy(() => import("../pages/instructor/notifications/Notifications"));
 const Profile = lazy(() => import("../pages/instructor/profile/Profile"));
+const InstructorChatPage = lazy(() => import("../pages/instructor/instructorChat/ChatPage"));
+
 
 // Redirect authenticated users away from public auth pages
 const RedirectIfAuth = ({ children }) => {
@@ -194,6 +197,14 @@ const router = createBrowserRouter([
                         ),
                     },
                     {
+                        path: "chat",
+                        element: (
+                            <SuspenseComponent>
+                                <StudentChatPage />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
                         path: "quizzes",
                         element: (
                             <SuspenseComponent>
@@ -314,6 +325,14 @@ const router = createBrowserRouter([
                         element: (
                             <SuspenseComponent>
                                 <InstructorDashboard />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "chat",
+                        element: (
+                            <SuspenseComponent>
+                                <InstructorChatPage />
                             </SuspenseComponent>
                         ),
                     },

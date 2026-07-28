@@ -15,12 +15,14 @@ import {
     FiAward,
     FiBell,
     FiUser,
-    FiLogOut
+    FiLogOut,
+    FiMessageSquare
 } from "react-icons/fi";
 
 // redux
 import { logoutThunk, selectProfile } from "../../../redux/slices/authSlice";
 import { selectUnreadCount } from "../../../redux/slices/notificationsSlice";
+import { selectUnreadCount as selectChatUnreadCount } from "../../../redux/slices/chatSlice";
 import { selectTheme } from "../../../redux/slices/themeSLice";
 
 // local
@@ -31,6 +33,7 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
     const navigate = useNavigate();
     const profile = useSelector(selectProfile);
     const unreadCount = useSelector(selectUnreadCount);
+    const chatUnreadCount = useSelector(selectChatUnreadCount);
     const theme = useSelector(selectTheme) || "light";
 
     const logoSrc = theme === "dark" ? "/dark-logo.png" : "/light-logo.png";
@@ -55,6 +58,12 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
             label: "Main",
             items: [
                 { path: "/instructor/dashboard", label: "Dashboard", icon: <FiHome /> },
+                { 
+                    path: "/instructor/chat", 
+                    label: "Chat", 
+                    icon: <FiMessageSquare />, 
+                    badge: chatUnreadCount > 0 ? chatUnreadCount : null 
+                },
                 { path: "/instructor/quizzes", label: "My Quizzes", icon: <FiClipboard /> },
                 { path: "/instructor/questions", label: "Question Bank", icon: <FiDatabase /> },
                 { path: "/instructor/rooms", label: "Rooms", icon: <FiFolder /> },

@@ -13,12 +13,14 @@ import {
     FiAward,
     FiBell,
     FiUser,
-    FiLogOut
+    FiLogOut,
+    FiMessageSquare
 } from "react-icons/fi";
 
 // redux
 import { logoutThunk, selectProfile } from "../../../redux/slices/authSlice";
 import { selectUnreadCount } from "../../../redux/slices/notificationsSlice";
+import { selectUnreadCount as selectChatUnreadCount } from "../../../redux/slices/chatSlice";
 import { selectTheme } from "../../../redux/slices/themeSLice";
 import { selectMyRooms } from "../../../redux/slices/roomsSlice";
 
@@ -31,6 +33,7 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
     const profile = useSelector(selectProfile);
     const rooms = useSelector(selectMyRooms);
     const unreadCount = useSelector(selectUnreadCount);
+    const chatUnreadCount = useSelector(selectChatUnreadCount);
     const theme = useSelector(selectTheme) || "light";
 
     // A student is in limited state if they belong to 0 rooms
@@ -58,6 +61,13 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
             label: "Main",
             items: [
                 { path: "/student/dashboard", label: "Dashboard", icon: <FiHome />, limitedAllowed: true },
+                { 
+                    path: "/student/chat", 
+                    label: "Chat", 
+                    icon: <FiMessageSquare />, 
+                    badge: chatUnreadCount > 0 ? chatUnreadCount : null,
+                    limitedAllowed: true 
+                },
                 { path: "/student/quizzes", label: "Browse Quizzes", icon: <FiSearch />, limitedAllowed: true },
                 { path: "/student/attempts", label: "My Attempts", icon: <FiClock />, limitedAllowed: false },
                 { path: "/student/progress", label: "Progress", icon: <FiBarChart2 />, limitedAllowed: false },
