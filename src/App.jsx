@@ -21,7 +21,7 @@ import {
     useRealtimeCertificates,
     useRealtimeCategories,
 } from "./hooks";
-import { selectTheme } from "./redux/slices/themeSlice.js";
+import { selectTheme } from "./redux/slices/themeSLice";
 import { supabase } from "./services/config/supabaseClient";
 
 // toastify

@@ -21,7 +21,7 @@ import {
 import { logoutThunk, selectProfile } from "../../../redux/slices/authSlice";
 import { selectUnreadCount } from "../../../redux/slices/notificationsSlice";
 import { selectUnreadCount as selectChatUnreadCount } from "../../../redux/slices/chatSlice";
-import { selectTheme } from "../../../redux/slices/themeSlice";
+import { selectTheme } from "../../../redux/slices/themeSLice";
 import { selectMyRooms } from "../../../redux/slices/roomsSlice";
 
 // local
