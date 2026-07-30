@@ -1,5 +1,5 @@
 // react
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 
 // react-icons
 import { FiSend } from "react-icons/fi";

@@ -1,5 +1,3 @@
-// react
-import React from "react";
 // redux
 import { useSelector } from "react-redux";
 import { selectUnreadCount } from "../../redux/slices/chatSlice";

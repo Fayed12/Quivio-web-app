@@ -1,0 +1,362 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.modalCard {
+  background-color: var(--bg-surface, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: var(--radius-xl, 16px);
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  width: 100%;
+  max-width: 540px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-5);
+  border-bottom: 1px solid var(--border-color, #E2E8F0);
+  background: linear-gradient(135deg, var(--blue-50, #EFF6FF) 0%, #FFFFFF 100%);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.iconWrapper {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--blue-600, #2563EB) 0%, var(--blue-700, #1D4ED8) 100%);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+.modalTitle {
+  font-size: var(--text-lg, 1.125rem);
+  font-weight: var(--fw-bold, 700);
+  color: var(--text-primary, #0F172A);
+  margin-bottom: 2px;
+}
+
+.modalSubtitle {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-secondary, #475569);
+}
+
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color, #E2E8F0);
+  background-color: var(--bg-surface, #FFFFFF);
+  color: var(--text-muted, #94A3B8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.closeBtn:hover {
+  background-color: var(--bg-app, #F8FAFC);
+  color: var(--text-primary, #0F172A);
+}
+
+.modalBody {
+  padding: var(--space-5);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--fw-bold, 700);
+  color: var(--text-primary, #0F172A);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.selectAllBtn {
+  background: none;
+  border: none;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--fw-semibold, 600);
+  color: var(--blue-600, #2563EB);
+  cursor: pointer;
+}
+
+.selectAllBtn:hover {
+  text-decoration: underline;
+}
+
+.searchBox {
+  position: relative;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #94A3B8);
+  font-size: 0.875rem;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-color, #E2E8F0);
+  background-color: var(--bg-app, #F8FAFC);
+  font-size: var(--text-xs, 0.75rem);
+  outline: none;
+}
+
+.searchInput:focus {
+  border-color: var(--blue-500, #3B82F6);
+  background-color: #FFFFFF;
+}
+
+.studentsList {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: var(--radius-lg, 12px);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: var(--bg-app, #F8FAFC);
+}
+
+.studentItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 10px;
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background-color: var(--bg-surface, #FFFFFF);
+  border: 1px solid transparent;
+}
+
+.studentItem:hover {
+  background-color: var(--blue-50, #EFF6FF);
+}
+
+.studentItemSelected {
+  background-color: var(--blue-50, #EFF6FF) !important;
+  border-color: var(--blue-200, #BFDBFE);
+}
+
+.checkboxWrapper {
+  display: flex;
+  align-items: center;
+  font-size: 1.1rem;
+}
+
+.checkboxIcon {
+  color: var(--text-muted, #94A3B8);
+}
+
+.checkboxIconChecked {
+  color: var(--blue-600, #2563EB);
+}
+
+.studentAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.studentInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.studentName {
+  font-size: var(--text-xs, 0.8125rem);
+  font-weight: var(--fw-semibold, 600);
+  color: var(--text-primary, #0F172A);
+  line-height: 1.2;
+}
+
+.studentEmail {
+  font-size: 0.6875rem;
+  color: var(--text-muted, #94A3B8);
+}
+
+.emptyList {
+  padding: var(--space-4);
+  text-align: center;
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--text-muted, #94A3B8);
+}
+
+.charCount {
+  font-size: 0.6875rem;
+  color: var(--text-muted, #94A3B8);
+}
+
+.messageTextarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--border-color, #E2E8F0);
+  background-color: var(--bg-app, #F8FAFC);
+  font-size: var(--text-xs, 0.8125rem);
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.messageTextarea:focus {
+  border-color: var(--blue-500, #3B82F6);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+}
+
+.modalFooter {
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-color, #E2E8F0);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  background-color: var(--bg-app, #F8FAFC);
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--border-color, #E2E8F0);
+  background-color: var(--bg-surface, #FFFFFF);
+  color: var(--text-secondary, #475569);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--fw-semibold, 600);
+  cursor: pointer;
+}
+
+.cancelBtn:hover:not(:disabled) {
+  background-color: var(--bg-app, #F8FAFC);
+}
+
+.sendBtn {
+  padding: 8px 18px;
+  border-radius: var(--radius-md, 8px);
+  border: none;
+  background: linear-gradient(135deg, var(--blue-600, #2563EB) 0%, var(--blue-700, #1D4ED8) 100%);
+  color: #FFFFFF;
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--fw-bold, 700);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s ease;
+}
+
+.sendBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.sendBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (max-width: 500px) {
+  .backdrop {
+    padding: 8px;
+  }
+
+  .modalCard {
+    max-height: 95vh;
+    border-radius: 14px;
+  }
+
+  .modalHeader {
+    padding: 12px 14px;
+  }
+
+  .modalTitle {
+    font-size: 1rem;
+  }
+
+  .iconWrapper {
+    width: 36px;
+    height: 36px;
+  }
+
+  .modalBody {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .studentsList {
+    max-height: 180px;
+  }
+
+  .modalFooter {
+    padding: 10px 14px;
+  }
+}

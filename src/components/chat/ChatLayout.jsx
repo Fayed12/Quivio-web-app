@@ -8,7 +8,9 @@ import {
   selectConversations,
   selectMessagesForConversation,
   selectHasMoreMessages,
+  selectChatContacts,
   sendChatMessage,
+  deleteChatMessage,
   markConversationRead,
   loadOlderMessages,
   fetchConversations,
@@ -29,7 +31,7 @@ import ChatMessagesList from "./ChatMessagesList";
 import ChatInput from "./ChatInput";
 
 // icons
-import { FiMessageSquare, FiSend, FiUsers } from "react-icons/fi";
+import { FiMessageSquare} from "react-icons/fi";
 
 // styling
 import styles from "./ChatLayout.module.css";
@@ -41,6 +43,7 @@ export default function ChatLayout({ role }) {
 
   const conversations = useSelector(selectConversations) || [];
   const activeConversationId = useSelector(selectActiveConversationId);
+  const rawContacts = useSelector(selectChatContacts);
 
   const messages = useSelector(
     selectMessagesForConversation(activeConversationId)
@@ -73,16 +76,24 @@ export default function ChatLayout({ role }) {
     }
   }, []);
 
-  // Mark conversation read when opened
+  // Mark conversation read when actively viewed
   useEffect(() => {
-    if (activeConversationId && currentUid) {
+    if (activeConversationId && currentUid && mobileView === "chat") {
       dispatch(markConversationRead({ conversationId: activeConversationId, currentUid }));
-      setMobileView("chat");
     }
-  }, [activeConversationId, currentUid, dispatch]);
+  }, [activeConversationId, currentUid, mobileView, dispatch]);
 
   const activeConvo = conversations.find((c) => c.id === activeConversationId);
-  const partnerUser = activeConvo?.otherUser;
+  const partnerUser = React.useMemo(() => {
+    if (activeConvo?.otherUser) return activeConvo.otherUser;
+    if (!activeConvo) return null;
+    const otherUid =
+      activeConvo.user1_uid === currentUid
+        ? activeConvo.user2_uid
+        : activeConvo.user1_uid;
+    const contactsList = rawContacts || [];
+    return contactsList.find((c) => (c.uid || c.id) === otherUid) || null;
+  }, [activeConvo, currentUid, rawContacts]);
 
   const handleSendMessage = (content) => {
     if (!activeConversationId || !currentUid || !content) return;
@@ -105,6 +116,17 @@ export default function ChatLayout({ role }) {
     );
   };
 
+  const handleDeleteMessage = (messageId) => {
+    if (!activeConversationId || !currentUid || !messageId) return;
+    dispatch(
+      deleteChatMessage({
+        messageId,
+        currentUid,
+        conversationId: activeConversationId,
+      })
+    );
+  };
+
   const handleBackMobile = () => {
     setMobileView("sidebar");
   };
@@ -117,7 +139,7 @@ export default function ChatLayout({ role }) {
       }`}
     >
       <div className={styles.sidebarWrapper}>
-        <ChatSidebar role={role} />
+        <ChatSidebar role={role} onSelectConversation={() => setMobileView("chat")} />
       </div>
 
       <main className={styles.mainChatArea}>
@@ -125,6 +147,7 @@ export default function ChatLayout({ role }) {
           <>
             <ChatTopbar
               partnerUser={partnerUser}
+              activeConversationId={activeConversationId}
               onBackMobile={handleBackMobile}
             />
 
@@ -133,6 +156,7 @@ export default function ChatLayout({ role }) {
               currentUid={currentUid}
               hasMore={hasMore}
               onLoadMore={handleLoadMore}
+              onDeleteMessage={handleDeleteMessage}
             />
 
             <ChatInput onSendMessage={handleSendMessage} />

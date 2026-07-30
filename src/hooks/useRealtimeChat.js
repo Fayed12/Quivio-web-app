@@ -13,8 +13,10 @@ import { selectUser } from "../redux/slices/authSlice";
 import {
   messageReceived,
   messageUpdated,
+  messageDeleted,
   fetchUnreadCount,
   fetchConversations,
+  markConversationRead,
 } from "../redux/slices/chatSlice";
 
 // local supabase client
@@ -26,9 +28,11 @@ import { supabase } from "../services/config/supabaseClient";
  */
 export function useRealtimeChat(conversationId) {
   const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  const currentUid = user?.id;
 
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || !currentUid) return;
 
     const channel = supabase
       .channel(`messages:conversation:${conversationId}`)
@@ -42,6 +46,11 @@ export function useRealtimeChat(conversationId) {
         },
         ({ new: message }) => {
           dispatch(messageReceived(message));
+
+          // Automatically mark incoming messages as read if the conversation is currently open
+          if (message.sender_uid !== currentUid) {
+            dispatch(markConversationRead({ conversationId, currentUid }));
+          }
         }
       )
       .on(
@@ -56,17 +65,29 @@ export function useRealtimeChat(conversationId) {
           dispatch(messageUpdated(message));
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        ({ old: message }) => {
+          dispatch(messageDeleted({ id: message.id, conversation_id: conversationId }));
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, dispatch]);
+  }, [conversationId, currentUid, dispatch]);
 }
 
 /**
  * Hook to subscribe to global inbox changes for the current user.
- * Automatically updates unread counts and refreshes conversation list when a message arrives.
+ * Automatically updates unread counts and refreshes conversation list when a message arrives or changes.
  */
 export function useRealtimeChatInbox() {
   const dispatch = useDispatch();
@@ -83,6 +104,22 @@ export function useRealtimeChatInbox() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
+        () => {
+          dispatch(fetchUnreadCount(user.id));
+          dispatch(fetchConversations(user.id));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages" },
+        () => {
+          dispatch(fetchUnreadCount(user.id));
+          dispatch(fetchConversations(user.id));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "messages" },
         () => {
           dispatch(fetchUnreadCount(user.id));
           dispatch(fetchConversations(user.id));

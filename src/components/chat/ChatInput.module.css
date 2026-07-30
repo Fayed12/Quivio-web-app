@@ -86,3 +86,24 @@
   color: var(--color-danger, #DC2626);
   font-weight: var(--fw-semibold, 600);
 }
+
+@media (max-width: 500px) {
+  .inputContainer {
+    padding: 8px 10px;
+    gap: 2px;
+  }
+
+  .inputRow {
+    padding: 6px 10px;
+    border-radius: 10px;
+  }
+
+  .textarea {
+    font-size: 0.8125rem;
+  }
+
+  .sendBtn {
+    width: 34px;
+    height: 34px;
+  }
+}

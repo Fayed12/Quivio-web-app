@@ -176,10 +176,12 @@ const slice = createSlice({
     },
 });
 
+const EMPTY_ARRAY = [];
+
 export const { clearRoomError } = slice.actions;
-export const selectMyRooms = (s) => s.rooms.items;
-export const selectCurrentRoom = (s) => s.rooms.current;
+export const selectMyRooms = (s) => s.rooms?.items || EMPTY_ARRAY;
+export const selectCurrentRoom = (s) => s.rooms?.current || null;
 export const selectRoomMembers = (roomId) => (s) =>
-    s.rooms.members[roomId] ?? [];
-export const selectNonMembers = (s) => s.rooms.nonMembers;
+    (roomId && s.rooms?.members?.[roomId]) || EMPTY_ARRAY;
+export const selectNonMembers = (s) => s.rooms?.nonMembers || EMPTY_ARRAY;
 export default slice.reducer;

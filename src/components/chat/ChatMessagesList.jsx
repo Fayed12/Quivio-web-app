@@ -8,7 +8,7 @@ import { gsap } from "gsap";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import isYesterday from "dayjs/plugin/isYesterday";
-import { FiCheck, FiCheckCircle, FiMessageSquare } from "react-icons/fi";
+import { FiCheck, FiCheckCircle, FiMessageSquare, FiTrash2 } from "react-icons/fi";
 
 // styling
 import styles from "./ChatMessagesList.module.css";
@@ -21,6 +21,7 @@ export default function ChatMessagesList({
   currentUid,
   hasMore = false,
   onLoadMore,
+  onDeleteMessage,
 }) {
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
@@ -114,14 +115,30 @@ export default function ChatMessagesList({
                   <div className={styles.metaRow}>
                     <span>{formatMessageTime(m.created_at)}</span>
                     {isMine && (
-                      <span
-                        className={`${styles.readReceiptIcon} ${
-                          isRead ? styles.readReceiptIconRead : ""
-                        }`}
-                        title={isRead ? "Read" : "Sent"}
-                      >
-                        {isRead ? <FiCheckCircle size={12} /> : <FiCheck size={12} />}
-                      </span>
+                      <>
+                        <span
+                          className={`${styles.readReceiptIcon} ${
+                            isRead ? styles.readReceiptIconRead : ""
+                          }`}
+                          title={isRead ? "Read" : "Sent"}
+                        >
+                          {isRead ? <FiCheckCircle size={12} /> : <FiCheck size={12} />}
+                        </span>
+
+                        {onDeleteMessage && (
+                          <button
+                            type="button"
+                            className={styles.deleteMsgBtn}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteMessage(m.id);
+                            }}
+                            title="Delete message"
+                          >
+                            <FiTrash2 size={12} />
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

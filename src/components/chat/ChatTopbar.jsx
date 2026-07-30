@@ -1,33 +1,75 @@
 // react
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
 
 // react-icons
-import { FiArrowLeft, FiMoreVertical, FiInfo, FiUser } from "react-icons/fi";
+import { FiArrowLeft, FiInfo, FiMoreVertical, FiTrash, FiTrash2 } from "react-icons/fi";
+import Swal from "sweetalert2";
 
-// components
+// components & helpers
 import UserProfileModal from "./UserProfileModal";
+import { getAvatarUrl } from "../../utils/avatarUtils";
+import { clearAllMessagesInConversation, deleteConversation } from "../../redux/slices/chatSlice";
 
 // styling
 import styles from "./ChatTopbar.module.css";
 
-export default function ChatTopbar({ partnerUser, onBackMobile }) {
+export default function ChatTopbar({ partnerUser, activeConversationId, onBackMobile }) {
+  const dispatch = useDispatch();
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+
+  useEffect(() => {
+    const close = () => setShowMenu(false);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, []);
 
   if (!partnerUser) return null;
 
-  const { full_name, email, role, avatar_url, is_active } = partnerUser;
+  const { full_name, role, is_active } = partnerUser;
 
-  const getAvatarColor = (name = "") => {
-    const char = name.trim().charAt(0).toUpperCase();
-    if (char >= "A" && char <= "E") return "var(--blue-600, #2563EB)";
-    if (char >= "F" && char <= "J") return "var(--violet-600, #7C3AED)";
-    if (char >= "K" && char <= "O") return "var(--teal-600, #0D9488)";
-    if (char >= "P" && char <= "T") return "var(--amber-600, #D97706)";
-    return "var(--green-600, #16A34A)";
+  const handleClearAll = (e) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    if (!activeConversationId) return;
+    Swal.fire({
+      title: "Delete all messages?",
+      text: "All messages in this conversation will be permanently deleted. You cannot undo this task!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#DC2626",
+      cancelButtonColor: "#64748B",
+      confirmButtonText: "Yes, delete all messages",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(clearAllMessagesInConversation(activeConversationId));
+      }
+    });
   };
 
-  const initial = (full_name || email || "U").charAt(0).toUpperCase();
-  const bgAvatarColor = getAvatarColor(full_name || email);
+  const handleDeleteConvo = (e) => {
+    e.stopPropagation();
+    setShowMenu(false);
+    if (!activeConversationId) return;
+    Swal.fire({
+      title: "Delete conversation?",
+      text: "This conversation and all its messages will be permanently deleted. You cannot undo this task!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#DC2626",
+      cancelButtonColor: "#64748B",
+      confirmButtonText: "Yes, delete conversation",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        dispatch(deleteConversation(activeConversationId));
+      }
+    });
+  };
 
   return (
     <>
@@ -50,20 +92,11 @@ export default function ChatTopbar({ partnerUser, onBackMobile }) {
             title="Click to view full user profile details"
           >
             <div className={styles.avatarWrapper}>
-              {avatar_url ? (
-                <img
-                  src={avatar_url}
-                  alt={full_name || "User avatar"}
-                  className={styles.avatar}
-                />
-              ) : (
-                <div
-                  className={styles.avatar}
-                  style={{ backgroundColor: bgAvatarColor }}
-                >
-                  {initial}
-                </div>
-              )}
+              <img
+                src={getAvatarUrl(partnerUser)}
+                alt={full_name || "User avatar"}
+                className={styles.avatar}
+              />
               <span
                 className={styles.statusDot}
                 style={{
@@ -92,6 +125,35 @@ export default function ChatTopbar({ partnerUser, onBackMobile }) {
           >
             <FiInfo size={18} />
           </button>
+
+          {activeConversationId && (
+            <div className={styles.menuWrapper} onClick={(e) => e.stopPropagation()}>
+              <button
+                className={styles.actionButton}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu((prev) => !prev);
+                }}
+                title="Conversation Options"
+              >
+                <FiMoreVertical size={18} />
+              </button>
+
+              {showMenu && (
+                <div className={styles.topbarDropdown}>
+                  <button className={styles.topbarMenuItem} onClick={handleClearAll}>
+                    <FiTrash size={14} /> Clear Messages
+                  </button>
+                  <button
+                    className={`${styles.topbarMenuItem} ${styles.topbarMenuItemDanger}`}
+                    onClick={handleDeleteConvo}
+                  >
+                    <FiTrash2 size={14} /> Delete Conversation
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </header>
 

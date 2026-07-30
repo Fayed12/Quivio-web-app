@@ -116,6 +116,58 @@
   gap: var(--space-2);
 }
 
+.menuWrapper {
+  position: relative;
+}
+
+.topbarDropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 6px;
+  background-color: var(--bg-surface, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+  padding: 4px;
+  z-index: 100;
+  min-width: 165px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topbarMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: var(--text-secondary, #475569);
+  font-size: var(--text-xs, 0.75rem);
+  font-weight: var(--fw-semibold, 600);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background-color 0.15s ease;
+}
+
+.topbarMenuItem:hover {
+  background-color: var(--bg-app, #F8FAFC);
+  color: var(--text-primary, #0F172A);
+}
+
+.topbarMenuItemDanger {
+  color: var(--color-error, #EF4444);
+}
+
+.topbarMenuItemDanger:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: #DC2626;
+}
+
 .actionButton {
   width: 36px;
   height: 36px;
@@ -139,5 +191,54 @@
 @media (max-width: 768px) {
   .backButton {
     display: flex;
+  }
+}
+
+@media (max-width: 500px) {
+  .topbar {
+    height: 54px;
+    padding: 0 8px;
+  }
+
+  .leftSection {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .userCardClickable {
+    padding: 2px 4px;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .userName {
+    font-size: 0.8125rem;
+    max-width: 110px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .userMeta {
+    font-size: 0.6875rem;
+  }
+
+  .roleChip {
+    display: none;
+  }
+
+  .actionButton {
+    width: 32px;
+    height: 32px;
+  }
+
+  .backButton {
+    width: 32px;
+    height: 32px;
   }
 }
