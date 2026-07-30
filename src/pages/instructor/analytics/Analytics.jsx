@@ -47,7 +47,7 @@ import {
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Avatar } from "@mui/material";
 
 // XLSX for exports
-import * as XLSX from "xlsx";
+import { utils, writeFile } from "xlsx";
 
 const Analytics = () => {
     // Local Filters States
@@ -160,10 +160,10 @@ const Analytics = () => {
         }
 
         try {
-            const worksheet = XLSX.utils.json_to_sheet(exportData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-            XLSX.writeFile(workbook, filename);
+            const worksheet = utils.json_to_sheet(exportData);
+            const workbook = utils.book_new();
+            utils.book_append_sheet(workbook, worksheet, sheetName);
+            writeFile(workbook, filename);
             toast.success(`Exported ${sheetName} successfully!`);
         } catch (err) {
             console.error("Error exporting to Excel:", err);

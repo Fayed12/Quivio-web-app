@@ -29,6 +29,10 @@ import { toast } from "react-toastify";
 // Material UI
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
 
+// react-pdf
+import { pdf } from "@react-pdf/renderer";
+import CertificatePDF from "../../student/profile/CertificatePDF";
+
 // supabase client
 import { supabase } from "../../../services/config/supabaseClient";
 
@@ -108,12 +112,28 @@ const Certificates = () => {
         }
     };
 
-    const handleDownloadPdf = (pdfUrl) => {
-        if (!pdfUrl) {
-            toast.info("Generating PDF download link...");
+    const handleDownloadPdf = async (cert) => {
+        if (cert.pdf_url) {
+            window.open(cert.pdf_url, "_blank");
             return;
         }
-        window.open(pdfUrl, "_blank");
+        try {
+            toast.info("Generating certificate PDF...");
+            const doc = <CertificatePDF cert={cert} profileName={cert.student?.full_name || "Student"} />;
+            const blob = await pdf(doc).toBlob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `Certificate_${cert.quiz?.title?.replace(/\s+/g, "_") || "Completion"}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            toast.success("Certificate downloaded successfully!");
+        } catch (err) {
+            console.error("PDF generation failed:", err);
+            toast.error("Could not generate certificate PDF.");
+        }
     };
 
     return (
@@ -296,8 +316,8 @@ const Certificates = () => {
                                         <div className={styles.actions}>
                                             <button 
                                                 className={styles.actionBtn} 
-                                                onClick={() => handleDownloadPdf(cert.pdf_url)}
-                                                title="Open Certificate PDF"
+                                                onClick={() => handleDownloadPdf(cert)}
+                                                title="Download Certificate PDF"
                                             >
                                                 <FiDownload />
                                             </button>

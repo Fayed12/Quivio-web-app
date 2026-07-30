@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import { useSelector } from "react-redux";
-import { selectTheme } from "../../redux/slices/themeSLice";
+import { selectTheme } from "../../redux/slices/themeSlice";
 import MainButton from "../../components/ui/button/MainButton";
 import { FiArrowLeft, FiArrowUp, FiFileText } from "react-icons/fi";
 import styles from "./TermsPage.module.css";

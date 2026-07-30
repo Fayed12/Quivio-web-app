@@ -1,5 +1,6 @@
 # 🚀 Quivio — QuizMaster Pro
 
+[![Live Demo](https://img.shields.io/badge/Production_Live_Demo-quivio--web--app.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://quivio-web-app.vercel.app/)
 [![React](https://img.shields.io/badge/React-19.2.7-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8.1.0-646CFF?style=for-the-badge&logo=vite)](https://vite.dev/)
 [![Redux](https://img.shields.io/badge/Redux_Toolkit-2.12.0-764ABC?style=for-the-badge&logo=redux)](https://redux-toolkit.js.org/)
@@ -8,6 +9,7 @@
 
 **Quivio — QuizMaster Pro** is a premium, next-generation gamified online assessment and classroom management system. Architected for both instructors and students, it delivers an immersive, real-time testing experience combined with robust class analytics, digital certificate generation, automated grading, and social gamification (XP, levels, streaks, and leaderboards).
 
+🌐 **Production Web App**: [https://quivio-web-app.vercel.app/](https://quivio-web-app.vercel.app/)  
 🧑‍💻 **Developer:** [Mohamed Emad Fayed](https://github.com/Fayed12)
 
 ---
@@ -258,7 +260,10 @@ npm run preview
 ```
 
 ### Hosting on Vercel
-The repository includes a `vercel.json` file configured to handle SPA routing redirects (`/*` to `/index.html`). To deploy:
+The app is deployed live in production on Vercel:
+👉 **Production Live URL**: [https://quivio-web-app.vercel.app/](https://quivio-web-app.vercel.app/)
+
+The repository includes a `vercel.json` file configured to handle SPA routing redirects (`/*` to `/index.html`). To deploy your own instance:
 1. Connect your repository to [Vercel](https://vercel.com).
 2. Configure environmental variables (`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`) in the Vercel dashboard.
 3. Deploy!

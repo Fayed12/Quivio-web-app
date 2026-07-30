@@ -55,11 +55,3 @@ export async function markAllAsRead() {
 export async function deleteNotification(id) {
   return handleQuery(supabase.from('notifications').delete().eq('id', id));
 }
-
-export async function createNotification({ uid, type, title, body, quiz_id, attempt_id }) {
-  return handleQuery(
-    supabase.from('notifications')
-      .insert({ uid, type, title, body, quiz_id, attempt_id })
-      .select().single()
-  );
-}

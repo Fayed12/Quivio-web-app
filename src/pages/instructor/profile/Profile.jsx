@@ -13,7 +13,7 @@ import {
     updateAvatarThunk
 } from "../../../redux/slices/profilesSlice";
 import { forgotPasswordThunk } from "../../../redux/slices/authSlice";
-import { setTheme } from "../../../redux/slices/themeSLice";
+import { setTheme } from "../../../redux/slices/themeSlice";
 
 // animation
 import usePageAnimation from "../../../hooks/instructor/usePageAnimation";

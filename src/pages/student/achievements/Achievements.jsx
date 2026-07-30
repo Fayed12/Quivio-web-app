@@ -25,7 +25,7 @@ import {
 } from "react-icons/fi";
 
 // xlsx
-import * as XLSX from "xlsx";
+import { utils, writeFile } from "xlsx";
 
 // local
 import styles from "./Achievements.module.css";
@@ -66,10 +66,10 @@ const Achievements = () => {
             "Date Unlocked": format(new Date(ea.earned_at), "PP")
         }));
 
-        const worksheet = XLSX.utils.json_to_sheet(data);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "My Achievements");
-        XLSX.writeFile(workbook, "quivio_unlocked_achievements.xlsx");
+        const worksheet = utils.json_to_sheet(data);
+        const workbook = utils.book_new();
+        utils.book_append_sheet(workbook, worksheet, "My Achievements");
+        writeFile(workbook, "quivio_unlocked_achievements.xlsx");
         toast.success("Achievements logs exported successfully!");
     };
 

@@ -1,7 +1,7 @@
 // local
 import MainButton from "../../components/ui/button/MainButton";
 import styles from "./landingPage.module.css";
-import { toggleTheme } from "../../redux/slices/themeSLice";
+import { toggleTheme } from "../../redux/slices/themeSlice";
 
 // react
 import { useEffect, useRef, useState } from "react";

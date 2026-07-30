@@ -15,7 +15,7 @@ import certificatesReducer   from './slices/certificatesSlice';
 import announcementsReducer  from './slices/announcementsSlice';
 import instructorStudentsReducer from './slices/instructorStudentsSlice';
 import chatReducer from "./slices/chatSlice"
-import themeReducer from "./slices/themeSLice"
+import themeReducer from "./slices/themeSlice";
 
 
 // redux

@@ -21,7 +21,7 @@ import {
 
 // redux
 import { logoutThunk, selectProfile } from "../../../redux/slices/authSlice";
-import { toggleTheme, selectTheme } from "../../../redux/slices/themeSLice";
+import { toggleTheme, selectTheme } from "../../../redux/slices/themeSlice";
 import {
     selectUnreadCount,
     fetchUnreadCount,
