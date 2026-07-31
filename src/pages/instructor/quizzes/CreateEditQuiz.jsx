@@ -3,6 +3,8 @@ import PageHeader from "../components/PageHeader";
 import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./CreateEditQuiz.module.css";
 import ModalPortal from "../components/ModalPortal";
+import QuizPreviewModal from "../components/QuizPreviewModal";
+import QuizVersionHistoryModal from "../components/QuizVersionHistoryModal";
 
 // react
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -19,6 +21,7 @@ import {
     publishQuizThunk,
     unpublishQuizThunk,
 } from "../../../redux/slices/quizzesSlice";
+import { saveQuizVersion } from "../../../redux/slices/quizVersionsSlice";
 import { removeFromQuizThunk } from "../../../redux/slices/questionsSlice";
 
 // react-icons
@@ -39,6 +42,8 @@ import {
     FiSettings,
     FiFileText,
     FiX,
+    FiEye,
+    FiGitCommit,
 } from "react-icons/fi";
 
 // react-toastify
@@ -119,6 +124,8 @@ const CreateEditQuiz = () => {
     // Modal toggles
     const [isBankModalOpen, setIsBankModalOpen] = useState(false);
     const [isEditWarningOpen, setIsEditWarningOpen] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
 
     // Search and filter for Question Bank Modal
     const [bankSearch, setBankSearch] = useState("");
@@ -703,20 +710,95 @@ const CreateEditQuiz = () => {
             return;
         }
 
+        const isDark = document.documentElement.classList.contains("dark");
+
         try {
             await handleAutosave();
             await dispatch(publishQuizThunk(id)).unwrap();
-            toast.success(`"${title}" is now published and live for students!`);
-            navigate("/instructor/quizzes");
+            
+            // Ask instructor for optional version snapshot note on publish
+            const { value: versionNote, isConfirmed: versionConfirmed } = await Swal.fire({
+                title: "Quiz Published!",
+                text: "Would you like to log a Version History note for this published snapshot?",
+                input: "text",
+                inputPlaceholder: "e.g., Final Published Version for Midterm Exam...",
+                showCancelButton: true,
+                confirmButtonText: "Save Version & Continue",
+                cancelButtonText: "Skip Note",
+                confirmButtonColor: "var(--color-accent, #6366f1)",
+                background: isDark ? "#1e293b" : "#ffffff",
+                color: isDark ? "#f8fafc" : "#0f172a",
+            });
+
+            if (versionConfirmed) {
+                try {
+                    await dispatch(saveQuizVersion({ 
+                        quizId: id, 
+                        note: versionNote?.trim() || "Published Version Snapshot" 
+                    })).unwrap();
+                    toast.success("Version snapshot recorded in history!");
+                } catch (vErr) {
+                    console.log("Version history snapshot error:", vErr);
+                }
+            }
+
+            Swal.fire({
+                title: "Quiz Published Successfully!",
+                text: "Your quiz is now live for students. Would you like to Preview it or return to My Quizzes?",
+                icon: "success",
+                showCancelButton: true,
+                confirmButtonText: "Preview Quiz Now",
+                cancelButtonText: "Go to My Quizzes",
+                confirmButtonColor: "var(--color-accent, #6366f1)",
+                background: isDark ? "#1e293b" : "#ffffff",
+                color: isDark ? "#f8fafc" : "#0f172a",
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    setIsPreviewOpen(true);
+                } else {
+                    navigate("/instructor/quizzes");
+                }
+            });
         } catch (err) {
             toast.error(err || "Failed to publish quiz");
         }
     };
 
     const handleSaveDraft = async () => {
+        const isDark = document.documentElement.classList.contains("dark");
+
         try {
             await handleAutosave();
-            toast.success("Quiz draft saved successfully!");
+            
+            // If editing an existing quiz, prompt user if they want to log a new version snapshot
+            if (id) {
+                const { value: versionNote, isConfirmed } = await Swal.fire({
+                    title: "Save Changes & Log Version?",
+                    text: "Your edits have been saved. Would you like to create a new Version Snapshot in history for these changes?",
+                    input: "text",
+                    inputPlaceholder: "Optional note (e.g. Updated Q2 options and explanation)...",
+                    showCancelButton: true,
+                    confirmButtonText: "Save Version Snapshot",
+                    cancelButtonText: "Save Without Version Note",
+                    confirmButtonColor: "var(--color-accent, #6366f1)",
+                    background: isDark ? "#1e293b" : "#ffffff",
+                    color: isDark ? "#f8fafc" : "#0f172a",
+                });
+
+                if (isConfirmed) {
+                    try {
+                        await dispatch(saveQuizVersion({ 
+                            quizId: id, 
+                            note: versionNote?.trim() || "Saved Edits Snapshot" 
+                        })).unwrap();
+                        toast.success("Version snapshot saved to Version History!");
+                    } catch (vErr) {
+                        console.error("Failed to save version snapshot:", vErr);
+                    }
+                }
+            }
+
+            toast.success("Quiz saved successfully!");
             navigate("/instructor/quizzes");
         } catch (err) {
             toast.error(err || "Failed to save draft");
@@ -817,18 +899,32 @@ const CreateEditQuiz = () => {
                 actions={
                     <div className={styles.headerRight}>
                         {id && (
-                            <div
-                                className={styles.autosaveStatus}
-                                data-status={saveStatus}
-                            >
-                                <span className={styles.statusDot} />
-                                <span className={styles.statusText}>
-                                    {saveStatus === "saved" && "Saved ✓"}
-                                    {saveStatus === "saving" && "Saving..."}
-                                    {saveStatus === "unsaved" &&
-                                        "Unsaved changes ●"}
-                                </span>
-                            </div>
+                            <>
+                                <MainButton
+                                    onClick={() => setIsPreviewOpen(true)}
+                                    variant="secondary"
+                                >
+                                    <FiEye /> Preview Quiz
+                                </MainButton>
+                                <MainButton
+                                    onClick={() => setIsVersionHistoryOpen(true)}
+                                    variant="secondary"
+                                >
+                                    <FiGitCommit /> Version History
+                                </MainButton>
+                                <div
+                                    className={styles.autosaveStatus}
+                                    data-status={saveStatus}
+                                >
+                                    <span className={styles.statusDot} />
+                                    <span className={styles.statusText}>
+                                        {saveStatus === "saved" && "Saved ✓"}
+                                        {saveStatus === "saving" && "Saving..."}
+                                        {saveStatus === "unsaved" &&
+                                            "Unsaved changes ●"}
+                                    </span>
+                                </div>
+                            </>
                         )}
                         <MainButton
                             onClick={() => navigate("/instructor/quizzes")}
@@ -2002,6 +2098,40 @@ const CreateEditQuiz = () => {
                         </div>
                     </div>
                 </ModalPortal>
+            )}
+
+            {/* QUIZ PREVIEW MODAL */}
+            <QuizPreviewModal
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+                quizId={id}
+                quiz={{
+                    id,
+                    title: title || "Quiz Preview",
+                    description,
+                    time_limit_minutes: hasTimeLimit ? Number(timeLimitMinutes) : null,
+                    passing_score: Number(passingScore),
+                    normalizedQuestions: questionsList.map(ql => ({
+                        id: ql.question?.id || ql.id,
+                        question_text: ql.question?.question_text || "",
+                        question_type: ql.question?.question_type || "mcq",
+                        points: ql.points_override || ql.question?.points || 1,
+                        difficulty: ql.question?.difficulty || "medium",
+                        hint: ql.question?.hint || "",
+                        explanation: ql.question?.explanation || "",
+                        options: ql.question?.options || ql.question?.question_options || []
+                    }))
+                }}
+            />
+
+            {/* QUIZ VERSION HISTORY MODAL */}
+            {id && (
+                <QuizVersionHistoryModal
+                    isOpen={isVersionHistoryOpen}
+                    onClose={() => setIsVersionHistoryOpen(false)}
+                    quizId={id}
+                    quizTitle={title}
+                />
             )}
         </div>
     );

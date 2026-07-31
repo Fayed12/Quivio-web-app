@@ -2,6 +2,7 @@
 import PageHeader from "../components/PageHeader";
 import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./StudentsManagement.module.css";
+import ExportGradesModal from "../components/ExportGradesModal";
 
 // react
 import { useState, useEffect, useRef } from "react";
@@ -79,6 +80,7 @@ const StudentsManagement = () => {
     // Modal togglers
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isImportOpen, setIsImportOpen] = useState(false);
+    const [isExportOpen, setIsExportOpen] = useState(false);
     const [selectedStudentId, setSelectedStudentId] = useState(null); // side panel student UID
     const [isDetailsLoading, setIsDetailsLoading] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState(null);
@@ -516,6 +518,9 @@ const StudentsManagement = () => {
                     <div className={styles.headerActions}>
                         <MainButton onClick={() => setIsCreateOpen(true)} variant="primary">
                             <FiPlus /> Create Student
+                        </MainButton>
+                        <MainButton onClick={() => setIsExportOpen(true)} variant="secondary">
+                            <FiDownload /> Export Grades
                         </MainButton>
                         <MainButton onClick={() => setIsImportOpen(true)} variant="outline">
                             <FiUpload /> Bulk Import
@@ -1046,6 +1051,13 @@ const StudentsManagement = () => {
                 </ModalPortal>
             )}
 
+            {/* EXPORT GRADES MODAL */}
+            <ExportGradesModal
+                isOpen={isExportOpen}
+                onClose={() => setIsExportOpen(false)}
+                students={students}
+                rooms={rooms}
+            />
         </div>
     );
 };

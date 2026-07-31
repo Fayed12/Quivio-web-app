@@ -2,6 +2,10 @@
 import PageHeader from "../components/PageHeader";
 import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./MyQuizzes.module.css";
+import QuizPreviewModal from "../components/QuizPreviewModal";
+import QuizVersionHistoryModal from "../components/QuizVersionHistoryModal";
+import ExportGradesModal from "../components/ExportGradesModal";
+import { getAttemptsByQuiz } from "../../../services/attemptsService";
 
 // react
 import { useState, useEffect, useRef, useMemo } from "react";
@@ -42,7 +46,9 @@ import {
     FiArchive, 
     FiInbox,
     FiCheckSquare,
-    FiX
+    FiX,
+    FiGitCommit,
+    FiDownload
 } from "react-icons/fi";
 
 // react-toastify
@@ -82,6 +88,12 @@ const MyQuizzes = () => {
     const [quizToAssign, setQuizToAssign] = useState(null);
     const [assignRoomId, setAssignRoomId] = useState("");
     const [assignDueDate, setAssignDueDate] = useState("");
+
+    // New features modal states
+    const [previewQuiz, setPreviewQuiz] = useState(null);
+    const [versionQuiz, setVersionQuiz] = useState(null);
+    const [isExportOpen, setIsExportOpen] = useState(false);
+    const [exportAttempts, setExportAttempts] = useState([]);
 
     const containerRef = useRef(null);
     const dropdownRef = useRef(null);
@@ -273,9 +285,14 @@ const MyQuizzes = () => {
                 subtitle={`Manage and build your library of academic tests. Total: ${quizzes.length} quizzes`}
                 breadcrumbs={["Quizzes"]}
                 actions={
-                    <MainButton onClick={() => navigate("/instructor/quizzes/create")} variant="primary">
-                        <FiPlus /> Create Quiz
-                    </MainButton>
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <MainButton onClick={() => setIsExportOpen(true)} variant="secondary">
+                            <FiDownload /> Export Grades
+                        </MainButton>
+                        <MainButton onClick={() => navigate("/instructor/quizzes/create")} variant="primary">
+                            <FiPlus /> Create Quiz
+                        </MainButton>
+                    </div>
                 }
             />
 
@@ -391,6 +408,13 @@ const MyQuizzes = () => {
                                     <div className={styles.cardActions}>
                                         <button 
                                             className={styles.actionBtn} 
+                                            onClick={() => { setPreviewQuiz(quiz); setActiveDropdown(null); }}
+                                            title="Preview Quiz"
+                                        >
+                                            <FiEye />
+                                        </button>
+                                        <button 
+                                            className={styles.actionBtn} 
                                             onClick={() => navigate(`/instructor/quizzes/${quiz.id}/edit`)}
                                             title="Edit Quiz"
                                         >
@@ -415,8 +439,11 @@ const MyQuizzes = () => {
 
                                             {activeDropdown === quiz.id && (
                                                 <div className={styles.dropdown} ref={dropdownRef}>
-                                                    <button onClick={() => navigate(`/student/quizzes/${quiz.id}`)} className={styles.dropdownItem}>
-                                                        <FiEye /> Student Preview
+                                                    <button onClick={() => { setPreviewQuiz(quiz); setActiveDropdown(null); }} className={styles.dropdownItem}>
+                                                        <FiEye /> Preview Quiz
+                                                    </button>
+                                                    <button onClick={() => { setVersionQuiz(quiz); setActiveDropdown(null); }} className={styles.dropdownItem}>
+                                                        <FiGitCommit /> Version History
                                                     </button>
                                                     <button onClick={() => handleTogglePublish(quiz)} className={styles.dropdownItem}>
                                                         <FiSend /> {quiz.status === "published" ? "Unpublish" : "Publish"}
@@ -426,6 +453,17 @@ const MyQuizzes = () => {
                                                     </button>
                                                     <button onClick={() => setQuizToAssign(quiz)} className={styles.dropdownItem}>
                                                         <FiCheckSquare /> Assign to Room
+                                                    </button>
+                                                    <button 
+                                                        onClick={async () => {
+                                                            const { data } = await getAttemptsByQuiz({ quizId: quiz.id });
+                                                            setExportAttempts(data || []);
+                                                            setIsExportOpen(true);
+                                                            setActiveDropdown(null);
+                                                        }} 
+                                                        className={styles.dropdownItem}
+                                                    >
+                                                        <FiDownload /> Export Quiz Grades
                                                     </button>
                                                     <div className={styles.dropdownDivider} />
                                                     <button onClick={() => { handleDeleteQuiz(quiz); setActiveDropdown(null); }} className={`${styles.dropdownItem} ${styles.danger}`}>
@@ -515,6 +553,37 @@ const MyQuizzes = () => {
                 </div>
                 </ModalPortal>
             )}
+
+            {/* QUIZ PREVIEW MODAL */}
+            <QuizPreviewModal
+                isOpen={!!previewQuiz}
+                onClose={() => setPreviewQuiz(null)}
+                quiz={previewQuiz}
+                quizId={previewQuiz?.id}
+            />
+
+            {/* QUIZ VERSION HISTORY MODAL */}
+            <QuizVersionHistoryModal
+                isOpen={!!versionQuiz}
+                onClose={() => setVersionQuiz(null)}
+                quizId={versionQuiz?.id}
+                quizTitle={versionQuiz?.title}
+                onRestoreVersion={() => {
+                    navigate(`/instructor/quizzes/${versionQuiz?.id}/edit`);
+                }}
+            />
+
+            {/* EXPORT GRADES MODAL */}
+            <ExportGradesModal
+                isOpen={isExportOpen}
+                onClose={() => {
+                    setIsExportOpen(false);
+                    setExportAttempts([]);
+                }}
+                students={[]}
+                attempts={exportAttempts}
+                rooms={rooms}
+            />
         </div>
     );
 };
