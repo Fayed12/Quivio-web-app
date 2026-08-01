@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
  * Prevents body scroll while open and centers content on the full viewport.
  */
 const ModalPortal = ({ children, onClose }) => {
-    const portalRoot = document.getElementById("popup-modal");
+    const portalRoot = document.getElementById("popup-modal") || (typeof document !== "undefined" ? document.body : null);
 
     // Prevent page scroll while modal is open
     useEffect(() => {

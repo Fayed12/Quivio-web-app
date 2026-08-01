@@ -45,6 +45,7 @@ import { gsap } from "gsap";
 // local
 import styles from "./QuizResults.module.css";
 import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import PracticeRecommendations from "./components/PracticeRecommendations";
 
 // Initialize sounds with local fallbacks
 const passSound = new Howl({ src: ["/sounds/pass.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.6, preload: true });
@@ -401,6 +402,11 @@ const QuizResults = () => {
                         </div>
                     );
                 })}
+            </div>
+
+            {/* Practice Recommendations & Skill Breakdown */}
+            <div className={styles.staggerItem}>
+                <PracticeRecommendations attempt={attempt} />
             </div>
 
             {/* Action Row */}

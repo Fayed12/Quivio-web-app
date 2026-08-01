@@ -138,7 +138,7 @@ export async function getMyAttempts({
   let query = supabase
     .from('attempts')
     .select(`
-      id, status, started_at, submitted_at, score, passed,
+      id, quiz_id, status, started_at, submitted_at, score, passed,
       correct_count, wrong_count, total_questions, time_spent_secs, xp_earned,
       quiz:quizzes(id, title, difficulty, category:categories(id, name))
     `, { count: 'exact' })

@@ -1,0 +1,213 @@
+.card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-2xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: flex-direction;
+    flex-direction: column;
+    gap: var(--space-5);
+    margin-top: var(--space-6);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: var(--space-4);
+}
+
+.titleGroup {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.iconBadge {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+    color: var(--color-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+}
+
+.title {
+    font-size: var(--text-xl);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+}
+
+.subtitle {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-5);
+}
+
+/* Strong Sides Column */
+.sectionCard {
+    background: var(--bg-app);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-md);
+    font-weight: var(--fw-bold);
+}
+
+.headerStrong {
+    color: var(--green-500);
+}
+
+.headerWeak {
+    color: var(--red-500);
+}
+
+.topicList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.topicItem {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.topicHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.topicName {
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--text-primary);
+}
+
+.topicScore {
+    font-size: var(--text-xs);
+    font-weight: var(--fw-bold);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+}
+
+.scoreGreen {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--green-500);
+}
+
+.scoreRed {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--red-500);
+}
+
+.progressBarBg {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-app);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.progressBarFill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.6s ease;
+}
+
+.adviceBox {
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px dashed var(--color-accent);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+}
+
+.practiceBtn {
+    margin-top: var(--space-2);
+    align-self: flex-start;
+    padding: 6px 14px;
+    border-radius: var(--radius-lg);
+    font-size: var(--text-xs);
+    font-weight: var(--fw-semibold);
+    background: var(--color-accent);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: all 0.2s ease;
+}
+
+.practiceBtn:hover {
+    background: var(--color-accent-hover);
+    transform: translateY(-1px);
+}
+
+/* ==========================================
+   RESPONSIVE BREAKPOINTS & SMALL SCREEN COMPATIBILITY (<500px)
+   ========================================== */
+@media (max-width: 768px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 500px) {
+    .card {
+        padding: var(--space-3);
+        margin-top: var(--space-4);
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .title {
+        font-size: var(--text-lg);
+    }
+
+    .sectionCard {
+        padding: var(--space-3);
+    }
+
+    .topicItem {
+        padding: var(--space-3);
+    }
+
+    .practiceBtn {
+        width: 100%;
+        justify-content: center;
+    }
+}

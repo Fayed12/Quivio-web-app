@@ -47,6 +47,10 @@ const Bookmarks = lazy(() => import("../pages/student/bookmarks/Bookmarks"));
 const StudentNotifications = lazy(() => import("../pages/student/notifications/Notifications"));
 const StudentProfile = lazy(() => import("../pages/student/profile/Profile"));
 const StudentChatPage = lazy(() => import("../pages/student/studentChat/ChatPage"));
+const StudentTodo = lazy(() => import("../pages/student/todo/TodoPage"));
+const StudentCalendar = lazy(() => import("../pages/student/calendar/CalendarPage"));
+const StudentRecommendations = lazy(() => import("../pages/student/recommendations/PracticeRecommendationsPage"));
+const StudentTimeline = lazy(() => import("../pages/student/timeline/TimelinePage"));
 
 // Lazy-loaded instructor pages
 const MyQuizzes = lazy(() => import("../pages/instructor/quizzes/MyQuizzes"));
@@ -297,6 +301,38 @@ const router = createBrowserRouter([
                         element: (
                             <SuspenseComponent>
                                 <StudentProfile />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "todo",
+                        element: (
+                            <SuspenseComponent>
+                                <StudentTodo />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "calendar",
+                        element: (
+                            <SuspenseComponent>
+                                <StudentCalendar />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "recommendations",
+                        element: (
+                            <SuspenseComponent>
+                                <StudentRecommendations />
+                            </SuspenseComponent>
+                        ),
+                    },
+                    {
+                        path: "timeline",
+                        element: (
+                            <SuspenseComponent>
+                                <StudentTimeline />
                             </SuspenseComponent>
                         ),
                     },

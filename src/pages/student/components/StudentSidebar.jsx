@@ -14,7 +14,11 @@ import {
     FiBell,
     FiUser,
     FiLogOut,
-    FiMessageSquare
+    FiMessageSquare,
+    FiCheckSquare,
+    FiCalendar,
+    FiZap,
+    FiActivity
 } from "react-icons/fi";
 
 // redux
@@ -68,6 +72,9 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
                     badge: chatUnreadCount > 0 ? chatUnreadCount : null,
                     limitedAllowed: true 
                 },
+                { path: "/student/todo", label: "Todo Checklist", icon: <FiCheckSquare />, limitedAllowed: true },
+                { path: "/student/calendar", label: "Study Calendar", icon: <FiCalendar />, limitedAllowed: true },
+                { path: "/student/recommendations", label: "Practice Skills", icon: <FiZap />, limitedAllowed: true },
                 { path: "/student/quizzes", label: "Browse Quizzes", icon: <FiSearch />, limitedAllowed: true },
                 { path: "/student/attempts", label: "My Attempts", icon: <FiClock />, limitedAllowed: false },
                 { path: "/student/progress", label: "Progress", icon: <FiBarChart2 />, limitedAllowed: false },
@@ -78,6 +85,7 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
         {
             label: "Activity",
             items: [
+                { path: "/student/timeline", label: "Timeline Stream", icon: <FiActivity />, limitedAllowed: false },
                 { path: "/student/achievements", label: "Achievements", icon: <FiAward />, limitedAllowed: false },
                 { 
                     path: "/student/notifications", 

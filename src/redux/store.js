@@ -16,6 +16,7 @@ import announcementsReducer from "./slices/announcementsSlice";
 import instructorStudentsReducer from "./slices/instructorStudentsSlice";
 import chatReducer from "./slices/chatSlice";
 import quizVersionsReducer from "./slices/quizVersionsSlice";
+import todosReducer from "./slices/todosSlice";
 import themeReducer from "./slices/themeSLice";
 
 // redux
@@ -40,6 +41,7 @@ const store = configureStore({
         instructorStudents: instructorStudentsReducer,
         chat: chatReducer,
         quizVersions: quizVersionsReducer,
+        todos: todosReducer,
         theme: themeReducer,
     },
 });
