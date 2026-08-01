@@ -12,7 +12,7 @@ import { useNavigate, useRouteError } from "react-router";
 import { gsap } from "gsap";
 
 // react-icons
-import { FiAlertOctagon, FiArrowLeft, FiHome } from "react-icons/fi";
+import { FiAlertOctagon, FiArrowLeft, FiHome, FiRefreshCw, FiGithub, FiMessageCircle } from "react-icons/fi";
 
 const ErrorPage = () => {
     const navigate = useNavigate();
@@ -86,6 +86,13 @@ const ErrorPage = () => {
                 { y: 0, opacity: 1, duration: 0.4, stagger: 0.1 },
                 "-=0.2"
             );
+
+            tl.fromTo(
+                `.${styles.contactSection}`,
+                { y: 10, opacity: 0 },
+                { y: 0, opacity: 1, duration: 0.4 },
+                "-=0.1"
+            );
         }, containerRef);
 
         return () => ctx.revert();
@@ -97,6 +104,10 @@ const ErrorPage = () => {
 
     const handleGoHome = () => {
         navigate("/");
+    };
+
+    const handleReload = () => {
+        window.location.reload();
     };
 
     return (
@@ -118,12 +129,39 @@ const ErrorPage = () => {
                 </div>
 
                 <div className={styles.actions}>
+                    <MainButton onClick={handleReload} variant="outline" size="md">
+                        <FiRefreshCw aria-hidden="true" /> Reload Page
+                    </MainButton>
                     <MainButton onClick={handleGoBack} variant="outline" size="md">
                         <FiArrowLeft aria-hidden="true" /> Go Back
                     </MainButton>
                     <MainButton onClick={handleGoHome} variant="primary" size="md">
                         <FiHome aria-hidden="true" /> Return Home
                     </MainButton>
+                </div>
+
+                <div className={styles.contactSection}>
+                    <p className={styles.contactText}>
+                        Found a bug or have a suggestion? Connect with the developer:
+                    </p>
+                    <div className={styles.contactLinks}>
+                        <a 
+                            href="https://wa.me/201093650836" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className={styles.contactLink}
+                        >
+                            <FiMessageCircle /> WhatsApp
+                        </a>
+                        <a 
+                            href="https://github.com/Fayed12" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className={styles.contactLink}
+                        >
+                            <FiGithub /> GitHub
+                        </a>
+                    </div>
                 </div>
             </main>
         </div>
