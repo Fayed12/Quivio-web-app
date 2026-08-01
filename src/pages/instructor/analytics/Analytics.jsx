@@ -225,7 +225,7 @@ const Analytics = () => {
                     <div className={styles.headerActions}>
                         {/* Quiz selector (Only on Quiz Performance tab) */}
                         {activeTab === "quizzes" && (
-                            <div className={styles.selectWrapper} style={{ width: "200px" }}>
+                            <div className={styles.selectWrapper}>
                                 <CustomSelect
                                     options={[
                                         { value: "all", label: "All Quizzes" },
@@ -239,7 +239,7 @@ const Analytics = () => {
                         )}
 
                         {/* Date Range Select */}
-                        <div className={styles.selectWrapper} style={{ width: "160px" }}>
+                        <div className={styles.selectWrapper}>
                             <CustomSelect
                                 options={[
                                     { value: "7days", label: "Last 7 Days" },

@@ -197,7 +197,7 @@ const Assignments = () => {
             {/* Page Header */}
             <PageHeader 
                 title="Quiz Assignments"
-                subtitle="Assign published tests to classrooms, specify deadlines, and send reminders."
+                subtitle={`Assign published tests to classrooms, specify deadlines, and send reminders. (${assignments.length} total assignments)`}
                 breadcrumbs={["Assignments"]}
                 actions={
                     <MainButton onClick={() => setIsAssignOpen(true)} variant="primary">
@@ -302,39 +302,41 @@ const Assignments = () => {
             </TableContainer>
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {totalRows > 0 && (
                 <div className={styles.paginationRow}>
                     <div className={styles.paginationInfo}>
                         Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> assignments
                     </div>
-                    <div className={styles.paginationBtnGroup}>
-                        <button 
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className={styles.pageBtn}
-                        >
-                            Previous
-                        </button>
-                        {[...Array(totalPages)].map((_, idx) => {
-                            const pageNum = idx + 1;
-                            return (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
-                                >
-                                    {pageNum}
-                                </button>
-                            );
-                        })}
-                        <button 
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className={styles.pageBtn}
-                        >
-                            Next
-                        </button>
-                    </div>
+                    {totalPages > 1 && (
+                        <div className={styles.paginationBtnGroup}>
+                            <button 
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className={styles.pageBtn}
+                            >
+                                Previous
+                            </button>
+                            {[...Array(totalPages)].map((_, idx) => {
+                                const pageNum = idx + 1;
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                            <button 
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className={styles.pageBtn}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 

@@ -66,6 +66,20 @@ const Certificates = () => {
     // Revocation state
     const [revokingCert, setRevokingCert] = useState(null);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+
+    // Pagination slices
+    const totalRows = issuedCerts.length;
+    const totalPages = Math.ceil(totalRows / pageSize);
+    const paginatedCerts = issuedCerts.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+    );
+    const startRow = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const endRow = Math.min(currentPage * pageSize, totalRows);
+
     const containerRef = useRef(null);
 
     // Page entrance animation
@@ -288,7 +302,7 @@ const Certificates = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {issuedCerts.map((cert) => (
+                            {paginatedCerts.map((cert) => (
                                 <TableRow key={cert.id} className={styles.tableRow}>
                                     <TableCell className={styles.tdCell}>
                                         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -342,6 +356,45 @@ const Certificates = () => {
                         </TableBody>
                     </Table>
                 </TableContainer>
+
+                {/* Pagination Controls */}
+                {totalRows > 0 && (
+                    <div className={styles.paginationRow}>
+                        <div className={styles.paginationInfo}>
+                            Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> certificates
+                        </div>
+                        {totalPages > 1 && (
+                            <div className={styles.paginationBtnGroup}>
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className={styles.pageBtn}
+                                >
+                                    Previous
+                                </button>
+                                {[...Array(totalPages)].map((_, idx) => {
+                                    const pageNum = idx + 1;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className={styles.pageBtn}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* REVOKE CERTIFICATE MODAL */}

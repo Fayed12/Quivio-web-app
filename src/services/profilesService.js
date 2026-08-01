@@ -8,15 +8,19 @@ import { handleQuery, clean } from './config/serviceHelpers';
 // Response: profiles row
 // ─────────────────────────────────────────────
 export async function getMyProfile() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: 'Not authenticated' };
-  return handleQuery(
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('uid', user.id)
-      .single()
-  );
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) return { data: null, error: error?.message || 'Not authenticated' };
+    return handleQuery(
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('uid', data.user.id)
+        .single()
+    );
+  } catch (err) {
+    return { data: null, error: err.message || 'Network error fetching profile' };
+  }
 }
 
 // ─────────────────────────────────────────────

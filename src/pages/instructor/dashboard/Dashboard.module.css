@@ -103,6 +103,8 @@
     grid-template-columns: 3fr 2fr;
     gap: var(--space-6);
     align-items: start;
+    min-width: 0;
+    width: 100%;
 }
 
 @media (max-width: 1024px) {
@@ -116,6 +118,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
+    min-width: 0;
+    width: 100%;
 }
 
 .dashboardCard {
@@ -128,6 +132,9 @@
     flex-direction: column;
     gap: var(--space-4);
     transition: background-color var(--transition-slow);
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .cardHeaderRow {
@@ -157,6 +164,8 @@
 /* MUI overrides inside module class */
 .tableContainer {
     background-color: transparent !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
 }
 
 .tableHead {
@@ -170,6 +179,7 @@
     text-transform: uppercase !important;
     border-bottom: 1px solid var(--border-default) !important;
     padding: var(--space-3) var(--space-4) !important;
+    white-space: nowrap !important;
 }
 
 .tableRow:hover {
@@ -181,6 +191,7 @@
     font-size: var(--text-sm) !important;
     border-bottom: 1px solid var(--border-default) !important;
     padding: var(--space-3) var(--space-4) !important;
+    white-space: nowrap !important;
 }
 
 .emptyCell {
@@ -221,6 +232,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    min-width: 0;
 }
 
 .studentItem {
@@ -229,6 +241,8 @@
     justify-content: space-between;
     padding: var(--space-2) 0;
     border-bottom: 1px solid var(--border-subtle);
+    min-width: 0;
+    gap: var(--space-2);
 }
 
 .studentItem:last-child {
@@ -239,6 +253,8 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
+    min-width: 0;
+    flex: 1;
 }
 
 .rankBadge {
@@ -252,6 +268,7 @@
     justify-content: center;
     font-size: var(--text-xs);
     font-weight: var(--fw-bold);
+    flex-shrink: 0;
 }
 
 .studentAvatar {
@@ -259,12 +276,17 @@
     font-size: var(--text-sm) !important;
     font-weight: var(--fw-bold) !important;
     background-color: var(--color-accent) !important;
+    flex-shrink: 0;
 }
 
 .studentName {
     font-size: var(--text-sm);
     font-weight: var(--fw-semibold);
     color: var(--text-primary);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .studentAttempts {
@@ -276,6 +298,7 @@
     font-size: var(--text-sm);
     font-weight: var(--fw-bold);
     color: var(--text-primary);
+    flex-shrink: 0;
 }
 
 /* Deadlines & alerts styling */
@@ -283,6 +306,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+    min-width: 0;
 }
 
 .alertSubTitle {
@@ -302,12 +326,16 @@
     border-radius: var(--radius-lg);
     background-color: var(--bg-surface-2);
     margin-bottom: var(--space-2);
+    min-width: 0;
+    gap: var(--space-2);
 }
 
 .deadlineQuiz {
     font-size: var(--text-sm);
     font-weight: var(--fw-semibold);
     color: var(--text-primary);
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .deadlineRoom {
@@ -319,6 +347,7 @@
     font-size: var(--text-xs);
     font-weight: var(--fw-semibold);
     color: var(--text-accent);
+    flex-shrink: 0;
 }
 
 .alertItem {
@@ -327,11 +356,16 @@
     background-color: var(--bg-danger);
     border-left: 3px solid var(--color-danger);
     margin-bottom: var(--space-2);
+    min-width: 0;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .alertHeader {
     font-size: var(--text-sm);
     color: var(--text-danger);
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .alertTime {
@@ -345,11 +379,16 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+    min-width: 0;
+    width: 100%;
 }
 
 .activityItem {
     display: flex;
     gap: var(--space-3);
+    align-items: flex-start;
+    min-width: 0;
+    width: 100%;
 }
 
 .activityIcon {
@@ -368,15 +407,28 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
 }
 
 .activityText {
     font-size: var(--text-sm);
     color: var(--text-primary);
     line-height: var(--leading-snug);
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .activityTime {
     font-size: var(--text-xs);
     color: var(--text-muted);
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+    .dashboardCard {
+        padding: var(--space-4);
+    }
 }

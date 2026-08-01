@@ -42,6 +42,7 @@
 .selectWrapper {
     position: relative;
     z-index: 10;
+    min-width: 170px;
 }
 
 .customDateWrapper {
@@ -858,6 +859,22 @@
 }
 
 @media (max-width: 768px) {
+    .headerActions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
+    }
+    .selectWrapper, .customDateWrapper {
+        width: 100% !important;
+        min-width: 100%;
+    }
+    .customDateWrapper {
+        justify-content: space-between;
+    }
+    .headerActions button {
+        width: 100%;
+    }
     .grid2 {
         grid-template-columns: 1fr;
     }
@@ -871,13 +888,6 @@
 }
 
 @media (max-width: 600px) {
-    .headerActions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .selectWrapper, .customDateWrapper {
-        width: 100% !important;
-    }
     .kpiGrid {
         grid-template-columns: 1fr;
     }

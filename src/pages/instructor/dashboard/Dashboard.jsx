@@ -168,7 +168,7 @@ const Dashboard = () => {
 
             {/* Main Visual Grids */}
             <div className={styles.gridMain} data-tour="dashboard-recent">
-                {/* Left Side: Recent Quizzes + Attempts chart */}
+                {/* Left Side: Recent Quizzes + Attempts chart + Activity Feed */}
                 <div className={styles.gridMainLeft}>
                     {/* Recent Quizzes table */}
                     <div className={styles.dashboardCard}>
@@ -234,9 +234,25 @@ const Dashboard = () => {
                             </ResponsiveContainer>
                         </div>
                     </div>
+
+                    {/* Activity Feed */}
+                    <div className={styles.dashboardCard}>
+                        <h3 className={styles.cardTitle}>Activity Feed</h3>
+                        <div className={styles.activityFeedList}>
+                            {activityFeed.map(act => (
+                                <div key={act.id} className={styles.activityItem}>
+                                    <div className={styles.activityIcon}>{act.icon}</div>
+                                    <div className={styles.activityContent}>
+                                        <p className={styles.activityText}>{act.text}</p>
+                                        <span className={styles.activityTime}>{act.time}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
-                {/* Right Side: Charts, Top Performing Students, Activity Feed */}
+                {/* Right Side: Charts, Top Performing Students, Deadlines & Alerts */}
                 <div className={styles.gridMainRight}>
                     {/* Top performing students */}
                     <div className={styles.dashboardCard}>
@@ -322,22 +338,6 @@ const Dashboard = () => {
                                     No alerts (all active attempts started &lt;24h ago).
                                 </div>
                             )}
-                        </div>
-                    </div>
-
-                    {/* Activity Feed */}
-                    <div className={styles.dashboardCard}>
-                        <h3 className={styles.cardTitle}>Activity Feed</h3>
-                        <div className={styles.activityFeedList}>
-                            {activityFeed.map(act => (
-                                <div key={act.id} className={styles.activityItem}>
-                                    <div className={styles.activityIcon}>{act.icon}</div>
-                                    <div className={styles.activityContent}>
-                                        <p className={styles.activityText}>{act.text}</p>
-                                        <span className={styles.activityTime}>{act.time}</span>
-                                    </div>
-                                </div>
-                            ))}
                         </div>
                     </div>
                 </div>

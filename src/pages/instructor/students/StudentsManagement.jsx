@@ -512,7 +512,7 @@ const StudentsManagement = () => {
             {/* Header */}
             <PageHeader 
                 title="Student Management"
-                subtitle={`Create, credential-provision, and monitor student accounts. Total: ${students.length}`}
+                subtitle={`Create, credential-provision, and monitor student accounts. (${students.length} total students)`}
                 breadcrumbs={["Students"]}
                 actions={
                     <div className={styles.headerActions}>
@@ -692,39 +692,41 @@ const StudentsManagement = () => {
             </TableContainer>
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {totalRows > 0 && (
                 <div className={styles.paginationRow}>
                     <div className={styles.paginationInfo}>
                         Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> students
                     </div>
-                    <div className={styles.paginationBtnGroup}>
-                        <button 
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className={styles.pageBtn}
-                        >
-                            Previous
-                        </button>
-                        {[...Array(totalPages)].map((_, idx) => {
-                            const pageNum = idx + 1;
-                            return (
-                                <button
-                                    key={pageNum}
-                                    onClick={() => setCurrentPage(pageNum)}
-                                    className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
-                                >
-                                    {pageNum}
-                                </button>
-                            );
-                        })}
-                        <button 
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className={styles.pageBtn}
-                        >
-                            Next
-                        </button>
-                    </div>
+                    {totalPages > 1 && (
+                        <div className={styles.paginationBtnGroup}>
+                            <button 
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className={styles.pageBtn}
+                            >
+                                Previous
+                            </button>
+                            {[...Array(totalPages)].map((_, idx) => {
+                                const pageNum = idx + 1;
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                            <button 
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className={styles.pageBtn}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 

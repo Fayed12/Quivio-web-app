@@ -9,6 +9,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
+    flex-wrap: wrap;
 }
 
 .filterBar {
@@ -34,8 +35,10 @@
 
 .searchIcon {
     position: absolute;
-    right: var(--space-3);
+    left: var(--space-4);
     color: var(--text-muted);
+    font-size: 16px;
+    pointer-events: none;
 }
 
 .clearIcon {
@@ -43,6 +46,7 @@
     right: var(--space-3);
     color: var(--text-muted);
     cursor: pointer;
+    font-size: 16px;
 }
 
 .searchInput {
@@ -51,7 +55,7 @@
     background-color: var(--bg-surface-2);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
-    padding: 0 var(--space-8) 0 var(--space-5);
+    padding: 0 var(--space-8) 0 var(--space-10);
     font-size: var(--text-sm);
     color: var(--text-primary);
     outline: none;
@@ -165,7 +169,8 @@
     border: 1px solid var(--border-default) !important;
     border-radius: var(--radius-xl) !important;
     box-shadow: var(--shadow-sm) !important;
-    overflow: hidden;
+    max-width: 100% !important;
+    overflow-x: auto !important;
 }
 
 .tableHead {
@@ -630,4 +635,96 @@
     background-color: var(--color-accent) !important;
     border-color: var(--color-accent) !important;
     color: white !important;
+}
+
+.questionTextCell {
+    max-width: 380px;
+    min-width: 220px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* Media Queries for Responsive Layout */
+@media (max-width: 1024px) {
+    .filterBar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .searchWrapper {
+        width: 100%;
+        min-width: 100%;
+    }
+
+    .filtersGrid {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--space-2);
+    }
+
+    .select {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .headerActions {
+        width: 100%;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+    }
+
+    .headerActions button {
+        flex: 1;
+        min-width: 130px;
+    }
+
+    .filtersGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .bulkBar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .bulkRight {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .bulkDivider {
+        display: none;
+    }
+
+    .grid2, .grid3 {
+        grid-template-columns: 1fr;
+    }
+
+    .paginationRow {
+        flex-direction: column;
+        gap: var(--space-3);
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .editorModal, .csvModal {
+        padding: var(--space-2);
+        max-height: 95vh;
+    }
+
+    .modalBody {
+        padding: var(--space-3);
+    }
+
+    .modalFooter {
+        flex-direction: column-reverse;
+        gap: var(--space-2);
+    }
+
+    .modalFooter button {
+        width: 100%;
+    }
 }

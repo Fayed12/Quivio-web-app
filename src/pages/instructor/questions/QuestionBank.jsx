@@ -560,7 +560,7 @@ const QuestionBank = () => {
             {/* Header */}
             <PageHeader 
                 title="Question Bank"
-                subtitle={`A unified library of all your reusable quiz questions. Total: ${totalCount}`}
+                subtitle={`A unified library of all your reusable quiz questions. (${totalCount} total questions)`}
                 breadcrumbs={["Quizzes", "Question Bank"]}
                 actions={
                     <div className={styles.headerActions}>
@@ -713,7 +713,7 @@ const QuestionBank = () => {
                                             {q.question_type === "mcq" ? <FiList /> : <FiToggleLeft />}
                                         </div>
                                     </TableCell>
-                                    <TableCell className={styles.tdCell} style={{fontWeight: 500}}>
+                                    <TableCell className={`${styles.tdCell} ${styles.questionTextCell}`} style={{fontWeight: 500}}>
                                         {q.question_text}
                                         {q.tags && q.tags.length > 0 && (
                                             <div className={styles.tagsRow}>

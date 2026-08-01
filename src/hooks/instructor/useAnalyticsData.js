@@ -74,11 +74,7 @@ export const useAnalyticsData = (dateRange = "all", customRange = null, selected
                     .select(`
                         id, status, score, passed, started_at, submitted_at, time_spent_secs, correct_count, total_questions,
                         quiz:quizzes!inner(id, title, instructor_uid, category:categories(id, name)),
-                        profile:profiles!uid(uid, full_name, email, avatar_url, is_active, last_activity_date),
-                        attempt_answers(
-                            id, question_id, is_correct, time_spent_secs,
-                            question:questions(id, question_text)
-                        )
+                        profile:profiles!uid(uid, full_name, email, avatar_url, is_active, last_activity_date)
                     `)
                     .eq("quiz.instructor_uid", userId);
 
@@ -327,36 +323,69 @@ export const useAnalyticsData = (dateRange = "all", customRange = null, selected
                 });
 
                 // G. Question Performances (correct/incorrect rates and times)
+                const completedAttemptIds = completed.map(a => a.id);
                 const questionStats = {};
-                completed.forEach(att => {
-                    const answers = att.attempt_answers || [];
-                    answers.forEach(ans => {
-                        const qId = ans.question_id;
-                        if (!qId) return;
-                        const qText = ans.question?.question_text || `Question ${qId}`;
-                        const isCorrect = ans.is_correct;
-                        const timeSpent = ans.time_spent_secs || 0;
 
-                        if (!questionStats[qId]) {
-                            questionStats[qId] = {
-                                id: qId,
-                                text: qText,
-                                total: 0,
-                                correct: 0,
-                                incorrect: 0,
-                                totalTimeSpent: 0
-                            };
+                if (completedAttemptIds.length > 0) {
+                    const { data: answersData } = await supabase
+                        .from("attempt_answers")
+                        .select(`
+                            id, attempt_id, question_id, is_correct, time_spent_secs,
+                            question:questions(id, question_text)
+                        `)
+                        .in("attempt_id", completedAttemptIds);
+
+                    if (answersData && answersData.length > 0) {
+                        // Check for any missing question texts and fetch them from questions table
+                        const missingQIds = [];
+                        answersData.forEach(ans => {
+                            if (ans.question_id && !ans.question?.question_text) {
+                                missingQIds.push(ans.question_id);
+                            }
+                        });
+
+                        let fallbackQuestionMap = {};
+                        if (missingQIds.length > 0) {
+                            const { data: qRows } = await supabase
+                                .from("questions")
+                                .select("id, question_text")
+                                .in("id", missingQIds);
+
+                            if (qRows) {
+                                qRows.forEach(q => {
+                                    fallbackQuestionMap[q.id] = q.question_text;
+                                });
+                            }
                         }
 
-                        questionStats[qId].total++;
-                        if (isCorrect) {
-                            questionStats[qId].correct++;
-                        } else {
-                            questionStats[qId].incorrect++;
-                        }
-                        questionStats[qId].totalTimeSpent += timeSpent;
-                    });
-                });
+                        answersData.forEach(ans => {
+                            const qId = ans.question_id;
+                            if (!qId) return;
+                            const qText = ans.question?.question_text || fallbackQuestionMap[qId] || `Question #${qId.slice(0, 6)}`;
+                            const isCorrect = Boolean(ans.is_correct);
+                            const timeSpent = Number(ans.time_spent_secs) || 0;
+
+                            if (!questionStats[qId]) {
+                                questionStats[qId] = {
+                                    id: qId,
+                                    text: qText,
+                                    total: 0,
+                                    correct: 0,
+                                    incorrect: 0,
+                                    totalTimeSpent: 0
+                                };
+                            }
+
+                            questionStats[qId].total++;
+                            if (isCorrect) {
+                                questionStats[qId].correct++;
+                            } else {
+                                questionStats[qId].incorrect++;
+                            }
+                            questionStats[qId].totalTimeSpent += timeSpent;
+                        });
+                    }
+                }
 
                 const questionPerformancesList = Object.values(questionStats).map(q => ({
                     id: q.id,
@@ -370,15 +399,19 @@ export const useAnalyticsData = (dateRange = "all", customRange = null, selected
                 }));
 
                 const hardestQs = [...questionPerformancesList]
-                    .sort((a, b) => b.percentIncorrect - a.percentIncorrect)
+                    .filter(q => q.attempts > 0)
+                    .sort((a, b) => b.percentIncorrect - a.percentIncorrect || b.attempts - a.attempts)
                     .slice(0, 5);
 
                 const easiestQs = [...questionPerformancesList]
-                    .sort((a, b) => b.percentCorrect - a.percentCorrect)
+                    .filter(q => q.attempts > 0)
+                    .sort((a, b) => b.percentCorrect - a.percentCorrect || b.attempts - a.attempts)
                     .slice(0, 5);
 
                 const avgTimePerQ = [...questionPerformancesList]
-                    .sort((a, b) => b.avgTimeSpent - a.avgTimeSpent);
+                    .filter(q => q.attempts > 0)
+                    .sort((a, b) => b.avgTimeSpent - a.avgTimeSpent)
+                    .slice(0, 5);
 
                 setQuestionPerformances({
                     hardest: hardestQs,

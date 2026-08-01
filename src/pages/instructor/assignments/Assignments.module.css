@@ -33,7 +33,7 @@
 
 .searchIcon {
     position: absolute;
-    right: var(--space-3);
+    left: var(--space-4);
     color: var(--text-muted);
     pointer-events: none;
     z-index: 2;
@@ -44,6 +44,7 @@
     right: var(--space-3);
     color: var(--text-muted);
     cursor: pointer;
+    z-index: 2;
 }
 
 .searchInput {
@@ -52,7 +53,7 @@
     background-color: var(--bg-surface-2);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-md);
-    padding: 0 var(--space-8) 0 var(--space-5);
+    padding: 0 var(--space-8) 0 var(--space-9);
     font-size: var(--text-sm);
     color: var(--text-primary);
     outline: none;
@@ -69,7 +70,9 @@
     border: 1px solid var(--border-default) !important;
     border-radius: var(--radius-xl) !important;
     box-shadow: var(--shadow-sm) !important;
-    overflow: hidden;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
 }
 
 .tableHead {
@@ -83,6 +86,7 @@
     text-transform: uppercase !important;
     border-bottom: 1px solid var(--border-default) !important;
     padding: var(--space-3) var(--space-4) !important;
+    white-space: nowrap !important;
 }
 
 .tableRow:hover {
@@ -94,6 +98,7 @@
     font-size: var(--text-sm) !important;
     border-bottom: 1px solid var(--border-default) !important;
     padding: var(--space-3) var(--space-4) !important;
+    white-space: nowrap !important;
 }
 
 .completionCount {
@@ -383,4 +388,41 @@
     background-color: var(--color-accent) !important;
     border-color: var(--color-accent) !important;
     color: white !important;
+}
+
+@media (max-width: 1024px) {
+    .filterBar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .searchWrapper {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .headerActions {
+        width: 100%;
+    }
+
+    .headerActions button {
+        width: 100%;
+    }
+
+    .paginationRow {
+        flex-direction: column;
+        gap: var(--space-3);
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .modalGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .modalButtons {
+        flex-direction: column;
+    }
 }

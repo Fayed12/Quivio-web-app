@@ -81,9 +81,13 @@ export async function resetPassword(password) {
 // Response: { data: { session }, error }
 // ─────────────────────────────────────────────
 export async function getSession() {
-  const { data, error } = await supabase.auth.getSession();
-  if (error) return { data: null, error: error.message };
-  return { data, error: null };
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: err.message || 'Network error fetching session' };
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -92,9 +96,13 @@ export async function getSession() {
 // Response: { data: { user }, error }
 // ─────────────────────────────────────────────
 export async function getUser() {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) return { data: null, error: error.message };
-  return { data, error: null };
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: err.message || 'Network error fetching user' };
+  }
 }
 
 // ─────────────────────────────────────────────

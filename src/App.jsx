@@ -215,14 +215,18 @@ function App() {
         const {
             data: { subscription },
         } = subscribeToAuthChanges(async (event, session) => {
-            if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-                const { data: profile } = await getMyProfile();
-                dispatch(setSession({ session, profile }));
-                dispatch(fetchUnreadCount());
-            }
-            if (event === "SIGNED_OUT") {
-                dispatch(setSession(null));
-                navigate("/home");
+            try {
+                if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+                    const { data: profile } = await getMyProfile();
+                    dispatch(setSession({ session, profile }));
+                    dispatch(fetchUnreadCount());
+                }
+                if (event === "SIGNED_OUT") {
+                    dispatch(setSession(null));
+                    navigate("/home");
+                }
+            } catch (err) {
+                console.warn("Auth change listener encountered a network error:", err);
             }
         });
         return () => subscription.unsubscribe();

@@ -207,7 +207,7 @@ const Profile = () => {
                             className={styles.fileInput}
                             accept="image/*"
                         />
-                        <Avatar src={profile.avatar_url} sx={{ width: 120, height: 120, fontSize: "48px" }} className={styles.avatar}>
+                        <Avatar src={profile.avatar_url} sx={{ width: '100%', height: '100%', fontSize: "48px" }} className={styles.avatar}>
                             {profile.full_name?.charAt(0)}
                         </Avatar>
                         <div className={styles.avatarOverlay}>
