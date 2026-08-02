@@ -307,7 +307,7 @@ const Leaderboard = () => {
                                             </td>
                                             <td className={styles.studentCell}>
                                                 <img src={avatar} alt={name} className={styles.avatar} />
-                                                <span className="font-medium">{name}</span>
+                                                <span className={styles.studentName}>{name}</span>
                                             </td>
                                             <td className="font-semibold">{entry.xp}</td>
                                             <td>{entry.quizzes_completed}</td>

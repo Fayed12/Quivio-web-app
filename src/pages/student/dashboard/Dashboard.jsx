@@ -92,17 +92,34 @@ const StudentDashboard = () => {
         return "Good evening";
     };
 
+    // Helper to safely extract category name from a quiz object
+    const getCategoryName = (quiz) => {
+        if (!quiz) return "General Knowledge";
+        const cat = quiz.category;
+        if (typeof cat === "string" && cat.trim()) return cat.trim();
+        if (Array.isArray(cat) && cat.length > 0) {
+            return typeof cat[0] === "string" ? cat[0] : (cat[0]?.name || quiz.category_name || "General Knowledge");
+        }
+        if (typeof cat === "object" && cat !== null && cat.name) {
+            return cat.name;
+        }
+        if (quiz.category_name) return quiz.category_name;
+        return "General Knowledge";
+    };
+
     // Calculate category averages from attempts
     const getCategoryPerformance = () => {
-        const completedAttempts = attempts.filter(a => a.status === "completed" && a.quiz?.category);
+        const completedAttempts = attempts.filter(a => 
+            (a.status === "completed" || (a.score !== null && a.score !== undefined)) && a.quiz
+        );
         const categoriesMap = {};
         completedAttempts.forEach(a => {
-            const cat = a.quiz.category;
-            if (!categoriesMap[cat.name]) {
-                categoriesMap[cat.name] = { totalScore: 0, count: 0 };
+            const catName = getCategoryName(a.quiz);
+            if (!categoriesMap[catName]) {
+                categoriesMap[catName] = { totalScore: 0, count: 0 };
             }
-            categoriesMap[cat.name].totalScore += a.score ?? 0;
-            categoriesMap[cat.name].count += 1;
+            categoriesMap[catName].totalScore += a.score ?? 0;
+            categoriesMap[catName].count += 1;
         });
 
         return Object.entries(categoriesMap).map(([name, val]) => ({

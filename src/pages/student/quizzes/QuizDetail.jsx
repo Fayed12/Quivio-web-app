@@ -20,6 +20,7 @@ import { toast } from "react-toastify";
 import * as FiIcons from "react-icons/fi";
 import {
     FiChevronLeft,
+    FiChevronRight,
     FiBookmark,
     FiBookOpen,
     FiUser,
@@ -139,6 +140,14 @@ const QuizDetail = () => {
 
     const isLocked = quiz?.max_attempts && completedAttempts.length >= quiz.max_attempts;
 
+    // Pagination for Attempt History
+    const [historyPage, setHistoryPage] = useState(1);
+    const historyPageSize = 5;
+    const totalHistoryItems = completedAttempts.length;
+    const totalHistoryPages = Math.ceil(totalHistoryItems / historyPageSize);
+    const startHistoryIdx = (historyPage - 1) * historyPageSize;
+    const paginatedHistoryAttempts = completedAttempts.slice(startHistoryIdx, startHistoryIdx + historyPageSize);
+
     const handleStartQuiz = async () => {
         if (activeAttempt) {
             navigate(`/student/quiz/${quizId}/take?attempt=${activeAttempt.id}`);
@@ -183,7 +192,7 @@ const QuizDetail = () => {
     return (
         <div ref={containerRef} className={styles.container}>
             {/* Breadcrumb / Page Header Actions */}
-            <div className="flex justify-between items-center" style={{ borderBottom: "1px solid var(--border-default)", paddingBottom: "var(--space-3)" }}>
+            <div className={styles.topNavRow}>
                 <button
                     onClick={() => navigate("/student/quizzes")}
                     className="btn btn--ghost btn--sm"
@@ -251,7 +260,7 @@ const QuizDetail = () => {
                         </div>
 
                         <div className={styles.heroFooterInfo}>
-                            <div className="flex items-center gap-3">
+                            <div className={styles.ratingRow}>
                                 <Rating 
                                     value={quiz.avg_score ? (quiz.avg_score / 20) : 0} 
                                     precision={0.5} 
@@ -342,7 +351,12 @@ const QuizDetail = () => {
                     {/* Attempt History */}
                     {completedAttempts.length > 0 && (
                         <div className={`${styles.sectionCard} ${styles.animateIn}`}>
-                            <h3 className={styles.sectionTitle}>Attempt History</h3>
+                            <div className="flex justify-between items-center" style={{ borderBottom: "1px solid var(--border-subtle)", paddingBottom: "var(--space-2)" }}>
+                                <h3 className={styles.sectionTitle} style={{ borderBottom: "none", paddingBottom: 0, margin: 0 }}>Attempt History</h3>
+                                <span className="text-xs text-secondary">
+                                    Total: <strong>{totalHistoryItems}</strong> attempts
+                                </span>
+                            </div>
                             <div className={styles.historyTableWrapper}>
                                 <table className={styles.historyTable}>
                                     <thead>
@@ -356,9 +370,9 @@ const QuizDetail = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {completedAttempts.map((att, idx) => (
+                                        {paginatedHistoryAttempts.map((att, idx) => (
                                             <tr key={att.id}>
-                                                <td>{completedAttempts.length - idx}</td>
+                                                <td>{totalHistoryItems - (startHistoryIdx + idx)}</td>
                                                 <td>{formatDateSafe(att.submitted_at, "PP")}</td>
                                                 <td className="font-semibold">{Math.round(att.score)}%</td>
                                                 <td>
@@ -381,6 +395,44 @@ const QuizDetail = () => {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Pagination Controls */}
+                            {totalHistoryPages > 1 && (
+                                <div className={styles.paginationRow}>
+                                    <span className="text-xs text-secondary">
+                                        Showing <strong>{startHistoryIdx + 1}</strong>–<strong>{Math.min(startHistoryIdx + historyPageSize, totalHistoryItems)}</strong> of <strong>{totalHistoryItems}</strong>
+                                    </span>
+                                    <div className="flex gap-1 items-center">
+                                        <button
+                                            className={styles.pageBtn}
+                                            disabled={historyPage === 1}
+                                            onClick={() => setHistoryPage(prev => Math.max(1, prev - 1))}
+                                            aria-label="Previous Page"
+                                        >
+                                            <FiChevronLeft />
+                                        </button>
+                                        
+                                        {Array.from({ length: totalHistoryPages }, (_, i) => i + 1).map((p) => (
+                                            <button
+                                                key={p}
+                                                onClick={() => setHistoryPage(p)}
+                                                className={`${styles.pageBtn} ${historyPage === p ? styles.pageBtnActive : ""}`}
+                                            >
+                                                {p}
+                                            </button>
+                                        ))}
+                                        
+                                        <button
+                                            className={styles.pageBtn}
+                                            disabled={historyPage === totalHistoryPages}
+                                            onClick={() => setHistoryPage(prev => Math.min(totalHistoryPages, prev + 1))}
+                                            aria-label="Next Page"
+                                        >
+                                            <FiChevronRight />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

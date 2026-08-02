@@ -220,7 +220,7 @@ const QuizResults = () => {
 
     return (
         <div ref={containerRef} className={styles.resultsLayout}>
-            {/* Modern Page Header & Results Overview with animated opening */}
+            {/* Modern Page Header & Results Overview */}
             <div className={`${styles.pageHeader} ${styles.staggerItem}`}>
                 <div className={styles.headerTop}>
                     <button
@@ -246,41 +246,46 @@ const QuizResults = () => {
                                 {attempt.passed ? "Passed" : "Failed"}
                             </div>
                             <span className={styles.statChip}>
-                                <FiClock /> Time Spent: {formatTimeSpent(attempt.time_spent_secs)}
+                                <FiClock /> {formatTimeSpent(attempt.time_spent_secs)}
                             </span>
-                            <span className={styles.statChip} style={{ borderLeft: "3px solid var(--color-success)" }}>
-                                <FiCheck style={{ color: "var(--color-success)" }} /> {correctCount} Correct
+                            <span className={`${styles.statChip} ${styles.chipCorrect}`}>
+                                <FiCheck /> {correctCount} Correct
                             </span>
-                            <span className={styles.statChip} style={{ borderLeft: "3px solid var(--color-danger)" }}>
-                                <FiX style={{ color: "var(--color-danger)" }} /> {wrongCount} Incorrect
+                            <span className={`${styles.statChip} ${styles.chipIncorrect}`}>
+                                <FiX /> {wrongCount} Incorrect
                             </span>
                         </div>
                     </div>
 
                     <div className={styles.headerGaugeSection} ref={heroCardRef}>
-                        <div className={styles.gaugeContainer}>
-                            <svg width="100" height="100" viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
-                                <circle
-                                    cx="60"
-                                    cy="60"
-                                    r="50"
-                                    stroke="var(--bg-surface-3)"
-                                    strokeWidth="10"
-                                    fill="transparent"
-                                />
-                                <circle
-                                    cx="60"
-                                    cy="60"
-                                    r="50"
-                                    stroke={attempt.passed ? "var(--color-success)" : "var(--color-danger)"}
-                                    strokeWidth="10"
-                                    fill="transparent"
-                                    strokeDasharray={314}
-                                    strokeDashoffset={314 - (314 * animatedScore) / 100}
-                                    style={{ transition: "stroke-dashoffset 0.1s ease-out" }}
-                                />
-                            </svg>
-                            <div className={styles.gaugeText}>{animatedScore}%</div>
+                        <div className={styles.gaugeCard}>
+                            <div className={styles.gaugeContainer}>
+                                <svg width="100" height="100" viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
+                                    <circle
+                                        cx="60"
+                                        cy="60"
+                                        r="50"
+                                        stroke="var(--bg-surface-3)"
+                                        strokeWidth="10"
+                                        fill="transparent"
+                                    />
+                                    <circle
+                                        cx="60"
+                                        cy="60"
+                                        r="50"
+                                        stroke={attempt.passed ? "var(--color-success)" : "var(--color-danger)"}
+                                        strokeWidth="10"
+                                        fill="transparent"
+                                        strokeDasharray={314}
+                                        strokeDashoffset={314 - (314 * animatedScore) / 100}
+                                        style={{ transition: "stroke-dashoffset 0.1s ease-out" }}
+                                    />
+                                </svg>
+                                <div className={styles.gaugeTextGroup}>
+                                    <div className={styles.gaugeText}>{animatedScore}%</div>
+                                    <span className={styles.gaugeLabel}>Score</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -316,11 +321,11 @@ const QuizResults = () => {
             {/* XP and Level Up Panel */}
             {attempt.xp_earned > 0 && (
                 <div className={`${styles.xpEarnedCard} ${styles.staggerItem}`}>
-                    <div className="flex items-center gap-3">
+                    <div className={styles.xpCardContent}>
                         <span className={styles.xpBadge}>
                             <FiZap /> +{attempt.xp_earned} XP
                         </span>
-                        <div className="text-sm text-secondary font-semibold">
+                        <div className={styles.xpText}>
                             XP added to your profile level tracker!
                         </div>
                     </div>
@@ -329,7 +334,12 @@ const QuizResults = () => {
 
             {/* Answer Review Section */}
             <div className={`${styles.reviewSection} ${styles.staggerItem}`}>
-                <h3 className="h3">Answer Review</h3>
+                <div className={styles.reviewSectionHeader}>
+                    <h3 className={styles.reviewSectionTitle}>Answer Review</h3>
+                    <span className={styles.reviewSectionSubtitle}>
+                        Click any question to view detailed options and explanations
+                    </span>
+                </div>
                 
                 {(attempt.attempt_answers || []).map((ans, idx) => {
                     const isExpanded = !!expandedQuestion[ans.id];
@@ -347,46 +357,49 @@ const QuizResults = () => {
                                 className={styles.reviewHeader}
                                 onClick={() => toggleExpand(ans.id)}
                             >
-                                <span className={styles.questionIndicator}>
-                                    {ans.is_correct ? (
-                                        <FiCheck style={{ color: "var(--color-success)" }} />
-                                    ) : (
-                                        <FiX style={{ color: "var(--color-danger)" }} />
-                                    )}
-                                </span>
-                                <div className={styles.questionText}>
-                                    {qText}
+                                <div className={`${styles.questionIndicator} ${ans.is_correct ? styles.indicatorCorrect : styles.indicatorIncorrect}`}>
+                                    {ans.is_correct ? <FiCheck /> : <FiX />}
                                 </div>
-                                <span>
+                                <div className={styles.questionTitleGroup}>
+                                    <span className={styles.questionNumber}>Question {idx + 1}</span>
+                                    <div className={styles.questionText}>{qText}</div>
+                                </div>
+                                <div className={styles.expandBadge}>
                                     {isExpanded ? <FiChevronUp /> : <FiChevronDown />}
-                                </span>
+                                </div>
                             </div>
 
                             {/* Body */}
                             {isExpanded && (
                                 <div className={styles.reviewBody}>
                                     {ans.question?.image_url && (
-                                        <img 
-                                            src={ans.question.image_url} 
-                                            alt="Question reference" 
-                                            style={{ maxHeight: "160px", width: "auto", borderRadius: "var(--radius-sm)", marginBottom: "var(--space-2)" }} 
-                                        />
+                                        <div className={styles.imageContainer}>
+                                            <img 
+                                                src={ans.question.image_url} 
+                                                alt="Question reference" 
+                                                className={styles.questionImg}
+                                            />
+                                        </div>
                                     )}
 
                                     {/* Selected answer row */}
                                     <div 
                                         className={`${styles.optionSelectedRow} ${ans.is_correct ? styles.selectedCorrect : styles.selectedIncorrect}`}
                                     >
-                                        <span>
-                                            Your answer: <strong>{selectedOption ? selectedOption.option_text : "No answer selected"}</strong>
+                                        <div className={styles.answerTextLabel}>
+                                            <span className={styles.labelText}>Your Answer:</span>
+                                            <strong>{selectedOption ? selectedOption.option_text : "No answer selected"}</strong>
+                                        </div>
+                                        <span className={`${styles.resultBadge} ${ans.is_correct ? styles.resultBadgePass : styles.resultBadgeFail}`}>
+                                            {ans.is_correct ? <><FiCheck /> Correct</> : <><FiX /> Incorrect</>}
                                         </span>
-                                        <span>{ans.is_correct ? <><FiCheck style={{ color: "var(--color-success)", marginRight: "4px" }} />Correct</> : <><FiX style={{ color: "var(--color-danger)", marginRight: "4px" }} />Incorrect</>}</span>
                                     </div>
 
                                     {/* Correct answer if wrong */}
                                     {!ans.is_correct && correctOption && (
                                         <div className={styles.correctAnswerLabel}>
-                                            Correct answer: <strong>{correctOption.option_text}</strong>
+                                            <span className={styles.labelText}>Correct Answer:</span>
+                                            <strong>{correctOption.option_text}</strong>
                                         </div>
                                     )}
 
@@ -394,7 +407,7 @@ const QuizResults = () => {
                                     {ans.question?.explanation && (
                                         <div className={styles.explanationPanel}>
                                             <strong>Explanation:</strong>
-                                            <p style={{ marginTop: "4px" }}>{ans.question.explanation}</p>
+                                            <p>{ans.question.explanation}</p>
                                         </div>
                                     )}
                                 </div>

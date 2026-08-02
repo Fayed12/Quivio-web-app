@@ -1,8 +1,10 @@
 .container {
     display: flex;
     flex-direction: column;
-    gap: var(--space-6);
+    gap: var(--space-5);
     width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
 }
 
 .card {
@@ -28,12 +30,14 @@
     align-items: center;
     border-bottom: 1px solid var(--border-default);
     padding-bottom: var(--space-4);
+    flex-wrap: wrap;
+    gap: var(--space-3);
 }
 
 .chartGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-6);
+    gap: var(--space-5);
 }
 
 @media (max-width: 900px) {
@@ -93,7 +97,7 @@
 .posText { color: var(--color-success); }
 .negText { color: var(--color-danger); }
 
-/* Review lists styling match Results page */
+/* Review lists styling */
 .reviewRow {
     background: var(--bg-surface);
     border: 1px solid var(--border-default);
@@ -113,9 +117,9 @@
 }
 
 .reviewHeader {
-    padding: var(--space-4);
+    padding: 14px var(--space-4);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     cursor: pointer;
     gap: var(--space-3);
@@ -135,13 +139,12 @@
 }
 
 .reviewBody {
-    padding: 0 var(--space-4) var(--space-4) var(--space-4);
+    padding: var(--space-3) var(--space-4) var(--space-4) var(--space-4);
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
     border-top: 1px solid var(--border-subtle);
-    padding-top: var(--space-3);
-    margin-left: 28px;
+    background: var(--bg-surface-2);
     animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     overflow: hidden;
 }
@@ -149,15 +152,36 @@
 .selectedCorrect {
     background: var(--bg-success-mid);
     color: var(--text-success);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    font-size: var(--text-sm);
+    padding: 10px var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    border: 1px solid var(--border-success);
 }
 
 .selectedIncorrect {
     background: var(--bg-danger-mid);
     color: var(--text-danger);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    font-size: var(--text-sm);
+    padding: 10px var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    border: 1px solid var(--border-danger);
+}
+
+@media (max-width: 640px) {
+    .container {
+        gap: var(--space-4);
+    }
+    
+    .titleRow {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .reviewHeader {
+        padding: var(--space-3);
+    }
+
+    .reviewBody {
+        padding: var(--space-3);
+    }
 }

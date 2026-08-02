@@ -16,7 +16,7 @@ import {
     FiBell,
     FiUser,
     FiLogOut,
-    FiMessageSquare
+    FiMessageSquare,
 } from "react-icons/fi";
 
 // redux
@@ -57,45 +57,85 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
         {
             label: "Main",
             items: [
-                { path: "/instructor/dashboard", label: "Dashboard", icon: <FiHome /> },
-                { 
-                    path: "/instructor/chat", 
-                    label: "Chat", 
-                    icon: <FiMessageSquare />, 
-                    badge: chatUnreadCount > 0 ? chatUnreadCount : null 
+                {
+                    path: "/instructor/dashboard",
+                    label: "Dashboard",
+                    icon: <FiHome />,
                 },
-                { path: "/instructor/quizzes", label: "My Quizzes", icon: <FiClipboard /> },
-                { path: "/instructor/questions", label: "Question Bank", icon: <FiDatabase /> },
-                { path: "/instructor/rooms", label: "Rooms", icon: <FiFolder /> },
-                { path: "/instructor/students", label: "Students", icon: <FiUsers /> },
-            ]
+                {
+                    path: "/instructor/chat",
+                    label: "Chat",
+                    icon: <FiMessageSquare />,
+                    badge: chatUnreadCount > 0 ? chatUnreadCount : null,
+                },
+                {
+                    path: "/instructor/quizzes",
+                    label: "My Quizzes",
+                    icon: <FiClipboard />,
+                },
+                {
+                    path: "/instructor/questions",
+                    label: "Question Bank",
+                    icon: <FiDatabase />,
+                },
+                {
+                    path: "/instructor/rooms",
+                    label: "Rooms",
+                    icon: <FiFolder />,
+                },
+                {
+                    path: "/instructor/students",
+                    label: "Students",
+                    icon: <FiUsers />,
+                },
+            ],
         },
         {
             label: "Analytics",
             items: [
-                { path: "/instructor/analytics", label: "Analytics", icon: <FiBarChart2 /> },
-                { path: "/instructor/assignments", label: "Assignments", icon: <FiCheckSquare /> },
-            ]
+                {
+                    path: "/instructor/analytics",
+                    label: "Analytics",
+                    icon: <FiBarChart2 />,
+                },
+                {
+                    path: "/instructor/assignments",
+                    label: "Assignments",
+                    icon: <FiCheckSquare />,
+                },
+            ],
         },
         {
             label: "Content",
             items: [
-                { path: "/instructor/categories", label: "Categories", icon: <FiTag /> },
-                { path: "/instructor/certificates", label: "Certificates", icon: <FiAward /> },
-            ]
+                {
+                    path: "/instructor/categories",
+                    label: "Categories",
+                    icon: <FiTag />,
+                },
+                {
+                    path: "/instructor/certificates",
+                    label: "Certificates",
+                    icon: <FiAward />,
+                },
+            ],
         },
         {
             label: "Account",
             items: [
-                { 
-                    path: "/instructor/notifications", 
-                    label: "Notifications", 
-                    icon: <FiBell />, 
-                    badge: unreadCount > 0 ? unreadCount : null 
+                {
+                    path: "/instructor/notifications",
+                    label: "Notifications",
+                    icon: <FiBell />,
+                    badge: unreadCount > 0 ? unreadCount : null,
                 },
-                { path: "/instructor/profile", label: "Profile", icon: <FiUser /> },
-            ]
-        }
+                {
+                    path: "/instructor/profile",
+                    label: "Profile",
+                    icon: <FiUser />,
+                },
+            ],
+        },
     ];
 
     const sidebarClass = `
@@ -111,12 +151,15 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
 
             <aside className={sidebarClass}>
                 {/* Logo Section */}
-                <div className={styles.logoSection} onClick={() => navigate("/instructor/dashboard")}>
-                    <img 
+                <div
+                    className={styles.logoSection}
+                    onClick={() => navigate("/instructor/dashboard")}
+                >
+                    <img
                         key={logoSrc}
-                        src={logoSrc} 
-                        alt="Quivio Logo" 
-                        className={styles.logoImg} 
+                        src={logoSrc}
+                        alt="Quivio Logo"
+                        className={styles.logoImg}
                     />
                 </div>
 
@@ -124,8 +167,14 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                 <nav className={styles.nav}>
                     {navSections.map((section, sIdx) => (
                         <div key={section.label} className={styles.section}>
-                            {!isCollapsed && <span className={styles.sectionLabel}>{section.label}</span>}
-                            {sIdx > 0 && isCollapsed && <div className={styles.sectionDivider} />}
+                            {!isCollapsed && (
+                                <span className={styles.sectionLabel}>
+                                    {section.label}
+                                </span>
+                            )}
+                            {sIdx > 0 && isCollapsed && (
+                                <div className={styles.sectionDivider} />
+                            )}
                             <div className={styles.sectionList}>
                                 {section.items.map((item) => {
                                     const tourKey = item.path.split("/").pop();
@@ -136,14 +185,28 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                                             onClick={onClose}
                                             data-tour={`sidebar-${tourKey}`}
                                             data-label={item.label}
-                                            className={({ isActive }) => 
+                                            className={({ isActive }) =>
                                                 `${styles.navItem} ${isActive ? styles.navItemActive : ""}`
                                             }
                                         >
-                                            <span className={styles.navItemIcon}>{item.icon}</span>
-                                            {!isCollapsed && <span className={styles.navItemLabel}>{item.label}</span>}
+                                            <span
+                                                className={styles.navItemIcon}
+                                            >
+                                                {item.icon}
+                                            </span>
+                                            {!isCollapsed && (
+                                                <span
+                                                    className={
+                                                        styles.navItemLabel
+                                                    }
+                                                >
+                                                    {item.label}
+                                                </span>
+                                            )}
                                             {item.badge && !isCollapsed && (
-                                                <span className={styles.badge}>{item.badge}</span>
+                                                <span className={styles.badge}>
+                                                    {item.badge}
+                                                </span>
                                             )}
                                         </NavLink>
                                     );
@@ -156,25 +219,42 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                 {/* Footer User Info */}
                 <div className={styles.footer}>
                     <div className={styles.userCard}>
-                        <div 
-                            className={styles.avatar} 
-                            style={profile?.avatar_url ? {} : { backgroundColor: getAvatarColor(profile?.full_name) }}
+                        <div
+                            className={styles.avatar}
+                            style={
+                                profile?.avatar_url
+                                    ? {}
+                                    : {
+                                          backgroundColor: getAvatarColor(
+                                              profile?.full_name,
+                                          ),
+                                      }
+                            }
                         >
                             {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt={profile.full_name || "Avatar"} className={styles.avatarImg} />
+                                <img
+                                    src={profile.avatar_url}
+                                    alt={profile.full_name || "Avatar"}
+                                    className={styles.avatarImg}
+                                />
                             ) : (
-                                profile?.full_name?.charAt(0).toUpperCase() || "I"
+                                profile?.full_name?.charAt(0).toUpperCase() ||
+                                "I"
                             )}
                         </div>
                         {!isCollapsed && (
                             <div className={styles.userInfo}>
-                                <div className={styles.userName}>{profile?.full_name || "Instructor"}</div>
-                                <div className={styles.userRole}>Instructor</div>
+                                <div className={styles.userName}>
+                                    {profile?.full_name || "Instructor"}
+                                </div>
+                                <div className={styles.userRole}>
+                                    Instructor
+                                </div>
                             </div>
                         )}
-                        <button 
-                            className={styles.logoutBtn} 
-                            onClick={handleLogout} 
+                        <button
+                            className={styles.logoutBtn}
+                            onClick={handleLogout}
                             title="Sign Out"
                             aria-label="Sign Out"
                         >

@@ -61,17 +61,32 @@ const ProgressAnalytics = () => {
             Quiz: a.quiz?.title
         }));
 
+    // Helper to safely extract category name from a quiz object
+    const getCategoryName = (quiz) => {
+        if (!quiz) return "General Knowledge";
+        const cat = quiz.category;
+        if (typeof cat === "string" && cat.trim()) return cat.trim();
+        if (Array.isArray(cat) && cat.length > 0) {
+            return typeof cat[0] === "string" ? cat[0] : (cat[0]?.name || quiz.category_name || "General Knowledge");
+        }
+        if (typeof cat === "object" && cat !== null && cat.name) {
+            return cat.name;
+        }
+        if (quiz.category_name) return quiz.category_name;
+        return "General Knowledge";
+    };
+
     // Tab 2: Category Mastery
     const getMasteryData = () => {
         const categoryMap = {};
         completedAttempts.forEach(a => {
-            if (a.quiz?.category) {
-                const cat = a.quiz.category;
-                if (!categoryMap[cat.name]) {
-                    categoryMap[cat.name] = { name: cat.name, Score: 0, Passing: 70, count: 0 };
+            if (a.quiz) {
+                const catName = getCategoryName(a.quiz);
+                if (!categoryMap[catName]) {
+                    categoryMap[catName] = { name: catName, Score: 0, Passing: 70, count: 0 };
                 }
-                categoryMap[cat.name].Score += a.score ?? 0;
-                categoryMap[cat.name].count += 1;
+                categoryMap[catName].Score += a.score ?? 0;
+                categoryMap[catName].count += 1;
             }
         });
         return Object.values(categoryMap).map(c => ({

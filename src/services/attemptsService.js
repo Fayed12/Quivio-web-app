@@ -290,7 +290,162 @@ export async function toggleFlagQuestion({ attemptId, questionId, flagged }) {
 }
 
 // ─────────────────────────────────────────────
-// POST: Submit attempt — calls Edge Function for server-side scoring
+// Grade attempt in database with strict total quiz questions denominator
+// ─────────────────────────────────────────────
+export async function gradeAttemptInDatabase(attemptId) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { data: null, error: 'Not authenticated' };
+
+  // 1. Fetch attempt + quiz details + all quiz questions + correct options
+  const { data: attempt, error: attemptErr } = await supabase
+    .from('attempts')
+    .select(`
+      id, uid, quiz_id, status, started_at, time_spent_secs,
+      quiz:quizzes (
+        id, passing_score, xp_reward,
+        quiz_questions (
+          question_id,
+          question:questions (
+            id,
+            question_options (id, is_correct)
+          )
+        )
+      )
+    `)
+    .eq('id', attemptId)
+    .single();
+
+  if (attemptErr || !attempt) {
+    return { data: null, error: attemptErr?.message || 'Attempt not found' };
+  }
+
+  const allQuizQuestions = (attempt.quiz?.quiz_questions || [])
+    .map(qq => qq.question)
+    .filter(q => q && q.id);
+
+  const totalQuizQuestions = allQuizQuestions.length || 1;
+
+  // 2. Fetch existing attempt_answers
+  const { data: savedAnswers } = await supabase
+    .from('attempt_answers')
+    .select('question_id, selected_option_id, time_spent_secs')
+    .eq('attempt_id', attemptId);
+
+  const savedMap = {};
+  (savedAnswers || []).forEach(a => {
+    savedMap[a.question_id] = a;
+  });
+
+  let correctCount = 0;
+  const answerUpserts = [];
+
+  // 3. Grade EVERY question in the quiz (unanswered questions count as 0/false)
+  allQuizQuestions.forEach(q => {
+    const saved = savedMap[q.id];
+    const correctOption = (q.question_options || []).find(o => o.is_correct);
+    const selectedOptionId = saved?.selected_option_id || null;
+
+    const isCorrect = !!(
+      selectedOptionId &&
+      correctOption &&
+      (String(selectedOptionId) === String(correctOption.id) ||
+       String(selectedOptionId).trim().toLowerCase() === String(correctOption.option_text || '').trim().toLowerCase())
+    );
+
+    if (isCorrect) {
+      correctCount += 1;
+    }
+
+    answerUpserts.push({
+      attempt_id: attemptId,
+      question_id: q.id,
+      selected_option_id: selectedOptionId,
+      is_correct: isCorrect,
+      points_awarded: isCorrect ? 1 : 0,
+      time_spent_secs: saved?.time_spent_secs || 0,
+      answered_at: new Date().toISOString(),
+    });
+  });
+
+  // Upsert all graded answer rows so unanswered questions are explicitly recorded as incorrect
+  if (answerUpserts.length > 0) {
+    await supabase
+      .from('attempt_answers')
+      .upsert(answerUpserts, { onConflict: 'attempt_id,question_id' });
+  }
+
+  // 4. Calculate metrics relative to ALL quiz questions
+  const wrongCount = totalQuizQuestions - correctCount;
+  const scorePercentage = Math.round((correctCount / totalQuizQuestions) * 100);
+  const passingScore = attempt.quiz?.passing_score ?? 70;
+  const passed = scorePercentage >= passingScore;
+  const xpEarned = passed ? (attempt.quiz?.xp_reward || 50) : 0;
+
+  // 5. Update attempt table
+  const { data: updatedAttempt, error: updateErr } = await supabase
+    .from('attempts')
+    .update({
+      status: 'completed',
+      submitted_at: new Date().toISOString(),
+      score: scorePercentage,
+      passed: passed,
+      correct_count: correctCount,
+      wrong_count: wrongCount,
+      total_questions: totalQuizQuestions,
+      xp_earned: xpEarned
+    })
+    .eq('id', attemptId)
+    .select()
+    .single();
+
+  if (updateErr) {
+    return { data: null, error: updateErr.message };
+  }
+
+  // 6. Issue certificate if passed
+  if (passed) {
+    try {
+      const { data: existingCert } = await supabase
+        .from('certificates')
+        .select('id')
+        .eq('uid', user.id)
+        .eq('quiz_id', attempt.quiz_id)
+        .maybeSingle();
+
+      if (!existingCert) {
+        const certCode = `CERT-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+        await supabase
+          .from('certificates')
+          .insert({
+            uid: user.id,
+            quiz_id: attempt.quiz_id,
+            attempt_id: attemptId,
+            score: scorePercentage,
+            certificate_code: certCode,
+            issued_at: new Date().toISOString()
+          });
+      }
+    } catch (certErr) {
+      console.warn("Certificate creation notice:", certErr);
+    }
+  }
+
+  return {
+    data: {
+      id: attemptId,
+      score: scorePercentage,
+      passed,
+      correct_count: correctCount,
+      wrong_count: wrongCount,
+      total_questions: totalQuizQuestions,
+      xp_earned: xpEarned
+    },
+    error: null
+  };
+}
+
+// ─────────────────────────────────────────────
+// POST: Submit attempt — calls Edge Function with client DB scoring fallback
 // Request : attemptId: string
 // Response: { score, passed, correct_count }
 // ─────────────────────────────────────────────
@@ -298,18 +453,26 @@ export async function submitAttempt(attemptId) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { data: null, error: 'Not authenticated' };
 
-  const res = await fetch(EFN('submit-quiz'), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({ attempt_id: attemptId }),
-  });
+  try {
+    const res = await fetch(EFN('submit-quiz'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ attempt_id: attemptId }),
+    });
 
-  const json = await res.json();
-  if (!res.ok) return { data: null, error: json.error ?? 'Submission failed' };
-  return { data: json, error: null };
+    if (res.ok) {
+      const json = await res.json();
+      return { data: json, error: null };
+    }
+  } catch (e) {
+    console.warn("Edge function unavailable, executing client DB scoring fallback:", e);
+  }
+
+  // Robust Client-side Database Scoring Fallback:
+  return gradeAttemptInDatabase(attemptId);
 }
 
 // ─────────────────────────────────────────────

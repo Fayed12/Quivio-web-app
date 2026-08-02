@@ -138,8 +138,8 @@ const Notifications = () => {
     return (
         <div ref={containerRef} className={styles.container}>
             {/* Header */}
-            <div className="flex justify-between items-center" style={{ borderBottom: "1px solid var(--border-default)", paddingBottom: "var(--space-4)" }}>
-                <div>
+            <div className={styles.headerRow}>
+                <div className={styles.headerInfo}>
                     <h1 className="h1">Notifications</h1>
                     <p className="text-sm text-secondary">Stay updated with classroom assignment releases and reminders.</p>
                 </div>
@@ -148,7 +148,7 @@ const Notifications = () => {
                         variant="outline"
                         size="sm"
                         onClick={handleMarkAllRead}
-                        style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                        className={styles.markAllBtn}
                     >
                         <FiCheckSquare /> Mark all as read
                     </MainButton>
@@ -177,7 +177,7 @@ const Notifications = () => {
                         Read
                     </button>
                 </div>
-                <span className="text-xs text-muted">
+                <span className={styles.totalCount}>
                     Total: {filteredNotifs.length}
                 </span>
             </div>

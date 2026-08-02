@@ -3,6 +3,18 @@
     flex-direction: column;
     gap: var(--space-6);
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.topNavRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: var(--space-3);
 }
 
 .heroSection {
@@ -13,19 +25,14 @@
     box-shadow: var(--shadow-sm);
     position: relative;
     overflow: hidden;
+    min-width: 0;
 }
 
 .heroLayout {
     display: flex;
     gap: var(--space-6);
     align-items: flex-start;
-}
-
-@media (max-width: 768px) {
-    .heroLayout {
-        flex-direction: column;
-        align-items: stretch;
-    }
+    min-width: 0;
 }
 
 .heroCoverWrapper {
@@ -37,13 +44,6 @@
     border: 1px solid var(--border-default);
     box-shadow: var(--shadow-md);
     position: relative;
-}
-
-@media (max-width: 768px) {
-    .heroCoverWrapper {
-        width: 100%;
-        height: 180px;
-    }
 }
 
 .heroCoverImage {
@@ -102,11 +102,13 @@
     justify-content: space-between;
     min-height: 160px;
     gap: var(--space-4);
+    min-width: 0;
 }
 
 .heroHeaderInfo {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .categoryNameRow {
@@ -131,12 +133,14 @@
 }
 
 .quizTitle {
-    font-size: var(--text-2xl);
+    font-size: clamp(1.25rem, 2.5vw, 1.65rem);
     font-weight: var(--fw-bold);
     color: var(--text-primary);
     margin-top: var(--space-2);
     margin-bottom: var(--space-3);
     line-height: var(--leading-tight);
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .instructorProfile {
@@ -190,6 +194,14 @@
     gap: var(--space-3);
     border-top: 1px solid var(--border-subtle);
     padding-top: var(--space-3);
+    min-width: 0;
+}
+
+.ratingRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
 }
 
 .ratingStarIcon {
@@ -253,18 +265,16 @@
     display: grid;
     grid-template-columns: 2.3fr 1.2fr;
     gap: var(--space-6);
-}
-
-@media (max-width: 1024px) {
-    .mainGrid {
-        grid-template-columns: 1fr;
-    }
+    min-width: 0;
+    width: 100%;
 }
 
 .leftCol, .rightCol {
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
+    min-width: 0;
+    width: 100%;
 }
 
 .sectionCard {
@@ -277,6 +287,8 @@
     flex-direction: column;
     gap: var(--space-4);
     transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    min-width: 0;
+    overflow: hidden;
 }
 
 .sectionCard:hover {
@@ -292,6 +304,12 @@
     padding-bottom: var(--space-2);
 }
 
+.badgesRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
 .tagBadge {
     font-size: var(--text-xs);
     color: var(--text-secondary);
@@ -301,15 +319,13 @@
     border: 1px solid var(--border-default);
 }
 
-.tagBadge:not(:last-child) {
-    margin-right: var(--space-2);
-}
-
 .sampleQuestion {
     background: var(--bg-surface-2);
     border: 1px solid var(--border-default);
     border-radius: var(--radius-lg);
     padding: var(--space-4);
+    min-width: 0;
+    overflow: hidden;
 }
 
 .blurAnswers {
@@ -323,10 +339,13 @@
     overflow-x: auto;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border-default);
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
 }
 
 .historyTable {
     width: 100%;
+    min-width: 520px;
     border-collapse: collapse;
     font-size: var(--text-sm);
 }
@@ -338,6 +357,7 @@
     text-align: left;
     padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--border-default);
+    white-space: nowrap;
 }
 
 .historyTable td {
@@ -345,6 +365,7 @@
     border-bottom: 1px solid var(--border-subtle);
     color: var(--text-secondary);
     vertical-align: middle;
+    white-space: nowrap;
 }
 
 .historyTable tr:last-child td {
@@ -437,6 +458,48 @@
     gap: 2px;
 }
 
+.paginationRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: var(--space-3);
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.pageBtn {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    min-width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pageBtn:hover:not(:disabled) {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background-color: var(--bg-surface-2);
+}
+
+.pageBtnActive {
+    background: var(--color-accent) !important;
+    color: white !important;
+    border-color: var(--color-accent) !important;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.pageBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 .animateIn {
     opacity: 0;
 }
@@ -473,4 +536,74 @@
     font-size: var(--text-sm);
     color: var(--text-secondary);
     font-weight: var(--fw-medium);
+}
+
+/* ==========================================
+   RESPONSIVE BREAKPOINTS & SMALL SCREEN OPTIMIZATION
+   ========================================== */
+@media (max-width: 1024px) {
+    .mainGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .heroLayout {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-4);
+    }
+
+    .heroCoverWrapper {
+        width: 100%;
+        height: 180px;
+    }
+
+    .heroSection {
+        padding: var(--space-4);
+    }
+}
+
+@media (max-width: 640px) {
+    .container {
+        gap: var(--space-4);
+    }
+
+    .sectionCard {
+        padding: var(--space-4);
+        gap: var(--space-3);
+    }
+
+    .heroBadgesRow {
+        gap: 6px;
+    }
+
+    .metaBadge, .metaBadgePass, .difficultyBadge {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+
+    .historyTable th, .historyTable td {
+        padding: var(--space-2) var(--space-3);
+    }
+}
+
+@media (max-width: 480px) {
+    .topNavRow {
+        flex-direction: row;
+        width: 100%;
+    }
+
+    .heroCoverWrapper {
+        height: 150px;
+    }
+
+    .quizTitle {
+        font-size: 1.2rem;
+        margin-bottom: var(--space-2);
+    }
+
+    .historyTable {
+        min-width: 500px;
+    }
 }

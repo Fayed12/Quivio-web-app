@@ -18,7 +18,7 @@ import {
     FiCheckSquare,
     FiCalendar,
     FiZap,
-    FiActivity
+    FiActivity,
 } from "react-icons/fi";
 
 // redux
@@ -64,44 +64,104 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
         {
             label: "Main",
             items: [
-                { path: "/student/dashboard", label: "Dashboard", icon: <FiHome />, limitedAllowed: true },
-                { 
-                    path: "/student/chat", 
-                    label: "Chat", 
-                    icon: <FiMessageSquare />, 
-                    badge: chatUnreadCount > 0 ? chatUnreadCount : null,
-                    limitedAllowed: true 
+                {
+                    path: "/student/dashboard",
+                    label: "Dashboard",
+                    icon: <FiHome />,
+                    limitedAllowed: true,
                 },
-                { path: "/student/todo", label: "Todo Checklist", icon: <FiCheckSquare />, limitedAllowed: true },
-                { path: "/student/calendar", label: "Study Calendar", icon: <FiCalendar />, limitedAllowed: true },
-                { path: "/student/recommendations", label: "Practice Skills", icon: <FiZap />, limitedAllowed: true },
-                { path: "/student/quizzes", label: "Browse Quizzes", icon: <FiSearch />, limitedAllowed: true },
-                { path: "/student/attempts", label: "My Attempts", icon: <FiClock />, limitedAllowed: false },
-                { path: "/student/progress", label: "Progress", icon: <FiBarChart2 />, limitedAllowed: false },
-                { path: "/student/leaderboard", label: "Leaderboard", icon: <FiTrendingUp />, limitedAllowed: false },
-                { path: "/student/bookmarks", label: "Bookmarks", icon: <FiBookmark />, limitedAllowed: false },
-            ]
+                {
+                    path: "/student/chat",
+                    label: "Chat",
+                    icon: <FiMessageSquare />,
+                    badge: chatUnreadCount > 0 ? chatUnreadCount : null,
+                    limitedAllowed: true,
+                },
+                {
+                    path: "/student/todo",
+                    label: "Todo Checklist",
+                    icon: <FiCheckSquare />,
+                    limitedAllowed: true,
+                },
+                {
+                    path: "/student/calendar",
+                    label: "Study Calendar",
+                    icon: <FiCalendar />,
+                    limitedAllowed: true,
+                },
+                {
+                    path: "/student/recommendations",
+                    label: "Practice Skills",
+                    icon: <FiZap />,
+                    limitedAllowed: true,
+                },
+                {
+                    path: "/student/quizzes",
+                    label: "Browse Quizzes",
+                    icon: <FiSearch />,
+                    limitedAllowed: true,
+                },
+                {
+                    path: "/student/attempts",
+                    label: "My Attempts",
+                    icon: <FiClock />,
+                    limitedAllowed: false,
+                },
+                {
+                    path: "/student/progress",
+                    label: "Progress",
+                    icon: <FiBarChart2 />,
+                    limitedAllowed: false,
+                },
+                {
+                    path: "/student/leaderboard",
+                    label: "Leaderboard",
+                    icon: <FiTrendingUp />,
+                    limitedAllowed: false,
+                },
+                {
+                    path: "/student/bookmarks",
+                    label: "Bookmarks",
+                    icon: <FiBookmark />,
+                    limitedAllowed: false,
+                },
+            ],
         },
         {
             label: "Activity",
             items: [
-                { path: "/student/timeline", label: "Timeline Stream", icon: <FiActivity />, limitedAllowed: false },
-                { path: "/student/achievements", label: "Achievements", icon: <FiAward />, limitedAllowed: false },
-                { 
-                    path: "/student/notifications", 
-                    label: "Notifications", 
-                    icon: <FiBell />, 
-                    badge: unreadCount > 0 ? unreadCount : null,
-                    limitedAllowed: false
+                {
+                    path: "/student/timeline",
+                    label: "Timeline Stream",
+                    icon: <FiActivity />,
+                    limitedAllowed: false,
                 },
-            ]
+                {
+                    path: "/student/achievements",
+                    label: "Achievements",
+                    icon: <FiAward />,
+                    limitedAllowed: false,
+                },
+                {
+                    path: "/student/notifications",
+                    label: "Notifications",
+                    icon: <FiBell />,
+                    badge: unreadCount > 0 ? unreadCount : null,
+                    limitedAllowed: false,
+                },
+            ],
         },
         {
             label: "Account",
             items: [
-                { path: "/student/profile", label: "Profile", icon: <FiUser />, limitedAllowed: false },
-            ]
-        }
+                {
+                    path: "/student/profile",
+                    label: "Profile",
+                    icon: <FiUser />,
+                    limitedAllowed: false,
+                },
+            ],
+        },
     ];
 
     const sidebarClass = `
@@ -117,12 +177,15 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
 
             <aside className={sidebarClass}>
                 {/* Logo Section */}
-                <div className={styles.logoSection} onClick={() => navigate("/student/dashboard")}>
-                    <img 
+                <div
+                    className={styles.logoSection}
+                    onClick={() => navigate("/student/dashboard")}
+                >
+                    <img
                         key={logoSrc}
-                        src={logoSrc} 
-                        alt="Quivio Logo" 
-                        className={styles.logoImg} 
+                        src={logoSrc}
+                        alt="Quivio Logo"
+                        className={styles.logoImg}
                     />
                 </div>
 
@@ -130,11 +193,18 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
                 <nav className={styles.nav}>
                     {navSections.map((section, sIdx) => (
                         <div key={section.label} className={styles.section}>
-                            {!isCollapsed && <span className={styles.sectionLabel}>{section.label}</span>}
-                            {sIdx > 0 && isCollapsed && <div className={styles.sectionDivider} />}
+                            {!isCollapsed && (
+                                <span className={styles.sectionLabel}>
+                                    {section.label}
+                                </span>
+                            )}
+                            {sIdx > 0 && isCollapsed && (
+                                <div className={styles.sectionDivider} />
+                            )}
                             <div className={styles.sectionList}>
                                 {section.items.map((item) => {
-                                    const isRestricted = isLimited && !item.limitedAllowed;
+                                    const isRestricted =
+                                        isLimited && !item.limitedAllowed;
                                     const tourKey = item.path.split("/").pop();
 
                                     if (isRestricted) {
@@ -145,9 +215,27 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
                                                 data-label={item.label}
                                                 title="Locked: Please contact your instructor to join a room."
                                             >
-                                                <span className={styles.navItemIcon}>{item.icon}</span>
-                                                {!isCollapsed && <span className={styles.navItemLabel}>{item.label}</span>}
-                                                <span className={styles.lockBadge}>🔒</span>
+                                                <span
+                                                    className={
+                                                        styles.navItemIcon
+                                                    }
+                                                >
+                                                    {item.icon}
+                                                </span>
+                                                {!isCollapsed && (
+                                                    <span
+                                                        className={
+                                                            styles.navItemLabel
+                                                        }
+                                                    >
+                                                        {item.label}
+                                                    </span>
+                                                )}
+                                                <span
+                                                    className={styles.lockBadge}
+                                                >
+                                                    🔒
+                                                </span>
                                             </div>
                                         );
                                     }
@@ -159,14 +247,28 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
                                             onClick={onClose}
                                             data-tour={`sidebar-${tourKey}`}
                                             data-label={item.label}
-                                            className={({ isActive }) => 
+                                            className={({ isActive }) =>
                                                 `${styles.navItem} ${isActive ? styles.navItemActive : ""}`
                                             }
                                         >
-                                            <span className={styles.navItemIcon}>{item.icon}</span>
-                                            {!isCollapsed && <span className={styles.navItemLabel}>{item.label}</span>}
+                                            <span
+                                                className={styles.navItemIcon}
+                                            >
+                                                {item.icon}
+                                            </span>
+                                            {!isCollapsed && (
+                                                <span
+                                                    className={
+                                                        styles.navItemLabel
+                                                    }
+                                                >
+                                                    {item.label}
+                                                </span>
+                                            )}
                                             {item.badge && !isCollapsed && (
-                                                <span className={styles.badge}>{item.badge}</span>
+                                                <span className={styles.badge}>
+                                                    {item.badge}
+                                                </span>
                                             )}
                                         </NavLink>
                                     );
@@ -179,25 +281,40 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
                 {/* Footer User Info */}
                 <div className={styles.footer}>
                     <div className={styles.userCard}>
-                        <div 
-                            className={styles.avatar} 
-                            style={profile?.avatar_url ? {} : { backgroundColor: getAvatarColor(profile?.full_name) }}
+                        <div
+                            className={styles.avatar}
+                            style={
+                                profile?.avatar_url
+                                    ? {}
+                                    : {
+                                          backgroundColor: getAvatarColor(
+                                              profile?.full_name,
+                                          ),
+                                      }
+                            }
                         >
                             {profile?.avatar_url ? (
-                                <img src={profile.avatar_url} alt={profile.full_name || "Avatar"} className={styles.avatarImg} />
+                                <img
+                                    src={profile.avatar_url}
+                                    alt={profile.full_name || "Avatar"}
+                                    className={styles.avatarImg}
+                                />
                             ) : (
-                                profile?.full_name?.charAt(0).toUpperCase() || "S"
+                                profile?.full_name?.charAt(0).toUpperCase() ||
+                                "S"
                             )}
                         </div>
                         {!isCollapsed && (
                             <div className={styles.userInfo}>
-                                <div className={styles.userName}>{profile?.full_name || "Student"}</div>
+                                <div className={styles.userName}>
+                                    {profile?.full_name || "Student"}
+                                </div>
                                 <div className={styles.userRole}>Student</div>
                             </div>
                         )}
-                        <button 
-                            className={styles.logoutBtn} 
-                            onClick={handleLogout} 
+                        <button
+                            className={styles.logoutBtn}
+                            onClick={handleLogout}
                             title="Sign Out"
                             aria-label="Sign Out"
                         >

@@ -56,7 +56,8 @@ import {
     FiArrowRight,
     FiVolume2,
     FiVolumeX,
-    FiLock
+    FiLock,
+    FiX
 } from "react-icons/fi";
 
 // howler
@@ -976,16 +977,42 @@ const QuizTaking = () => {
             </div>
 
             {/* Question Navigator Drawer */}
-            {totalQuestions > 5 && (
+            {totalQuestions > 0 && (
                 <>
-                    <div 
-                        className={styles.navigatorToggle}
+                    <button 
+                        className={`${styles.navigatorToggle} ${isNavigatorOpen ? styles.navigatorToggleOpen : ""}`}
                         onClick={() => setIsNavigatorOpen(!isNavigatorOpen)}
+                        title={isNavigatorOpen ? "Close Question Navigator" : "Open Question Navigator"}
+                        aria-label="Question Navigator"
                     >
-                        {isNavigatorOpen ? <FiChevronRight /> : <FiFolder />}
-                    </div>
+                        {isNavigatorOpen ? <FiX /> : <FiFolder />}
+                        <span className={styles.toggleBadge}>{answeredCount}/{totalQuestions}</span>
+                    </button>
+
                     <div className={`${styles.drawer} ${isNavigatorOpen ? styles.drawerOpen : ""}`}>
-                        <h4 className="h5">Question Navigator</h4>
+                        <div className={styles.drawerHeader}>
+                            <div className="flex items-center gap-2">
+                                <FiFolder style={{ color: "var(--color-accent)", fontSize: "1.2rem" }} />
+                                <h4 className="h5" style={{ margin: 0 }}>Question Navigator</h4>
+                            </div>
+                            <button 
+                                onClick={() => setIsNavigatorOpen(false)}
+                                className={styles.drawerCloseBtn}
+                                aria-label="Close Navigator"
+                            >
+                                <FiX />
+                            </button>
+                        </div>
+
+                        <div className={styles.drawerSubheader}>
+                            <span>Answered: <strong>{answeredCount}</strong> / {totalQuestions}</span>
+                            {flagged.length > 0 && (
+                                <span className={styles.flaggedCountTag}>
+                                    <FiFlag /> {flagged.length}
+                                </span>
+                            )}
+                        </div>
+
                         <div className={styles.navigatorGrid}>
                             {shuffledQuestions.map((q, idx) => {
                                 const isCurrent = idx === currentIndex;
@@ -998,7 +1025,7 @@ const QuizTaking = () => {
                                 if (isFlaggedQ) boxClass += ` ${styles.boxFlagged}`;
 
                                 return (
-                                    <div
+                                    <button
                                         key={q?.id || `nav-${idx}`}
                                         onClick={() => {
                                             safePlay(nextSound);
@@ -1006,11 +1033,24 @@ const QuizTaking = () => {
                                             setIsNavigatorOpen(false);
                                         }}
                                         className={boxClass}
+                                        title={`Question ${idx + 1}${isAnswered ? ' (Answered)' : ''}${isFlaggedQ ? ' (Flagged)' : ''}`}
                                     >
                                         {idx + 1}
-                                    </div>
+                                    </button>
                                 );
                             })}
+                        </div>
+
+                        <div className={styles.drawerLegend}>
+                            <div className={styles.legendItem}>
+                                <span className={`${styles.legendDot} ${styles.dotAnswered}`} /> Answered
+                            </div>
+                            <div className={styles.legendItem}>
+                                <span className={`${styles.legendDot} ${styles.dotCurrent}`} /> Current
+                            </div>
+                            <div className={styles.legendItem}>
+                                <span className={`${styles.legendDot} ${styles.dotFlagged}`} /> Flagged
+                            </div>
                         </div>
                     </div>
                 </>

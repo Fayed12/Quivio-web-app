@@ -55,7 +55,12 @@ const PracticeRecommendationsPage = () => {
         let totalQuestions = 0;
 
         completed.forEach((att) => {
-            const catName = att.quiz?.category?.name || "General Knowledge";
+            let catName = "General Knowledge";
+            const cat = att.quiz?.category;
+            if (typeof cat === "string" && cat.trim()) catName = cat.trim();
+            else if (Array.isArray(cat) && cat.length > 0) catName = typeof cat[0] === "string" ? cat[0] : (cat[0]?.name || "General Knowledge");
+            else if (typeof cat === "object" && cat !== null && cat.name) catName = cat.name;
+            else if (att.quiz?.category_name) catName = att.quiz.category_name;
             const qCount = att.total_questions || 1;
             const cCount = att.correct_count || 0;
 
@@ -196,31 +201,35 @@ const PracticeRecommendationsPage = () => {
                     </div>
 
                     <div className={styles.categoryList}>
-                        {strongCategories.map((cat, idx) => (
-                            <div key={idx} className={styles.categoryCard}>
-                                <div className={styles.categoryRow}>
-                                    <span className={styles.catName}>{cat.name}</span>
-                                    <span className={styles.catAccuracy} style={{ color: "var(--green-500)" }}>
-                                        {cat.accuracy}% Accuracy
-                                    </span>
-                                </div>
+                        {strongCategories.length === 0 ? (
+                            <div className={styles.emptyState}>No strong categories logged yet. Take more quizzes to unlock insights!</div>
+                        ) : (
+                            strongCategories.map((cat, idx) => (
+                                <div key={idx} className={styles.categoryCard}>
+                                    <div className={styles.categoryRow}>
+                                        <span className={styles.catName}>{cat.name}</span>
+                                        <span className={styles.catAccuracy} style={{ color: "var(--green-500)" }}>
+                                            {cat.accuracy}% Accuracy
+                                        </span>
+                                    </div>
 
-                                <div className={styles.barBg}>
-                                    <div
-                                        className={styles.barFill}
-                                        style={{
-                                            width: `${cat.accuracy}%`,
-                                            backgroundColor: "var(--green-500)"
-                                        }}
-                                    />
-                                </div>
+                                    <div className={styles.barBg}>
+                                        <div
+                                            className={styles.barFill}
+                                            style={{
+                                                width: `${cat.accuracy}%`,
+                                                backgroundColor: "var(--green-500)"
+                                            }}
+                                        />
+                                    </div>
 
-                                <div className={styles.catMeta}>
-                                    <span>{cat.attemptsCount} Quiz Attempts Completed</span>
-                                    <span>{cat.correctQuestions}/{cat.totalQuestions} Correct</span>
+                                    <div className={styles.catMeta}>
+                                        <span>{cat.attemptsCount} Attempts</span>
+                                        <span>{cat.correctQuestions}/{cat.totalQuestions} Correct</span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
 
@@ -228,7 +237,7 @@ const PracticeRecommendationsPage = () => {
                 <div className={styles.matrixCard}>
                     <div className={styles.matrixHeader}>
                         <h3 className={styles.matrixTitle} style={{ color: "var(--red-500)" }}>
-                            <FiAlertTriangle /> Weak Sides (Requires Practice & Revision)
+                            <FiAlertTriangle /> Weak Sides (Requires Revision)
                         </h3>
                         <span className={`${styles.badgeCount} ${styles.badgeRed}`}>
                             {weakCategories.length} Focus Topics
@@ -236,38 +245,42 @@ const PracticeRecommendationsPage = () => {
                     </div>
 
                     <div className={styles.categoryList}>
-                        {weakCategories.map((cat, idx) => (
-                            <div key={idx} className={styles.categoryCard}>
-                                <div className={styles.categoryRow}>
-                                    <span className={styles.catName}>{cat.name}</span>
-                                    <span className={styles.catAccuracy} style={{ color: "var(--red-500)" }}>
-                                        {cat.accuracy}% Accuracy
-                                    </span>
-                                </div>
+                        {weakCategories.length === 0 ? (
+                            <div className={styles.emptyState}>Great job! No weak subjects detected based on your historical accuracy.</div>
+                        ) : (
+                            weakCategories.map((cat, idx) => (
+                                <div key={idx} className={styles.categoryCard}>
+                                    <div className={styles.categoryRow}>
+                                        <span className={styles.catName}>{cat.name}</span>
+                                        <span className={styles.catAccuracy} style={{ color: "var(--red-500)" }}>
+                                            {cat.accuracy}% Accuracy
+                                        </span>
+                                    </div>
 
-                                <div className={styles.barBg}>
-                                    <div
-                                        className={styles.barFill}
-                                        style={{
-                                            width: `${cat.accuracy}%`,
-                                            backgroundColor: "var(--red-500)"
-                                        }}
-                                    />
-                                </div>
+                                    <div className={styles.barBg}>
+                                        <div
+                                            className={styles.barFill}
+                                            style={{
+                                                width: `${cat.accuracy}%`,
+                                                backgroundColor: "var(--red-500)"
+                                            }}
+                                        />
+                                    </div>
 
-                                <div className={styles.catMeta}>
-                                    <span>{cat.attemptsCount} Attempts</span>
-                                    <span>{cat.correctQuestions}/{cat.totalQuestions} Correct</span>
-                                </div>
+                                    <div className={styles.catMeta}>
+                                        <span>{cat.attemptsCount} Attempts</span>
+                                        <span>{cat.correctQuestions}/{cat.totalQuestions} Correct</span>
+                                    </div>
 
-                                <button
-                                    className={styles.actionBtn}
-                                    onClick={() => navigate("/student/quizzes")}
-                                >
-                                    <FiBookOpen /> Practice {cat.name} Now
-                                </button>
-                            </div>
-                        ))}
+                                    <button
+                                        className={styles.actionBtn}
+                                        onClick={() => navigate("/student/quizzes")}
+                                    >
+                                        <FiBookOpen /> Practice {cat.name} Now
+                                    </button>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

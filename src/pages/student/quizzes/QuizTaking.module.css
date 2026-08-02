@@ -318,38 +318,142 @@
 /* Question Navigator Drawer */
 .navigatorToggle {
     position: fixed;
-    right: 0;
+    left: 0;
     top: 50%;
     transform: translateY(-50%);
     background: var(--color-accent);
     color: white;
-    padding: var(--space-3) var(--space-2);
-    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+    padding: var(--space-3) 10px;
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
     cursor: pointer;
-    box-shadow: var(--shadow-md);
-    z-index: 100;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    transition: left var(--transition-slower), background-color 0.2s ease;
+}
+
+.navigatorToggle:hover {
+    background: var(--color-accent-hover);
+}
+
+.navigatorToggleOpen {
+    left: 280px;
+}
+
+.toggleBadge {
+    font-size: 10px;
+    font-weight: var(--fw-bold);
+    background: rgba(0, 0, 0, 0.25);
+    padding: 1px 5px;
+    border-radius: var(--radius-sm);
 }
 
 .drawer {
     position: fixed;
-    right: -280px;
-    top: 60px;
-    bottom: 70px;
+    left: -280px;
+    top: 0;
+    bottom: 0;
     width: 280px;
     background: var(--bg-surface);
-    border-left: 1px solid var(--border-default);
-    box-shadow: var(--shadow-lg);
-    z-index: 99;
-    padding: var(--space-4);
+    border-right: 1px solid var(--border-default);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
+    z-index: 999;
+    padding: var(--space-5) var(--space-4);
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-    transition: right var(--transition-slower);
+    transition: left var(--transition-slower);
     overflow-y: auto;
 }
 
 .drawerOpen {
-    right: 0;
+    left: 0;
+}
+
+.drawerHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: var(--space-3);
+}
+
+.drawerCloseBtn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.drawerCloseBtn:hover {
+    color: var(--text-primary);
+    background: var(--bg-surface-2);
+}
+
+.drawerSubheader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    background: var(--bg-surface-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+}
+
+.flaggedCountTag {
+    color: var(--color-warning);
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: var(--fw-bold);
+}
+
+.drawerLegend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border-subtle);
+    padding-top: var(--space-3);
+    margin-top: auto;
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.legendDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.dotAnswered {
+    background: var(--color-accent);
+}
+
+.dotCurrent {
+    border: 2px solid var(--color-accent);
+    background: transparent;
+}
+
+.dotFlagged {
+    background: var(--color-warning);
 }
 
 .navigatorGrid {
@@ -558,7 +662,11 @@
 
     .drawer {
         width: 240px;
-        right: -240px;
+        left: -240px;
+    }
+
+    .navigatorToggleOpen {
+        left: 240px;
     }
 
     .navigatorGrid {
@@ -653,8 +761,12 @@
     }
 
     .drawer {
-        width: 200px;
-        right: -200px;
+        width: 210px;
+        left: -210px;
+    }
+
+    .navigatorToggleOpen {
+        left: 210px;
     }
 
     .navigatorGrid {
@@ -671,19 +783,24 @@
 /* ═══════════════════════════════════════════════ */
 /* Quiz Security Guide & Audio / Timer Upgrades    */
 /* ═══════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════ */
+/* Quiz Security Guide & Audio / Timer Upgrades    */
+/* ═══════════════════════════════════════════════ */
 .guideContainer {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    height: 100vh;
     width: 100vw;
-    background: radial-gradient(circle at top, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.96) 100%);
+    background: radial-gradient(circle at top, rgba(30, 41, 59, 0.92) 0%, rgba(15, 23, 42, 0.97) 100%);
     position: fixed;
     top: 0;
     left: 0;
     z-index: 9999;
     padding: var(--space-4);
     overflow-y: auto;
+    box-sizing: border-box;
 }
 
 .guideCard {
@@ -692,12 +809,15 @@
     border-radius: var(--radius-xl);
     max-width: 580px;
     width: 100%;
+    max-height: calc(100vh - 2rem);
     padding: var(--space-6);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
+    gap: var(--space-4);
     animation: scaleUpIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    margin: auto;
+    overflow: hidden;
 }
 
 @keyframes scaleUpIn {
@@ -713,20 +833,29 @@
     gap: var(--space-2);
     border-bottom: 1px solid var(--border-subtle);
     padding-bottom: var(--space-4);
+    flex-shrink: 0;
+}
+
+.guideHeader h2 {
+    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+    margin: 0;
 }
 
 .lockIconWrapper {
     background: rgba(99, 102, 241, 0.08);
     color: var(--color-accent);
-    width: 60px;
-    height: 60px;
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     margin-bottom: var(--space-1);
     box-shadow: inset 0 0 10px rgba(99, 102, 241, 0.05);
+    flex-shrink: 0;
 }
 
 .guideSubtitle {
@@ -737,12 +866,16 @@
 .guideBody {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: var(--space-3);
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 4px;
+    -webkit-overflow-scrolling: touch;
 }
 
 .ruleItem {
     display: flex;
-    gap: var(--space-4);
+    gap: 14px;
     align-items: flex-start;
     padding: var(--space-3) var(--space-4);
     background: var(--bg-surface-2);
@@ -757,13 +890,13 @@
 }
 
 .ruleIconWrapper {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     flex-shrink: 0;
 }
 
@@ -791,6 +924,7 @@
     gap: var(--space-3);
     border-top: 1px solid var(--border-subtle);
     padding-top: var(--space-4);
+    flex-shrink: 0;
 }
 
 .countdownProgressContainer {
@@ -819,6 +953,59 @@
     font-size: var(--text-xs);
     color: var(--text-secondary);
     font-weight: var(--fw-semibold);
+}
+
+@media (max-width: 640px) {
+    .guideContainer {
+        padding: var(--space-2);
+    }
+
+    .guideCard {
+        padding: var(--space-4);
+        max-height: calc(100vh - 1rem);
+        border-radius: var(--radius-lg);
+        gap: var(--space-3);
+    }
+
+    .guideHeader {
+        padding-bottom: var(--space-3);
+    }
+
+    .lockIconWrapper {
+        width: 44px;
+        height: 44px;
+        font-size: 1.3rem;
+    }
+
+    .ruleItem {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .ruleIconWrapper {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+
+    .guideFooter {
+        padding-top: var(--space-3);
+    }
+
+    .guideFooterActions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .guideFooterActions button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .countdownText {
+        text-align: center;
+    }
 }
 
 .audioBtn {
