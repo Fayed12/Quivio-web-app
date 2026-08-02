@@ -21,7 +21,8 @@ import { toast } from "react-toastify";
 // react-icons
 import {
     FiDownload,
-    FiAward
+    FiAward,
+    FiLock
 } from "react-icons/fi";
 
 // xlsx
@@ -135,7 +136,7 @@ const Achievements = () => {
                         >
                             <div className={styles.headerRow}>
                                 <span className={styles.badgeIcon}>
-                                    {isUnlocked ? (ach.icon || "🏆") : "🔒"}
+                                    {isUnlocked ? (ach.icon || <FiAward />) : <FiLock />}
                                 </span>
                                 {isUnlocked ? (
                                     <span className={styles.xpBadge}>

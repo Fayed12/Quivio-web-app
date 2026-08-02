@@ -19,6 +19,7 @@ import {
     FiCalendar,
     FiZap,
     FiActivity,
+    FiLock,
 } from "react-icons/fi";
 
 // redux
@@ -234,7 +235,7 @@ const StudentSidebar = ({ isCollapsed, isOpen, onClose }) => {
                                                 <span
                                                     className={styles.lockBadge}
                                                 >
-                                                    🔒
+                                                    <FiLock />
                                                 </span>
                                             </div>
                                         );

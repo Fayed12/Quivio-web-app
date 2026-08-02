@@ -18,7 +18,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 
 // react-icons
-import { FiMail, FiLock, FiEye, FiEyeOff, FiCheck, FiArrowLeft } from "react-icons/fi";
+import { FiMail, FiLock, FiEye, FiEyeOff, FiCheck, FiArrowLeft, FiZap } from "react-icons/fi";
 
 // toastify
 import { toast } from "react-toastify";
@@ -117,7 +117,7 @@ const LoginPage = () => {
                 <div className={styles.decorPanel}>
                     <div className={styles.decorContent}>
                         <div className={styles.logoBadge}>
-                            <span className={styles.logoIcon}>⚡</span>
+                            <span className={styles.logoIcon}><FiZap /></span>
                             <span className={styles.logoText}>Quivio</span>
                         </div>
                         <h1 className={styles.decorTitle}>
@@ -161,7 +161,7 @@ const LoginPage = () => {
                             <FiArrowLeft style={{ marginRight: "var(--space-1)" }} /> Back to Home
                         </Link>
                         <div className={`${styles.formHeader} ${styles.formItem}`}>
-                            <div className={styles.mobileLogo}>⚡ Quivio</div>
+                            <div className={styles.mobileLogo}><FiZap /> Quivio</div>
                             <h2>Welcome back</h2>
                             <p>Sign in to your account to continue</p>
                         </div>

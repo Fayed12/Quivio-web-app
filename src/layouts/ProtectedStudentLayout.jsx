@@ -25,6 +25,9 @@ import StudentSidebar from "../pages/student/components/StudentSidebar";
 import StudentTopbar from "../pages/student/components/StudentTopbar";
 import StudentMovingBackground from "../pages/student/components/StudentMovingBackground";
 
+// react-icons
+import { FiShield, FiAlertOctagon } from "react-icons/fi";
+
 // local
 import styles from "./ProtectedStudentLayout.module.css";
 
@@ -309,8 +312,8 @@ const ProtectedStudentLayout = () => {
                         zIndex: 10
                     }}
                 >
-                    <div style={{ fontSize: "4rem", marginBottom: "1.5rem" }} role="img" aria-label="Locked">
-                        🛑
+                    <div style={{ fontSize: "3.5rem", marginBottom: "1.5rem", color: "var(--color-danger)" }} role="img" aria-label="Locked">
+                        <FiAlertOctagon />
                     </div>
                     <h1 style={{ 
                         fontSize: "var(--text-2xl)", 
@@ -497,8 +500,8 @@ const ProtectedStudentLayout = () => {
                             textAlign: "center"
                         }}
                     >
-                        <div style={{ fontSize: "3rem", marginBottom: "1rem" }} role="img" aria-label="Shield">
-                            🛡️
+                        <div style={{ fontSize: "3rem", marginBottom: "1rem", color: "var(--color-accent)" }} role="img" aria-label="Shield">
+                            <FiShield />
                         </div>
                         <h2 style={{ 
                             fontSize: "var(--text-xl)", 

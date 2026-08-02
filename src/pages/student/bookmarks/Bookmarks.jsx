@@ -16,7 +16,8 @@ import {
     FiBookmark,
     FiClock,
     FiAward,
-    FiChevronRight
+    FiChevronRight,
+    FiFileText
 } from "react-icons/fi";
 
 // local
@@ -96,7 +97,7 @@ const Bookmarks = () => {
             {/* Grid */}
             {filteredBookmarks.length === 0 ? (
                 <div className={styles.emptyState}>
-                    <div className={styles.emptyIllustration} role="img" aria-label="No bookmarks">🔖</div>
+                    <div className={styles.emptyIllustration} role="img" aria-label="No bookmarks"><FiBookmark style={{ fontSize: "3.5rem", color: "var(--text-tertiary)" }} /></div>
                     <h3 className="h3">No bookmarks found</h3>
                     <p className="text-secondary text-sm">Save quizzes while browsing to find them here.</p>
                 </div>
@@ -111,7 +112,7 @@ const Bookmarks = () => {
                         return (
                             <div key={b.id} className={styles.quizCard}>
                                 <div className={styles.cardBanner} style={{ backgroundColor: bannerCol }}>
-                                    <span className={styles.categoryIconInBanner}>{quiz.category?.icon || "📝"}</span>
+                                    <span className={styles.categoryIconInBanner}>{quiz.category?.icon || <FiFileText />}</span>
                                     <button
                                         onClick={() => handleRemoveBookmark(quiz.id)}
                                         className={`${styles.bookmarkBtn} ${styles.bookmarkActive}`}

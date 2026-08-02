@@ -743,16 +743,16 @@ const TodoPage = () => {
                                                     value: newPriority,
                                                     label:
                                                         newPriority === "High"
-                                                            ? "🔴 High Priority"
+                                                            ? "High Priority"
                                                             : newPriority === "Low"
-                                                            ? "🟢 Low Priority"
-                                                            : "🟡 Medium Priority",
+                                                            ? "Low Priority"
+                                                            : "Medium Priority",
                                                 }}
                                                 onChange={(opt) => setNewPriority(opt.value)}
                                                 options={[
-                                                    { value: "High", label: "🔴 High Priority" },
-                                                    { value: "Medium", label: "🟡 Medium Priority" },
-                                                    { value: "Low", label: "🟢 Low Priority" },
+                                                    { value: "High", label: "High Priority" },
+                                                    { value: "Medium", label: "Medium Priority" },
+                                                    { value: "Low", label: "Low Priority" },
                                                 ]}
                                                 isSearchable={false}
                                                 menuPortalTarget={typeof document !== "undefined" ? document.body : null}

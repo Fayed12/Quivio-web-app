@@ -18,7 +18,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 
 // react-icons
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiCheck, FiInfo } from "react-icons/fi";
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiCheck, FiInfo, FiZap, FiAward } from "react-icons/fi";
+import { FaFireFlameCurved } from "react-icons/fa6";
 
 // toastify
 import { toast } from "react-toastify";
@@ -180,7 +181,7 @@ const RegisterPage = () => {
                     <div className={styles.decorPanel}>
                         <div className={styles.decorContent}>
                             <div className={styles.logoBadge}>
-                                <span className={styles.logoIcon}>⚡</span>
+                                <span className={styles.logoIcon}><FiZap /></span>
                                 <span className={styles.logoText}>Quivio</span>
                             </div>
                             <h1 className={styles.decorTitle}>
@@ -245,17 +246,17 @@ const RegisterPage = () => {
 
                                     <div className={styles.statsGrid}>
                                         <div className={styles.statBox}>
-                                            <span className={styles.statEmoji}>🔥</span>
+                                            <span className={styles.statEmoji}><FaFireFlameCurved style={{ color: "#f59e0b" }} /></span>
                                             <div className={styles.statLabel}>Streak</div>
                                             <div className={styles.statVal}>{profile?.streak ?? 0} days</div>
                                         </div>
                                         <div className={styles.statBox}>
-                                            <span className={styles.statEmoji}>⚡</span>
+                                            <span className={styles.statEmoji}><FiZap style={{ color: "#3b82f6" }} /></span>
                                             <div className={styles.statLabel}>Level</div>
                                             <div className={styles.statVal}>Lvl {profile?.level ?? 1}</div>
                                         </div>
                                         <div className={styles.statBox}>
-                                            <span className={styles.statEmoji}>🏆</span>
+                                            <span className={styles.statEmoji}><FiAward style={{ color: "#eab308" }} /></span>
                                             <div className={styles.statLabel}>XP</div>
                                             <div className={styles.statVal}>{profile?.xp ?? 0} XP</div>
                                         </div>
@@ -281,7 +282,7 @@ const RegisterPage = () => {
                             // Render Instructor Registration Form
                             <>
                                 <div className={`${styles.formHeader} ${styles.formItem}`}>
-                                    <div className={styles.mobileLogo}>⚡ Quivio</div>
+                                    <div className={styles.mobileLogo}><FiZap /> Quivio</div>
                                     <h2>Create Instructor Account</h2>
                                     <p>Set up your teaching profile</p>
                                 </div>
