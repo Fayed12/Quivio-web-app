@@ -95,8 +95,8 @@
     border-radius: var(--radius-2xl);
     padding: var(--space-10);
     box-shadow: var(--shadow-xl);
-    backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
     transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
@@ -147,8 +147,8 @@
     border-radius: var(--radius-2xl);
     padding: var(--space-10);
     box-shadow: var(--shadow-xl);
-    backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
 }
 
 .resultHeader {

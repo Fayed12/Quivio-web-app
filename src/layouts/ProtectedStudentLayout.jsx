@@ -479,6 +479,7 @@ const ProtectedStudentLayout = () => {
                         width: "100%",
                         height: "100%",
                         backgroundColor: "rgba(15, 23, 42, 0.6)",
+                        WebkitBackdropFilter: "blur(6px)",
                         backdropFilter: "blur(6px)",
                         display: "flex",
                         alignItems: "center",

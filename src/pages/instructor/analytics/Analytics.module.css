@@ -704,6 +704,7 @@
     width: 100vw;
     height: 100vh;
     background-color: var(--bg-overlay);
+    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
     z-index: var(--z-overlay);
 }

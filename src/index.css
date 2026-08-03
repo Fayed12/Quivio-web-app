@@ -1388,8 +1388,8 @@ code {
   position: fixed;
   inset: 0;
   background: var(--bg-overlay);
-  backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   z-index: var(--z-modal);
   display: flex;
   align-items: center;

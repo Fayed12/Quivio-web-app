@@ -381,8 +381,8 @@
         width: 100vw !important;
         height: 100vh !important;
         background-color: var(--bg-overlay, rgba(15, 23, 42, 0.5)) !important;
-        backdrop-filter: blur(2px) !important;
         -webkit-backdrop-filter: blur(2px) !important;
+        backdrop-filter: blur(2px) !important;
         z-index: 999 !important;
     }
 }
