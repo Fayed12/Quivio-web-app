@@ -33,8 +33,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 // sweetalert2
 import Swal from "sweetalert2";
 
-// Howler
-import { Howler } from "howler";
+// howler
+import { Howler, Howl } from "howler";
 
 // react-icons
 import {
@@ -58,9 +58,6 @@ import {
     FiLock,
     FiX
 } from "react-icons/fi";
-
-// howler
-import { Howl } from "howler";
 
 // local
 import styles from "./QuizTaking.module.css";
