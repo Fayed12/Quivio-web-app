@@ -65,6 +65,7 @@ import { Howl } from "howler";
 // local
 import styles from "./QuizTaking.module.css";
 import usePageAnimation from "../../../hooks/usePageAnimation";
+import { seededShuffle } from "../../../utils/seededShuffle";
 
 // Initialize sounds using Howler with generated WAV files
 const selectSound = new Howl({ src: ["/sounds/select.wav"], html5: true, volume: 0.4, preload: true });
@@ -77,33 +78,6 @@ const submitSound = new Howl({ src: ["/sounds/submit.wav"], html5: true, volume:
 // Safe play wrapper — silently catch errors if sound files are missing
 const safePlay = (sound) => {
     try { sound.play(); } catch { /* ignore sound errors */ }
-};
-
-// Seeded shuffle function for consistency across page refreshes
-// Fixed: uses unsigned right shift (>>> 0) to prevent negative values from JS % operator
-const seededShuffle = (array, seed) => {
-    let m = 0x80000000; // 2^31
-    let a = 1103515245;
-    let c = 12345;
-
-    // Hash the seed string into a positive integer
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-        hash = ((hash << 5) - hash + seed.charCodeAt(i)) >>> 0; // unsigned
-    }
-    let state = hash;
-
-    const nextRandom = () => {
-        state = ((a * state + c) >>> 0) % m; // unsigned to prevent negative values
-        return Math.abs(state) / m;
-    };
-
-    const copy = [...array];
-    for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(nextRandom() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-    }
-    return copy;
 };
 
 // Helper: check if a question_type is True/False
@@ -168,10 +142,12 @@ const QuizTaking = () => {
     const timeRemainingRef = useRef(timeRemaining);
     const currentIndexRef = useRef(currentIndex);
     const answersRef = useRef(answers);
+    const shuffledQuestionsRef = useRef(shuffledQuestions);
 
     useEffect(() => { timeRemainingRef.current = timeRemaining; }, [timeRemaining]);
     useEffect(() => { currentIndexRef.current = currentIndex; }, [currentIndex]);
     useEffect(() => { answersRef.current = answers; }, [answers]);
+    useEffect(() => { shuffledQuestionsRef.current = shuffledQuestions; }, [shuffledQuestions]);
 
     // Ref to track cumulative time spent per question (questionId -> seconds)
     const timeSpentRef = useRef({});
@@ -223,6 +199,13 @@ const QuizTaking = () => {
             autoSubmittedRef.current = false;
         }
     }, [activeAttempt, answers, dispatch, navigate, quizId]);
+
+    // Keep a ref to the latest auto-submit handler so the countdown interval
+    // can be mounted once instead of being torn down on every render/tick.
+    const handleAutoSubmitRef = useRef(handleAutoSubmit);
+    useEffect(() => {
+        handleAutoSubmitRef.current = handleAutoSubmit;
+    }, [handleAutoSubmit]);
 
     const containerRef = useRef(null);
 
@@ -319,22 +302,36 @@ const QuizTaking = () => {
             
             const attemptId = activeAttempt?.id;
             if (attemptId) {
-                await dispatch(saveAllAnswersThunk({
-                    attempt_id: attemptId,
-                    answers: answersRef.current,
-                    timeSpent: timeSpentRef.current
-                }));
-                await dispatch(submitAttemptThunk(attemptId));
-                
-                Swal.fire({
-                    icon: "error",
-                    title: "Quiz Terminated",
-                    text: "Exam terminated due to window blur or tab switch. Your progress was automatically submitted.",
-                    confirmButtonText: "OK",
-                    confirmButtonColor: "#ef4444"
-                }).then(() => {
-                    navigate(`/student/quiz/${quizId}/results/${attemptId}`);
-                });
+                try {
+                    await dispatch(saveAllAnswersThunk({
+                        attempt_id: attemptId,
+                        answers: answersRef.current,
+                        timeSpent: timeSpentRef.current
+                    }));
+                } catch { /* best-effort save */ }
+
+                const res = await dispatch(submitAttemptThunk(attemptId));
+                if (submitAttemptThunk.fulfilled.match(res)) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Quiz Terminated",
+                        text: "Exam terminated due to window blur or tab switch. Your progress was automatically submitted.",
+                        confirmButtonText: "OK",
+                        confirmButtonColor: "#ef4444"
+                    }).then(() => {
+                        navigate(`/student/quiz/${quizId}/results/${attemptId}`);
+                    });
+                } else {
+                    // Submission failed — do NOT navigate to results (they'd spin forever).
+                    autoSubmittedRef.current = false;
+                    Swal.fire({
+                        icon: "error",
+                        title: "Submission Failed",
+                        text: "Your attempt could not be auto-submitted due to a network issue. Your progress is saved locally — please stay on the quiz and submit again.",
+                        confirmButtonText: "Back to Quiz",
+                        confirmButtonColor: "#ef4444"
+                    });
+                }
             }
         };
 
@@ -358,61 +355,81 @@ const QuizTaking = () => {
     }, [showGuide, activeAttempt, navigate, quizId, dispatch]);
 
 
-    // Fixed Auto-save cycle (every 3 seconds) that doesn't clear on every tick
+    // Fixed Auto-save cycle (every 3 seconds) that doesn't clear on every tick.
+    // RTK thunks never throw — they return rejected action objects, so we must
+    // inspect the thunk results to detect a failed save and fall back to localStorage.
     useEffect(() => {
-        if (!activeAttempt || shuffledQuestions.length === 0) return;
+        if (!activeAttempt?.id || shuffledQuestions.length === 0) return;
+
+        const writeBackup = () => {
+            localStorage.setItem(`attempt_backup:${activeAttempt?.id}`, JSON.stringify({
+                answers: answersRef.current,
+                timeRemaining: timeRemainingRef.current,
+                currentIndex: currentIndexRef.current
+            }));
+        };
 
         const interval = setInterval(async () => {
             setSaveStatus("saving");
-            
-            try {
-                const cIdx = currentIndexRef.current;
-                const tRem = timeRemainingRef.current;
-                const ans = answersRef.current;
 
-                await dispatch(updateProgressThunk({
-                    id: activeAttempt?.id,
-                    current_question_order: cIdx,
-                    time_remaining_secs: tRem
+            const cIdx = currentIndexRef.current;
+            const tRem = timeRemainingRef.current;
+            const ans = answersRef.current;
+            const currentQuestion = shuffledQuestionsRef.current[cIdx];
+            const selectedOptionId = ans[currentQuestion?.id];
+            const accumulatedTime = timeSpentRef.current[currentQuestion?.id] || 0;
+
+            const progRes = await dispatch(updateProgressThunk({
+                id: activeAttempt?.id,
+                current_question_order: cIdx,
+                time_remaining_secs: tRem
+            }));
+            let saveOk = updateProgressThunk.fulfilled.match(progRes);
+
+            if (selectedOptionId && currentQuestion?.id) {
+                const saveRes = await dispatch(saveAnswerThunk({
+                    attempt_id: activeAttempt?.id,
+                    question_id: currentQuestion?.id,
+                    selected_option_id: selectedOptionId,
+                    time_spent_secs: accumulatedTime
                 }));
+                saveOk = saveOk && saveAnswerThunk.fulfilled.match(saveRes);
+            }
 
-                const currentQuestion = shuffledQuestions[cIdx];
-                const selectedOptionId = ans[currentQuestion?.id];
-                const accumulatedTime = timeSpentRef.current[currentQuestion?.id] || 0;
-                
-                if (selectedOptionId && currentQuestion?.id) {
-                    await dispatch(saveAnswerThunk({
-                        attempt_id: activeAttempt?.id,
-                        question_id: currentQuestion?.id,
-                        selected_option_id: selectedOptionId,
-                        time_spent_secs: accumulatedTime
-                    }));
-                }
-
+            if (saveOk) {
                 setSaveStatus("saved");
-            } catch (err) {
-                console.error("Auto save failed, writing to localStorage:", err);
-                localStorage.setItem(`attempt_backup:${activeAttempt?.id}`, JSON.stringify({
-                    answers: answersRef.current,
-                    timeRemaining: timeRemainingRef.current,
-                    currentIndex: currentIndexRef.current
-                }));
+            } else {
+                console.warn("Auto save failed, writing to localStorage backup.");
+                try { writeBackup(); } catch { /* storage full/blocked */ }
                 setSaveStatus("saving_local");
             }
         }, 3000);
 
         return () => clearInterval(interval);
-    }, [activeAttempt, shuffledQuestions, dispatch]);
+    }, [activeAttempt?.id, shuffledQuestions, dispatch]);
 
-    // Countdown Timer logic (with showGuide check)
+    // Countdown Timer logic (with showGuide check).
+    // Mounted once per attempt/guide state and reads latest values from refs so
+    // the interval is NOT torn down on every tick (fixes wall-clock drift and
+    // the stale-closure bug where handleAutoSubmit identity changed every save).
     useEffect(() => {
-        if (timeRemaining === null || timeRemaining <= 0 || showGuide) return;
+        if (!activeAttempt?.id || showGuide) return;
+
+        // Resume case: an already-expired in_progress attempt must auto-submit immediately.
+        if (timeRemainingRef.current !== null && timeRemainingRef.current <= 0) {
+            handleAutoSubmitRef.current();
+            return;
+        }
+        if (timeRemainingRef.current === null) return; // untimed quiz — no countdown
 
         const interval = setInterval(() => {
-            const nextTime = timeRemaining - 1;
+            const current = timeRemainingRef.current;
+            if (current === null) return;
+
+            const nextTime = current - 1;
             dispatch(setTimeRemaining(nextTime));
 
-            const currentQuestionId = shuffledQuestions[currentIndex]?.id;
+            const currentQuestionId = shuffledQuestionsRef.current[currentIndexRef.current]?.id;
             if (currentQuestionId) {
                 timeSpentRef.current[currentQuestionId] = (timeSpentRef.current[currentQuestionId] || 0) + 1;
             }
@@ -423,12 +440,12 @@ const QuizTaking = () => {
 
             if (nextTime <= 0) {
                 clearInterval(interval);
-                handleAutoSubmit();
+                handleAutoSubmitRef.current();
             }
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [timeRemaining, dispatch, handleAutoSubmit, shuffledQuestions, currentIndex, showGuide]);
+    }, [activeAttempt?.id, showGuide, dispatch]);
 
     // Security and exit interceptors
     useEffect(() => {

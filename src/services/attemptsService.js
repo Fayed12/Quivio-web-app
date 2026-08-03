@@ -302,7 +302,7 @@ export async function gradeAttemptInDatabase(attemptId) {
     .select(`
       id, uid, quiz_id, status, started_at, time_spent_secs,
       quiz:quizzes (
-        id, passing_score, xp_reward,
+        id, passing_score, xp_reward, certificates_enabled,
         quiz_questions (
           question_id,
           question:questions (
@@ -402,8 +402,8 @@ export async function gradeAttemptInDatabase(attemptId) {
     return { data: null, error: updateErr.message };
   }
 
-  // 6. Issue certificate if passed
-  if (passed) {
+  // 6. Issue certificate if passed (and certificates are enabled for the quiz)
+  if (passed && attempt.quiz?.certificates_enabled !== false) {
     try {
       const { data: existingCert } = await supabase
         .from('certificates')

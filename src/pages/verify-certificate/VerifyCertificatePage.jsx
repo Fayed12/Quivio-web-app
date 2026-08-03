@@ -1,5 +1,5 @@
 // react
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // react-router
 import { useParams, Link } from "react-router";
@@ -42,12 +42,20 @@ const VerifyCertificatePage = () => {
     const error = useSelector((s) => s.certificates.error);
     const cardRef = useRef(null);
 
+    // Local flag so the error/not-found card never flashes on the very first
+    // paint (the thunk dispatch happens in useEffect, after first render).
+    const [checking, setChecking] = useState(() => Boolean(code));
+
     // Fetch certificate on mount
     useEffect(() => {
+        let active = true;
         if (code) {
-            dispatch(verifyCertificateThunk(code));
+            dispatch(verifyCertificateThunk(code)).finally(() => {
+                if (active) setChecking(false);
+            });
         }
         return () => {
+            active = false;
             dispatch(clearVerified());
             dispatch(clearCertError());
         };
@@ -75,7 +83,7 @@ const VerifyCertificatePage = () => {
     };
 
     // ─── Loading State ────────────────────────────────────────
-    if (loading) {
+    if (loading || checking) {
         return (
             <div className={styles.verifyContainer}>
                 <div className={styles.loadingWrapper}>

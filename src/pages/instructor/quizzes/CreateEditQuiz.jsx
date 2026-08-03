@@ -193,7 +193,9 @@ const CreateEditQuiz = () => {
                 if (data.length > 0 && !selectedQuestionId) {
                     loadActiveQuestion(data[0]);
                 }
+                return data;
             }
+            return [];
         },
         [selectedQuestionId, loadActiveQuestion],
     );
@@ -476,7 +478,7 @@ const CreateEditQuiz = () => {
                     question_type: "mcq",
                     points: 1,
                     difficulty: "medium",
-                    instructor_uid: currentQuiz.instructor_uid,
+                    instructor_uid: currentQuiz?.instructor_uid || userId,
                     category_id: categoryId || null,
                 })
                 .select()
@@ -588,12 +590,16 @@ const CreateEditQuiz = () => {
                     await dispatch(removeFromQuizThunk(linkId)).unwrap();
                     toast.success("Question removed from quiz!");
 
-                    // If we deleted the currently active question, clear active selection
+                    const data = await loadQuizQuestions(id);
+                    // If we deleted the currently active question, select the next one
                     if (selectedQuestionId === linkId) {
-                        setSelectedQuestionId(null);
-                        setQText("");
+                        if (data.length > 0) {
+                            loadActiveQuestion(data[0]);
+                        } else {
+                            setSelectedQuestionId(null);
+                            setQText("");
+                        }
                     }
-                    loadQuizQuestions(id);
                 } catch (err) {
                     toast.error(err || "Failed to remove question");
                 }
