@@ -1,6 +1,5 @@
 // local
 import * as chatService from "../../services/chatService"
-import { supabase } from '../../services/config/supabaseClient';
 
 // redux
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
@@ -45,12 +44,7 @@ export const openConversationWith = createAsyncThunk(
       let otherUser = state.chat?.contacts?.find((c) => (c.uid || c.id) === otherUid);
 
       if (!otherUser) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('uid, full_name, email, avatar_url, role, is_active')
-          .eq('uid', otherUid)
-          .maybeSingle();
-        otherUser = profile || null;
+        otherUser = await chatService.getProfileByUid(otherUid);
       }
 
       return { conversation, messages, otherUser, otherUid };

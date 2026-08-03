@@ -170,7 +170,7 @@ Students (No Self-Register) ───> Provisioned by Instructor ───> Pass
 
 ### 2. Interactive Quiz-Taking Engine
 *   **Audio Atmosphere:** Custom sound cues powered by `Howler.js` play on select/next/flag/hint actions.
-*   **Continuous 2-Second Autosave:** Answer selections are debounced and synced to the database every 2 seconds. In case of network loss, answers are cached in browser `localStorage` and synced upon reconnection.
+*   **Continuous 3-Second Autosave:** Answer selections are debounced and synced to the database every 3 seconds. In case of network loss, answers are cached in browser `localStorage` and automatically restored on the next session.
 *   **Seeded Answer Shuffling:** A deterministic shuffle algorithm uses the student's attempt ID as seed, maintaining consistent option order across browser reloads.
 *   **Auto-Submit:** When countdown timers reach zero, `submitAttemptThunk()` automatically calculates final scores and terminates the session.
 

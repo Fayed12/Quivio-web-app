@@ -120,7 +120,8 @@ export const useNotificationsData = () => {
         };
 
         loadLogs();
-    }, [user, rooms?.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.uid, user?.id, rooms?.length]);
 
     return { announcements, rooms, systemLogs, loadingLogs };
 };

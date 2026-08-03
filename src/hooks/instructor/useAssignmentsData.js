@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchMyAssignments, selectMyAssignments } from "../../redux/slices/assignmentsSlice";
 import { fetchMyQuizzes, selectMyQuizzes } from "../../redux/slices/quizzesSlice";
@@ -13,6 +13,12 @@ export const useAssignmentsData = () => {
 
     const [completionsMap, setCompletionsMap] = useState({});
     const [loadingCompletions, setLoadingCompletions] = useState(false);
+
+    // Stabilize assignments identity so the effect below doesn't re-fire every render
+    const assignmentIds = useMemo(
+        () => assignments.map(a => a.id).join(","),
+        [assignments]
+    );
 
     useEffect(() => {
         dispatch(fetchMyAssignments());
@@ -78,8 +84,10 @@ export const useAssignmentsData = () => {
         };
 
         fetchCompletions();
-    }, [assignments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [assignmentIds]);
 
     return { assignments, quizzes, rooms, completionsMap, loadingCompletions };
 };
 export default useAssignmentsData;
+

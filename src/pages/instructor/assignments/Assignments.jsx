@@ -307,36 +307,34 @@ const Assignments = () => {
                     <div className={styles.paginationInfo}>
                         Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> assignments
                     </div>
-                    {totalPages > 1 && (
-                        <div className={styles.paginationBtnGroup}>
-                            <button 
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                                className={styles.pageBtn}
-                            >
-                                Previous
-                            </button>
-                            {[...Array(totalPages)].map((_, idx) => {
-                                const pageNum = idx + 1;
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-                            <button 
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages}
-                                className={styles.pageBtn}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    )}
+                    <div className={styles.paginationBtnGroup}>
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className={styles.pageBtn}
+                        >
+                            Previous
+                        </button>
+                        {[...Array(totalPages)].map((_, idx) => {
+                            const pageNum = idx + 1;
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className={styles.pageBtn}
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             )}
 

@@ -1,6 +1,17 @@
 import { utils, writeFile } from "xlsx";
 import { format } from "date-fns";
 
+// HTML escape utility to prevent stored XSS in PDF export
+function escapeHtml(str) {
+    if (str == null) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 export function exportGradesToExcel(studentsList = [], attemptsList = [], options = {}) {
     const filename = options.filename || `Quivio_Grade_Report_${format(new Date(), "yyyy-MM-dd")}.xlsx`;
 
@@ -238,9 +249,9 @@ export function exportGradesToPDF(studentsList = [], options = {}) {
                     ${studentsList.map((s, idx) => `
                         <tr>
                             <td>${idx + 1}</td>
-                            <td><strong>${s.profile?.full_name || "N/A"}</strong></td>
-                            <td>${s.student_code || "N/A"}</td>
-                            <td>${s.profile?.email || "N/A"}</td>
+                            <td><strong>${escapeHtml(s.profile?.full_name || "N/A")}</strong></td>
+                            <td>${escapeHtml(s.student_code || "N/A")}</td>
+                            <td>${escapeHtml(s.profile?.email || "N/A")}</td>
                             <td>${s.attempts_count || (s.attempts ? s.attempts.length : 0)}</td>
                             <td><strong>${s.avg_score || 0}%</strong></td>
                             <td><span class="badge badge-active">Active</span></td>
@@ -262,9 +273,15 @@ export function exportGradesToPDF(studentsList = [], options = {}) {
         </html>
     `;
 
-    const printWindow = window.open('', '_blank');
+    // Use Blob URL instead of window.open + document.write for better popup-blocker compatibility
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, '_blank');
     if (printWindow) {
-        printWindow.document.write(htmlContent);
-        printWindow.document.close();
+        printWindow.addEventListener('afterprint', () => URL.revokeObjectURL(url));
+        // Fallback cleanup after 60 seconds
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } else {
+        URL.revokeObjectURL(url);
     }
 }

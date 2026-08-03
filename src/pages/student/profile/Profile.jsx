@@ -30,10 +30,6 @@ import MainButton from "../../../components/ui/button/MainButton";
 import ModalPortal from "../../instructor/components/ModalPortal";
 import { toast } from "react-toastify";
 
-// react-pdf
-import { pdf } from "@react-pdf/renderer";
-import CertificatePDF from "./CertificatePDF";
-
 // supabase
 import { supabase } from "../../../services/config/supabaseClient";
 
@@ -199,6 +195,11 @@ const StudentProfile = () => {
         try {
             toast.info("Generating certificate PDF...");
             
+            const [{ pdf }, { default: CertificatePDF }] = await Promise.all([
+                import("@react-pdf/renderer"),
+                import("./CertificatePDF")
+            ]);
+
             // Render document to blob
             const doc = <CertificatePDF cert={cert} profileName={profile?.full_name} />;
             const blob = await pdf(doc).toBlob();

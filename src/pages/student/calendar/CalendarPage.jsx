@@ -144,7 +144,7 @@ const CalendarPage = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [dispatch]);
+    }, [dispatch, user?.id]);
 
     // Build unified events array
     const allEvents = useMemo(() => {

@@ -106,7 +106,13 @@ export const useAnalyticsData = (dateRange = "all", customRange = null, selected
                     filteredAttempts = filteredAttempts.filter(a => a.quiz?.id === selectedQuizId);
                 }
 
-                const completed = filteredAttempts.filter(a => a.status === "completed");
+                const completed = filteredAttempts.filter(a => 
+                    a.status === "completed" || 
+                    a.status === "submitted" || 
+                    a.status === "finished" || 
+                    a.score !== null || 
+                    a.completed_at !== null
+                );
                 const totalScore = completed.reduce((sum, curr) => sum + (curr.score || 0), 0);
                 const passedCount = completed.filter(a => a.passed).length;
                 const totalTime = completed.reduce((sum, curr) => sum + (curr.time_spent_secs || 0), 0);
@@ -170,7 +176,7 @@ export const useAnalyticsData = (dateRange = "all", customRange = null, selected
                         attemptsByDate[dateStr] = { date: dateStr, count: 0, passed: 0 };
                     }
                     attemptsByDate[dateStr].count++;
-                    if (a.passed && a.status === "completed") {
+                    if (a.passed && (a.status === "completed" || a.status === "submitted" || a.score !== null)) {
                         attemptsByDate[dateStr].passed++;
                     }
                 });
@@ -323,37 +329,31 @@ export const useAnalyticsData = (dateRange = "all", customRange = null, selected
                 });
 
                 // G. Question Performances (correct/incorrect rates and times)
-                const completedAttemptIds = completed.map(a => a.id);
+                const completedAttemptIds = completed.map(a => a.id).filter(Boolean);
                 const questionStats = {};
 
                 if (completedAttemptIds.length > 0) {
-                    const { data: answersData } = await supabase
+                    const { data: answersData, error: ansErr } = await supabase
                         .from("attempt_answers")
-                        .select(`
-                            id, attempt_id, question_id, is_correct, time_spent_secs,
-                            question:questions(id, question_text)
-                        `)
+                        .select("id, attempt_id, question_id, is_correct, time_spent_secs")
                         .in("attempt_id", completedAttemptIds);
 
-                    if (answersData && answersData.length > 0) {
-                        // Check for any missing question texts and fetch them from questions table
-                        const missingQIds = [];
-                        answersData.forEach(ans => {
-                            if (ans.question_id && !ans.question?.question_text) {
-                                missingQIds.push(ans.question_id);
-                            }
-                        });
+                    if (ansErr) {
+                        console.error("Error fetching attempt answers for analytics:", ansErr);
+                    }
 
-                        let fallbackQuestionMap = {};
-                        if (missingQIds.length > 0) {
+                    if (answersData && answersData.length > 0) {
+                        const questionIds = [...new Set(answersData.map(ans => ans.question_id).filter(Boolean))];
+                        let questionMap = {};
+                        if (questionIds.length > 0) {
                             const { data: qRows } = await supabase
                                 .from("questions")
                                 .select("id, question_text")
-                                .in("id", missingQIds);
+                                .in("id", questionIds);
 
                             if (qRows) {
                                 qRows.forEach(q => {
-                                    fallbackQuestionMap[q.id] = q.question_text;
+                                    questionMap[q.id] = q.question_text;
                                 });
                             }
                         }
@@ -361,7 +361,7 @@ export const useAnalyticsData = (dateRange = "all", customRange = null, selected
                         answersData.forEach(ans => {
                             const qId = ans.question_id;
                             if (!qId) return;
-                            const qText = ans.question?.question_text || fallbackQuestionMap[qId] || `Question #${qId.slice(0, 6)}`;
+                            const qText = questionMap[qId] || `Question #${qId.slice(0, 6)}`;
                             const isCorrect = Boolean(ans.is_correct);
                             const timeSpent = Number(ans.time_spent_secs) || 0;
 
@@ -400,18 +400,16 @@ export const useAnalyticsData = (dateRange = "all", customRange = null, selected
 
                 const hardestQs = [...questionPerformancesList]
                     .filter(q => q.attempts > 0)
-                    .sort((a, b) => b.percentIncorrect - a.percentIncorrect || b.attempts - a.attempts)
-                    .slice(0, 5);
+                    .sort((a, b) => b.percentIncorrect - a.percentIncorrect || b.attempts - a.attempts);
 
                 const easiestQs = [...questionPerformancesList]
                     .filter(q => q.attempts > 0)
-                    .sort((a, b) => b.percentCorrect - a.percentCorrect || b.attempts - a.attempts)
-                    .slice(0, 5);
+                    .sort((a, b) => b.percentCorrect - a.percentCorrect || b.attempts - a.attempts);
 
                 const avgTimePerQ = [...questionPerformancesList]
                     .filter(q => q.attempts > 0)
                     .sort((a, b) => b.avgTimeSpent - a.avgTimeSpent)
-                    .slice(0, 5);
+                    .slice(0, 10);
 
                 setQuestionPerformances({
                     hardest: hardestQs,

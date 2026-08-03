@@ -419,3 +419,16 @@ export async function getUnreadCount(currentUid) {
   return count || 0;
 }
 
+/**
+ * Fetch a user profile by UID for chat context.
+ */
+export async function getProfileByUid(uid) {
+  if (!uid) return null;
+  const { data } = await supabase
+    .from('profiles')
+    .select('uid, full_name, email, avatar_url, role, is_active')
+    .eq('uid', uid)
+    .maybeSingle();
+  return data || null;
+}
+

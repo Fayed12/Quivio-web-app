@@ -42,6 +42,7 @@ const AssignmentDetail = () => {
 
     // Local States
     const [searchQuery, setSearchQuery] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
     const containerRef = useRef(null);
 
     // Page entrance animation
@@ -74,6 +75,14 @@ const AssignmentDetail = () => {
                s.email.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
+    // Pagination calculations
+    const rowsPerPage = 5;
+    const totalRows = filteredStudents.length;
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+    const paginatedStudents = filteredStudents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+    const startRow = totalRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+    const endRow = Math.min(currentPage * rowsPerPage, totalRows);
+
     if (loading) {
         return <div className={styles.loading}>Loading Assignment details...</div>;
     }
@@ -82,9 +91,9 @@ const AssignmentDetail = () => {
         <div ref={containerRef} className={styles.container}>
             {/* Page Header */}
             <PageHeader 
-                title={`Assignment: ${assignment.quiz?.title}`}
-                subtitle={`Target Classroom: ${assignment.room?.name || "Classroom"}`}
-                breadcrumbs={["Assignments", assignment.quiz?.title || "Details"]}
+                title={`Assignment: ${assignment?.quiz?.title || "Quiz Assignment"}`}
+                subtitle={assignment?.room?.name ? `Target Classroom: ${assignment.room.name}` : assignment?.student?.full_name ? `Target Student: ${assignment.student.full_name}` : "Assignment Details"}
+                breadcrumbs={["Assignments", assignment?.quiz?.title || "Details"]}
                 onBack={() => navigate("/instructor/assignments")}
                 actions={
                     <MainButton onClick={() => navigate("/instructor/assignments")} variant="secondary">
@@ -116,10 +125,13 @@ const AssignmentDetail = () => {
                             type="text" 
                             placeholder="Search student status..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
                             className={styles.searchInput}
                         />
-                        {searchQuery && <FiX className={styles.clearIcon} onClick={() => setSearchQuery("")} />}
+                        {searchQuery && <FiX className={styles.clearIcon} onClick={() => { setSearchQuery(""); setCurrentPage(1); }} />}
                     </div>
                 </div>
 
@@ -137,7 +149,7 @@ const AssignmentDetail = () => {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {filteredStudents.map((s) => (
+                            {paginatedStudents.map((s) => (
                                 <TableRow key={s.uid} className={styles.tableRow}>
                                     <TableCell className={styles.tdCell}>
                                         <div className={styles.studentNameCol}>
@@ -189,6 +201,43 @@ const AssignmentDetail = () => {
                         </TableBody>
                     </Table>
                 </TableContainer>
+
+                {/* Pagination Controls */}
+                {totalRows > 0 && (
+                    <div className={styles.paginationRow}>
+                        <div className={styles.paginationInfo}>
+                            Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> students
+                        </div>
+                        <div className={styles.paginationBtnGroup}>
+                            <button 
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className={styles.pageBtn}
+                            >
+                                Previous
+                            </button>
+                            {[...Array(totalPages)].map((_, idx) => {
+                                const pageNum = idx + 1;
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                            <button 
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className={styles.pageBtn}
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

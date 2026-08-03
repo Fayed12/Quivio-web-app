@@ -102,6 +102,7 @@ const QuestionBank = () => {
     const [csvErrors, setCsvErrors] = useState(0);
     const [csvValidCount, setCsvValidCount] = useState(0);
     const [isImporting, setIsImporting] = useState(false);
+    const [csvPage, setCsvPage] = useState(1);
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -762,7 +763,7 @@ const QuestionBank = () => {
             </TableContainer>
 
             {/* Pagination Controls */}
-            {totalPages > 1 && (
+            {totalRows > 0 && (
                 <div className={styles.paginationRow}>
                     <div className={styles.paginationInfo}>
                         Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> questions
@@ -994,39 +995,87 @@ const QuestionBank = () => {
                             </div>
 
                             {/* CSV Preview */}
-                            {csvPreview.length > 0 && (
-                                <div className={styles.csvPreviewWrapper}>
-                                    <div className={styles.csvSummaryText}>
-                                        <span className={styles.validText}>{csvValidCount} Valid Rows</span> • 
-                                        <span className={styles.errorText} style={{marginLeft: "5px"}}>{csvErrors} Error Rows</span>
-                                    </div>
-                                    
-                                    <div className={styles.csvPreviewTableScroll}>
-                                        <table className={styles.csvTable}>
-                                            <thead>
-                                                <tr>
-                                                    <th>Type</th>
-                                                    <th>Question Text</th>
-                                                    <th>Correct</th>
-                                                    <th>Category</th>
-                                                    <th>Validation</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {csvPreview.map((row, idx) => (
-                                                    <tr key={idx} className={row.isValid ? styles.csvRowValid : styles.csvRowError}>
-                                                        <td>{row.type}</td>
-                                                        <td>{row.question_text}</td>
-                                                        <td align="center">{row.correct}</td>
-                                                        <td>{row.category}</td>
-                                                        <td>{row.isValid ? "✓ OK" : `✗ ${row.errorMsg}`}</td>
+                            {csvPreview.length > 0 && (() => {
+                                const csvRowsPerPage = 5;
+                                const totalCsvRows = csvPreview.length;
+                                const totalCsvPages = Math.ceil(totalCsvRows / csvRowsPerPage);
+                                const paginatedCsvPreview = csvPreview.slice((csvPage - 1) * csvRowsPerPage, csvPage * csvRowsPerPage);
+                                const csvStartRow = totalCsvRows === 0 ? 0 : (csvPage - 1) * csvRowsPerPage + 1;
+                                const csvEndRow = Math.min(csvPage * csvRowsPerPage, totalCsvRows);
+
+                                return (
+                                    <div className={styles.csvPreviewWrapper}>
+                                        <div className={styles.csvSummaryText}>
+                                            <span className={styles.validText}>{csvValidCount} Valid Rows</span> • 
+                                            <span className={styles.errorText} style={{marginLeft: "5px"}}>{csvErrors} Error Rows</span>
+                                        </div>
+                                        
+                                        <div className={styles.csvPreviewTableScroll}>
+                                            <table className={styles.csvTable}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Type</th>
+                                                        <th>Question Text</th>
+                                                        <th>Correct</th>
+                                                        <th>Category</th>
+                                                        <th>Validation</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody>
+                                                    {paginatedCsvPreview.map((row, idx) => (
+                                                        <tr key={idx} className={row.isValid ? styles.csvRowValid : styles.csvRowError}>
+                                                            <td>{row.type}</td>
+                                                            <td>{row.question_text}</td>
+                                                            <td align="center">{row.correct}</td>
+                                                            <td>{row.category}</td>
+                                                            <td>{row.isValid ? "✓ OK" : `✗ ${row.errorMsg}`}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {totalCsvRows > 0 && (
+                                            <div className={styles.paginationRow} style={{ marginTop: "var(--space-2)" }}>
+                                                <div className={styles.paginationInfo}>
+                                                    Showing <strong>{csvStartRow}</strong>-<strong>{csvEndRow}</strong> of <strong>{totalCsvRows}</strong> rows
+                                                </div>
+                                                <div className={styles.paginationBtnGroup}>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setCsvPage(prev => Math.max(1, prev - 1))}
+                                                        disabled={csvPage === 1}
+                                                        className={styles.pageBtn}
+                                                    >
+                                                        Previous
+                                                    </button>
+                                                    {[...Array(totalCsvPages)].map((_, idx) => {
+                                                        const pageNum = idx + 1;
+                                                        return (
+                                                            <button
+                                                                type="button"
+                                                                key={pageNum}
+                                                                onClick={() => setCsvPage(pageNum)}
+                                                                className={`${styles.pageNumberBtn} ${csvPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                                            >
+                                                                {pageNum}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setCsvPage(prev => Math.min(totalCsvPages, prev + 1))}
+                                                        disabled={csvPage === totalCsvPages}
+                                                        className={styles.pageBtn}
+                                                    >
+                                                        Next
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
 
                         <div className={styles.modalFooter}>

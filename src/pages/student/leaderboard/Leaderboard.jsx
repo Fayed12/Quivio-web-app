@@ -133,6 +133,8 @@ const Leaderboard = () => {
         }
     }, [activeLeaderboard, activeTab]);
 
+    const [currentPage, setCurrentPage] = useState(1);
+
     // Filter list by search query
     const filteredLeaderboard = activeLeaderboard.filter(entry => {
         if (!searchQuery) return true;
@@ -148,8 +150,13 @@ const Leaderboard = () => {
     if (podiumList[0]) orderedPodium.push({ ...podiumList[0], rank: 1 });
     if (podiumList[2]) orderedPodium.push({ ...podiumList[2], rank: 3 });
 
-    // Table List (show all ranks in the table)
-    const tableList = filteredLeaderboard;
+    // Pagination calculations
+    const rowsPerPage = 10;
+    const totalRows = filteredLeaderboard.length;
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+    const paginatedTableList = filteredLeaderboard.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+    const startRow = totalRows === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1;
+    const endRow = Math.min(currentPage * rowsPerPage, totalRows);
 
     // Current student sticky banner stats
     const getMyCurrentRankDetails = () => {
@@ -264,7 +271,10 @@ const Leaderboard = () => {
                     <input
                         type="text"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                        }}
                         placeholder="Search student name..."
                         className={styles.searchInput}
                     />
@@ -275,55 +285,95 @@ const Leaderboard = () => {
                         No leaderboard entries found.
                     </div>
                 ) : (
-                    <div className={styles.tableWrapper}>
-                        <table className={styles.leaderboardTable}>
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Student</th>
-                                    <th>XP</th>
-                                    <th>Quizzes Done</th>
-                                    <th>Streak</th>
-                                    <th>Avg Score</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {tableList.map((entry, idx) => {
-                                    const rankNum = entry.rank || (idx + 1);
-                                    const name = entry.profile?.full_name || entry.full_name || "Student";
-                                    const avatar = entry.profile?.avatar_url || entry.avatar_url || "https://api.dicebear.com/7.x/adventurer/svg?seed=Quivio";
-                                    const isMe = entry.uid === currentProfile?.uid;
+                    <>
+                        <div className={styles.tableWrapper}>
+                            <table className={styles.leaderboardTable}>
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Student</th>
+                                        <th>XP</th>
+                                        <th>Quizzes Done</th>
+                                        <th>Streak</th>
+                                        <th>Avg Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedTableList.map((entry, idx) => {
+                                        const globalIndex = (currentPage - 1) * rowsPerPage + idx;
+                                        const rankNum = entry.rank || (globalIndex + 1);
+                                        const name = entry.profile?.full_name || entry.full_name || "Student";
+                                        const avatar = entry.profile?.avatar_url || entry.avatar_url || "https://api.dicebear.com/7.x/adventurer/svg?seed=Quivio";
+                                        const isMe = entry.uid === currentProfile?.uid;
 
-                                    return (
-                                        <tr 
-                                            key={entry.uid}
-                                            className={isMe ? styles.highlightRow : ""}
-                                        >
-                                            <td className="font-semibold">
-                                                {rankNum === 1 ? <FaMedal style={{ color: "#F59E0B", fontSize: "1.1rem" }} />
-                                                 : rankNum === 2 ? <FaMedal style={{ color: "#94A3B8", fontSize: "1.1rem" }} />
-                                                 : rankNum === 3 ? <FaMedal style={{ color: "#B45309", fontSize: "1.1rem" }} />
-                                                 : `#${rankNum}`}
-                                            </td>
-                                            <td className={styles.studentCell}>
-                                                <img src={avatar} alt={name} className={styles.avatar} />
-                                                <span className={styles.studentName}>{name}</span>
-                                            </td>
-                                            <td className="font-semibold">{entry.xp}</td>
-                                            <td>{entry.quizzes_completed}</td>
-                                            <td>
-                                                <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-1)" }}>
-                                                    <FaFire style={{ color: "#EF4444" }} />
-                                                    <span>{entry.streak}d</span>
-                                                </div>
-                                            </td>
-                                            <td className="font-semibold">{entry.avg_score ?? 0}%</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                        return (
+                                            <tr 
+                                                key={entry.uid}
+                                                className={isMe ? styles.highlightRow : ""}
+                                            >
+                                                <td className="font-semibold">
+                                                    {rankNum === 1 ? <FaMedal style={{ color: "#F59E0B", fontSize: "1.1rem" }} />
+                                                     : rankNum === 2 ? <FaMedal style={{ color: "#94A3B8", fontSize: "1.1rem" }} />
+                                                     : rankNum === 3 ? <FaMedal style={{ color: "#B45309", fontSize: "1.1rem" }} />
+                                                     : `#${rankNum}`}
+                                                </td>
+                                                <td className={styles.studentCell}>
+                                                    <img src={avatar} alt={name} className={styles.avatar} />
+                                                    <span className={styles.studentName}>{name}</span>
+                                                </td>
+                                                <td className="font-semibold">{entry.xp}</td>
+                                                <td>{entry.quizzes_completed}</td>
+                                                <td>
+                                                    <div style={{ display: "inline-flex", alignItems: "center", gap: "var(--space-1)" }}>
+                                                        <FaFire style={{ color: "#EF4444" }} />
+                                                        <span>{entry.streak}d</span>
+                                                    </div>
+                                                </td>
+                                                <td className="font-semibold">{entry.avg_score ?? 0}%</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Pagination Controls */}
+                        {totalRows > 0 && (
+                            <div className={styles.paginationRow}>
+                                <div className={styles.paginationInfo}>
+                                    Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> entries
+                                </div>
+                                <div className={styles.paginationBtnGroup}>
+                                    <button 
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                        className={styles.pageBtn}
+                                    >
+                                        Previous
+                                    </button>
+                                    {[...Array(totalPages)].map((_, idx) => {
+                                        const pageNum = idx + 1;
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => setCurrentPage(pageNum)}
+                                                className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
+                                    <button 
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className={styles.pageBtn}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 

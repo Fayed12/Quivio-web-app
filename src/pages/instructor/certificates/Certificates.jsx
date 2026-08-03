@@ -29,10 +29,6 @@ import { toast } from "react-toastify";
 // Material UI
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from "@mui/material";
 
-// react-pdf
-import { pdf } from "@react-pdf/renderer";
-import CertificatePDF from "../../student/profile/CertificatePDF";
-
 // supabase client
 import { supabase } from "../../../services/config/supabaseClient";
 
@@ -133,6 +129,10 @@ const Certificates = () => {
         }
         try {
             toast.info("Generating certificate PDF...");
+            const [{ pdf }, { default: CertificatePDF }] = await Promise.all([
+                import("@react-pdf/renderer"),
+                import("../../student/profile/CertificatePDF")
+            ]);
             const doc = <CertificatePDF cert={cert} profileName={cert.student?.full_name || "Student"} />;
             const blob = await pdf(doc).toBlob();
             const url = URL.createObjectURL(blob);
@@ -363,36 +363,34 @@ const Certificates = () => {
                         <div className={styles.paginationInfo}>
                             Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> certificates
                         </div>
-                        {totalPages > 1 && (
-                            <div className={styles.paginationBtnGroup}>
-                                <button 
-                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                    disabled={currentPage === 1}
-                                    className={styles.pageBtn}
-                                >
-                                    Previous
-                                </button>
-                                {[...Array(totalPages)].map((_, idx) => {
-                                    const pageNum = idx + 1;
-                                    return (
-                                        <button
-                                            key={pageNum}
-                                            onClick={() => setCurrentPage(pageNum)}
-                                            className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
-                                        >
-                                            {pageNum}
-                                        </button>
-                                    );
-                                })}
-                                <button 
-                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className={styles.pageBtn}
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        )}
+                        <div className={styles.paginationBtnGroup}>
+                            <button 
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className={styles.pageBtn}
+                            >
+                                Previous
+                            </button>
+                            {[...Array(totalPages)].map((_, idx) => {
+                                const pageNum = idx + 1;
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                            <button 
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className={styles.pageBtn}
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

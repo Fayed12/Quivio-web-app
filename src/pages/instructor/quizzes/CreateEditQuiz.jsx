@@ -260,6 +260,7 @@ const CreateEditQuiz = () => {
     // 1. Initial Load & Fetch details if edit mode
     useEffect(() => {
         if (id) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             loadQuizQuestions(id);
         }
     }, [id, loadQuizQuestions]);
@@ -267,6 +268,7 @@ const CreateEditQuiz = () => {
     // 2. Populate states when currentQuiz details are loaded
     useEffect(() => {
         if (currentQuiz && id) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setTitle(currentQuiz.title || "");
             setDescription(currentQuiz.description || "");
             setCategoryId(currentQuiz.category_id || "");

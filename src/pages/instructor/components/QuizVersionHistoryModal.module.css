@@ -178,6 +178,12 @@
     gap: var(--space-4, 1rem);
 }
 
+@media (max-width: 768px) {
+    .versionsGrid {
+        flex-direction: column;
+    }
+}
+
 .timelineList {
     flex: 1;
     display: flex;
@@ -302,6 +308,12 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .detailPanel {
+        width: 100%;
+    }
 }
 
 .detailHeader {

@@ -23,7 +23,7 @@ import {
 import { logoutThunk, selectProfile } from "../../../redux/slices/authSlice";
 import { selectUnreadCount } from "../../../redux/slices/notificationsSlice";
 import { selectUnreadCount as selectChatUnreadCount } from "../../../redux/slices/chatSlice";
-import { selectTheme } from "../../../redux/slices/themeSLice";
+import { selectTheme } from "../../../redux/slices/themeSlice";
 
 // local
 import styles from "./Sidebar.module.css";
@@ -138,6 +138,8 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
         },
     ];
 
+    const effectiveCollapsed = isCollapsed && !isOpen;
+
     const sidebarClass = `
         ${styles.sidebar} 
         ${isCollapsed ? styles.collapsed : ""} 
@@ -167,12 +169,12 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                 <nav className={styles.nav}>
                     {navSections.map((section, sIdx) => (
                         <div key={section.label} className={styles.section}>
-                            {!isCollapsed && (
+                            {!effectiveCollapsed && (
                                 <span className={styles.sectionLabel}>
                                     {section.label}
                                 </span>
                             )}
-                            {sIdx > 0 && isCollapsed && (
+                            {sIdx > 0 && effectiveCollapsed && (
                                 <div className={styles.sectionDivider} />
                             )}
                             <div className={styles.sectionList}>
@@ -185,6 +187,7 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                                             onClick={onClose}
                                             data-tour={`sidebar-${tourKey}`}
                                             data-label={item.label}
+                                            title={item.label}
                                             className={({ isActive }) =>
                                                 `${styles.navItem} ${isActive ? styles.navItemActive : ""}`
                                             }
@@ -194,7 +197,7 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                                             >
                                                 {item.icon}
                                             </span>
-                                            {!isCollapsed && (
+                                            {!effectiveCollapsed && (
                                                 <span
                                                     className={
                                                         styles.navItemLabel
@@ -203,7 +206,7 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                                                     {item.label}
                                                 </span>
                                             )}
-                                            {item.badge && !isCollapsed && (
+                                            {item.badge && !effectiveCollapsed && (
                                                 <span className={styles.badge}>
                                                     {item.badge}
                                                 </span>
@@ -242,7 +245,7 @@ const Sidebar = ({ isCollapsed, isOpen, onClose }) => {
                                 "I"
                             )}
                         </div>
-                        {!isCollapsed && (
+                        {!effectiveCollapsed && (
                             <div className={styles.userInfo}>
                                 <div className={styles.userName}>
                                     {profile?.full_name || "Instructor"}

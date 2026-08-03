@@ -382,7 +382,7 @@ export async function gradeAttemptInDatabase(attemptId) {
   const xpEarned = passed ? (attempt.quiz?.xp_reward || 50) : 0;
 
   // 5. Update attempt table
-  const { data: updatedAttempt, error: updateErr } = await supabase
+  const { error: updateErr } = await supabase
     .from('attempts')
     .update({
       status: 'completed',

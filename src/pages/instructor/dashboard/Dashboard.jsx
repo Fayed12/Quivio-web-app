@@ -5,7 +5,7 @@ import MainButton from "../../../components/ui/button/MainButton";
 import styles from "./Dashboard.module.css";
 
 // react
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 // react-router
 import { useNavigate } from "react-router";
@@ -77,7 +77,16 @@ const Dashboard = () => {
         getCategoryData
     } = useDashboardData();
 
+    const [recentQuizzesPage, setRecentQuizzesPage] = useState(1);
     const containerRef = useRef(null);
+
+    // Pagination for recent quizzes table
+    const recentRowsPerPage = 5;
+    const totalRecentQuizzes = quizzes.length;
+    const totalRecentPages = Math.ceil(totalRecentQuizzes / recentRowsPerPage);
+    const paginatedQuizzes = quizzes.slice((recentQuizzesPage - 1) * recentRowsPerPage, recentQuizzesPage * recentRowsPerPage);
+    const recentStart = totalRecentQuizzes === 0 ? 0 : (recentQuizzesPage - 1) * recentRowsPerPage + 1;
+    const recentEnd = Math.min(recentQuizzesPage * recentRowsPerPage, totalRecentQuizzes);
 
     // Page entrance animation
     usePageAnimation(containerRef, {
@@ -188,7 +197,7 @@ const Dashboard = () => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {quizzes.slice(0, 5).map((q) => (
+                                    {paginatedQuizzes.map((q) => (
                                         <TableRow key={q.id} className={styles.tableRow}>
                                             <TableCell className={styles.tdCell} style={{fontWeight: 600}}>{q.title}</TableCell>
                                             <TableCell align="center" className={styles.tdCell}>{q.attempt_count || 0}</TableCell>
@@ -211,6 +220,43 @@ const Dashboard = () => {
                                 </TableBody>
                             </Table>
                         </TableContainer>
+
+                        {/* Pagination Controls */}
+                        {totalRecentQuizzes > 0 && (
+                            <div className={styles.paginationRow}>
+                                <div className={styles.paginationInfo}>
+                                    Showing <strong>{recentStart}</strong>-<strong>{recentEnd}</strong> of <strong>{totalRecentQuizzes}</strong> quizzes
+                                </div>
+                                <div className={styles.paginationBtnGroup}>
+                                    <button 
+                                        onClick={() => setRecentQuizzesPage(prev => Math.max(1, prev - 1))}
+                                        disabled={recentQuizzesPage === 1}
+                                        className={styles.pageBtn}
+                                    >
+                                        Previous
+                                    </button>
+                                    {[...Array(totalRecentPages)].map((_, idx) => {
+                                        const pageNum = idx + 1;
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => setRecentQuizzesPage(pageNum)}
+                                                className={`${styles.pageNumberBtn} ${recentQuizzesPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
+                                    <button 
+                                        onClick={() => setRecentQuizzesPage(prev => Math.min(totalRecentPages, prev + 1))}
+                                        disabled={recentQuizzesPage === totalRecentPages}
+                                        className={styles.pageBtn}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Attempts over time chart */}

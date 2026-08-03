@@ -48,7 +48,6 @@ import {
     FiLoader,
     FiFolder,
     FiEdit3,
-    FiChevronRight,
     FiAlertCircle,
     FiSave,
     FiWifiOff,
@@ -65,15 +64,15 @@ import { Howl } from "howler";
 
 // local
 import styles from "./QuizTaking.module.css";
-import usePageAnimation from "../../../hooks/instructor/usePageAnimation";
+import usePageAnimation from "../../../hooks/usePageAnimation";
 
-// Initialize sounds using Howler with reliable free URLs
-const selectSound = new Howl({ src: ["/sounds/select.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.4, preload: true });
-const nextSound = new Howl({ src: ["/sounds/next.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.3, preload: true });
-const flagSound = new Howl({ src: ["/sounds/flag.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.4, preload: true });
-const hintSound = new Howl({ src: ["/sounds/hint.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.5, preload: true });
-const tickSound = new Howl({ src: ["/sounds/tick.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.2, preload: true });
-const submitSound = new Howl({ src: ["/sounds/submit.mp3", "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA="], html5: true, volume: 0.6, preload: true });
+// Initialize sounds using Howler with generated WAV files
+const selectSound = new Howl({ src: ["/sounds/select.wav"], html5: true, volume: 0.4, preload: true });
+const nextSound = new Howl({ src: ["/sounds/next.wav"], html5: true, volume: 0.3, preload: true });
+const flagSound = new Howl({ src: ["/sounds/flag.wav"], html5: true, volume: 0.4, preload: true });
+const hintSound = new Howl({ src: ["/sounds/hint.wav"], html5: true, volume: 0.5, preload: true });
+const tickSound = new Howl({ src: ["/sounds/tick.wav"], html5: true, volume: 0.2, preload: true });
+const submitSound = new Howl({ src: ["/sounds/submit.wav"], html5: true, volume: 0.6, preload: true });
 
 // Safe play wrapper — silently catch errors if sound files are missing
 const safePlay = (sound) => {
@@ -159,7 +158,9 @@ const QuizTaking = () => {
     // Guide Card & Audio Mute state
     const [showGuide, setShowGuide] = useState(true);
     const [guideCountdown, setGuideCountdown] = useState(5);
-    const [isMuted, setIsMuted] = useState(false);
+    const [isMuted, setIsMuted] = useState(() => {
+        try { return localStorage.getItem("quivio_quiz_muted") === "true"; } catch { return false; }
+    });
     
     // Auto-save indicators
     const [saveStatus, setSaveStatus] = useState("saved"); // "saved" | "saving" | "saving_local" | "error"
@@ -241,6 +242,32 @@ const QuizTaking = () => {
         };
     }, [quizId, attemptId, dispatch]);
 
+    // Restore from localStorage backup if autosave had previously failed (BUG-4 fix)
+    useEffect(() => {
+        if (!activeAttempt?.id) return;
+        const backupKey = `attempt_backup:${activeAttempt.id}`;
+        try {
+            const raw = localStorage.getItem(backupKey);
+            if (!raw) return;
+            const backup = JSON.parse(raw);
+            if (backup.answers && typeof backup.answers === "object") {
+                Object.entries(backup.answers).forEach(([questionId, optionId]) => {
+                    dispatch(setAnswerLocal({ question_id: questionId, selected_option_id: optionId }));
+                });
+            }
+            if (typeof backup.timeRemaining === "number") {
+                dispatch(setTimeRemaining(backup.timeRemaining));
+            }
+            if (typeof backup.currentIndex === "number") {
+                dispatch(setCurrentIndex(backup.currentIndex));
+            }
+            localStorage.removeItem(backupKey);
+            toast.info("Restored your previous progress from local backup", { autoClose: 4000 });
+        } catch {
+            // Corrupted backup — just remove it
+            try { localStorage.removeItem(backupKey); } catch { /* ignore */ }
+        }
+    }, [activeAttempt?.id, dispatch]);
 
 
     // Guide Card Countdown Effect
@@ -756,6 +783,7 @@ const QuizTaking = () => {
         const newMute = !isMuted;
         setIsMuted(newMute);
         Howler.mute(newMute);
+        try { localStorage.setItem("quivio_quiz_muted", String(newMute)); } catch { /* ignore */ }
     };
 
     // Check if current question is T/F
@@ -865,7 +893,7 @@ const QuizTaking = () => {
 
                         {/* Options depending on Question Type */}
                         {isCurrentTF ? (
-                            <div className={styles.tfSplit}>
+                            <div className={styles.tfSplit} role="radiogroup" aria-label="True or False options">
                                 {["True", "False"].map((tfOpt) => {
                                     const opt = (currentQuestion?.question_options || []).find(
                                         o => o.option_text?.toLowerCase() === tfOpt.toLowerCase()
@@ -876,7 +904,16 @@ const QuizTaking = () => {
                                     return (
                                         <div
                                             key={`tf-${tfOpt}`}
+                                            role="radio"
+                                            aria-checked={isSelected}
+                                            tabIndex={0}
                                             onClick={() => handleSelectOption(opt?.id)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === " " || e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    handleSelectOption(opt?.id);
+                                                }
+                                            }}
                                             className={`${styles.optionCard} ${styles.tfCard} ${isSelected ? styles.optionSelected : ""}`}
                                         >
                                             <span className={styles.optionText}>{tfOpt}</span>
@@ -888,13 +925,22 @@ const QuizTaking = () => {
                                 })}
                             </div>
                         ) : (
-                            <div className={styles.optionsStack}>
+                            <div className={styles.optionsStack} role="radiogroup" aria-label="Question options">
                                 {(currentQuestion?.question_options || []).map((opt, optIdx) => {
                                     const isSelected = answers[currentQuestion?.id] === opt?.id;
                                     return (
                                         <div
                                             key={opt?.id || `opt-${optIdx}`}
+                                            role="radio"
+                                            aria-checked={isSelected}
+                                            tabIndex={0}
                                             onClick={() => handleSelectOption(opt?.id)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === " " || e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    handleSelectOption(opt?.id);
+                                                }
+                                            }}
                                             className={`${styles.optionCard} ${isSelected ? styles.optionSelected : ""}`}
                                         >
                                             <span className={styles.optionText}>{opt?.option_text}</span>

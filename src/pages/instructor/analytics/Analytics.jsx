@@ -189,13 +189,41 @@ const Analytics = () => {
         return matchesSearch;
     });
 
-    // Pagination
+    // Pagination for student engagement table
     const totalRows = filteredProgress.length;
     const totalPages = Math.ceil(totalRows / pageSize);
     const paginatedProgress = filteredProgress.slice(
         (currentPage - 1) * pageSize,
         currentPage * pageSize
     );
+    const progressStart = totalRows === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const progressEnd = Math.min(currentPage * pageSize, totalRows);
+
+    // Additional table pagination states
+    const [hardestPage, setHardestPage] = useState(1);
+    const [easiestPage, setEasiestPage] = useState(1);
+    const [categoryPage, setCategoryPage] = useState(1);
+
+    const hardestRowsPerPage = 5;
+    const totalHardest = questionPerformances.hardest.length;
+    const totalHardestPages = Math.ceil(totalHardest / hardestRowsPerPage);
+    const paginatedHardest = questionPerformances.hardest.slice((hardestPage - 1) * hardestRowsPerPage, hardestPage * hardestRowsPerPage);
+    const hardestStart = totalHardest === 0 ? 0 : (hardestPage - 1) * hardestRowsPerPage + 1;
+    const hardestEnd = Math.min(hardestPage * hardestRowsPerPage, totalHardest);
+
+    const easiestRowsPerPage = 5;
+    const totalEasiest = questionPerformances.easiest.length;
+    const totalEasiestPages = Math.ceil(totalEasiest / easiestRowsPerPage);
+    const paginatedEasiest = questionPerformances.easiest.slice((easiestPage - 1) * easiestRowsPerPage, easiestPage * easiestRowsPerPage);
+    const easiestStart = totalEasiest === 0 ? 0 : (easiestPage - 1) * easiestRowsPerPage + 1;
+    const easiestEnd = Math.min(easiestPage * easiestRowsPerPage, totalEasiest);
+
+    const categoryRowsPerPage = 5;
+    const totalCategory = categoryPerformance.length;
+    const totalCategoryPages = Math.ceil(totalCategory / categoryRowsPerPage);
+    const paginatedCategory = categoryPerformance.slice((categoryPage - 1) * categoryRowsPerPage, categoryPage * categoryRowsPerPage);
+    const categoryStart = totalCategory === 0 ? 0 : (categoryPage - 1) * categoryRowsPerPage + 1;
+    const categoryEnd = Math.min(categoryPage * categoryRowsPerPage, totalCategory);
 
     // Reset pagination to page 1 on filter changes during render to avoid cascading renders
     const filterKey = `${searchQuery}_${studentStatusFilter}`;
@@ -457,10 +485,10 @@ const Analytics = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {questionPerformances.hardest.map((q, idx) => (
+                                        {paginatedHardest.map((q, idx) => (
                                             <tr key={q.id}>
                                                 <td className={styles.questionTextCol}>
-                                                    {idx === 0 && <span className={styles.missedBadge}>Most Missed</span>}
+                                                    {idx === 0 && hardestPage === 1 && <span className={styles.missedBadge}>Most Missed</span>}
                                                     <span className={styles.truncatedText} title={q.text}>
                                                         {q.text}
                                                     </span>
@@ -483,6 +511,30 @@ const Analytics = () => {
                                     </tbody>
                                 </table>
                             </div>
+                            {totalHardest > 0 && (
+                                <div className={styles.paginationRow}>
+                                    <div className={styles.paginationInfo}>
+                                        Showing <strong>{hardestStart}</strong>-<strong>{hardestEnd}</strong> of <strong>{totalHardest}</strong>
+                                    </div>
+                                    <div className={styles.paginationBtnGroup}>
+                                        <button 
+                                            onClick={() => setHardestPage(prev => Math.max(1, prev - 1))}
+                                            disabled={hardestPage === 1}
+                                            className={styles.pageBtn}
+                                        >
+                                            Prev
+                                        </button>
+                                        <span className={styles.pageInfo}>{hardestPage}/{totalHardestPages}</span>
+                                        <button 
+                                            onClick={() => setHardestPage(prev => Math.min(totalHardestPages, prev + 1))}
+                                            disabled={hardestPage === totalHardestPages}
+                                            className={styles.pageBtn}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Easiest Questions Table */}
@@ -498,7 +550,7 @@ const Analytics = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {questionPerformances.easiest.map((q) => (
+                                        {paginatedEasiest.map((q) => (
                                             <tr key={q.id}>
                                                 <td className={styles.questionTextCol}>
                                                     <span className={styles.truncatedText} title={q.text}>
@@ -523,6 +575,30 @@ const Analytics = () => {
                                     </tbody>
                                 </table>
                             </div>
+                            {totalEasiest > 0 && (
+                                <div className={styles.paginationRow}>
+                                    <div className={styles.paginationInfo}>
+                                        Showing <strong>{easiestStart}</strong>-<strong>{easiestEnd}</strong> of <strong>{totalEasiest}</strong>
+                                    </div>
+                                    <div className={styles.paginationBtnGroup}>
+                                        <button 
+                                            onClick={() => setEasiestPage(prev => Math.max(1, prev - 1))}
+                                            disabled={easiestPage === 1}
+                                            className={styles.pageBtn}
+                                        >
+                                            Prev
+                                        </button>
+                                        <span className={styles.pageInfo}>{easiestPage}/{totalEasiestPages}</span>
+                                        <button 
+                                            onClick={() => setEasiestPage(prev => Math.min(totalEasiestPages, prev + 1))}
+                                            disabled={easiestPage === totalEasiestPages}
+                                            className={styles.pageBtn}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -692,23 +768,39 @@ const Analytics = () => {
                     </TableContainer>
 
                     {/* Pagination */}
-                    {totalPages > 1 && (
+                    {totalRows > 0 && (
                         <div className={styles.paginationRow}>
-                            <button 
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                                className={styles.pageBtn}
-                            >
-                                Previous
-                            </button>
-                            <span className={styles.pageInfo}>Page {currentPage} of {totalPages}</span>
-                            <button 
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages}
-                                className={styles.pageBtn}
-                            >
-                                Next
-                            </button>
+                            <div className={styles.paginationInfo}>
+                                Showing <strong>{progressStart}</strong>-<strong>{progressEnd}</strong> of <strong>{totalRows}</strong> students
+                            </div>
+                            <div className={styles.paginationBtnGroup}>
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className={styles.pageBtn}
+                                >
+                                    Previous
+                                </button>
+                                {[...Array(totalPages)].map((_, idx) => {
+                                    const pageNum = idx + 1;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                <button 
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className={styles.pageBtn}
+                                >
+                                    Next
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -788,7 +880,7 @@ const Analytics = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {categoryPerformance.map((c, idx) => (
+                                        {paginatedCategory.map((c, idx) => (
                                             <tr key={idx}>
                                                 <td style={{ fontWeight: 600 }}>{c.subject}</td>
                                                 <td align="center">{c.quizCount}</td>
@@ -810,6 +902,30 @@ const Analytics = () => {
                                     </tbody>
                                 </table>
                             </div>
+                            {totalCategory > 0 && (
+                                <div className={styles.paginationRow}>
+                                    <div className={styles.paginationInfo}>
+                                        Showing <strong>{categoryStart}</strong>-<strong>{categoryEnd}</strong> of <strong>{totalCategory}</strong>
+                                    </div>
+                                    <div className={styles.paginationBtnGroup}>
+                                        <button 
+                                            onClick={() => setCategoryPage(prev => Math.max(1, prev - 1))}
+                                            disabled={categoryPage === 1}
+                                            className={styles.pageBtn}
+                                        >
+                                            Prev
+                                        </button>
+                                        <span className={styles.pageInfo}>{categoryPage}/{totalCategoryPages}</span>
+                                        <button 
+                                            onClick={() => setCategoryPage(prev => Math.min(totalCategoryPages, prev + 1))}
+                                            disabled={categoryPage === totalCategoryPages}
+                                            className={styles.pageBtn}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -99,6 +99,7 @@ const StudentsManagement = () => {
     const [csvValidCount, setCsvValidCount] = useState(0);
     const [csvErrorsCount, setCsvErrorsCount] = useState(0);
     const [isImporting, setIsImporting] = useState(false);
+    const [csvPage, setCsvPage] = useState(1);
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -697,36 +698,34 @@ const StudentsManagement = () => {
                     <div className={styles.paginationInfo}>
                         Showing <strong>{startRow}</strong>-<strong>{endRow}</strong> of <strong>{totalRows}</strong> students
                     </div>
-                    {totalPages > 1 && (
-                        <div className={styles.paginationBtnGroup}>
-                            <button 
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                                className={styles.pageBtn}
-                            >
-                                Previous
-                            </button>
-                            {[...Array(totalPages)].map((_, idx) => {
-                                const pageNum = idx + 1;
-                                return (
-                                    <button
-                                        key={pageNum}
-                                        onClick={() => setCurrentPage(pageNum)}
-                                        className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
-                                    >
-                                        {pageNum}
-                                    </button>
-                                );
-                            })}
-                            <button 
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages}
-                                className={styles.pageBtn}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    )}
+                    <div className={styles.paginationBtnGroup}>
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={currentPage === 1}
+                            className={styles.pageBtn}
+                        >
+                            Previous
+                        </button>
+                        {[...Array(totalPages)].map((_, idx) => {
+                            const pageNum = idx + 1;
+                            return (
+                                <button
+                                    key={pageNum}
+                                    onClick={() => setCurrentPage(pageNum)}
+                                    className={`${styles.pageNumberBtn} ${currentPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                >
+                                    {pageNum}
+                                </button>
+                            );
+                        })}
+                        <button 
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            disabled={currentPage === totalPages}
+                            className={styles.pageBtn}
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -1002,37 +1001,85 @@ const StudentsManagement = () => {
                             </div>
 
                             {/* Preview Table */}
-                            {csvPreview.length > 0 && (
-                                <div className={styles.csvPreviewWrapper}>
-                                    <div className={styles.csvSummaryText}>
-                                        <span className={styles.validText}>{csvValidCount} Valid Students</span> • 
-                                        <span className={styles.errorText} style={{marginLeft: "5px"}}>{csvErrorsCount} Errors</span>
-                                    </div>
-                                    
-                                    <div className={styles.csvPreviewTableScroll}>
-                                        <table className={styles.csvTable}>
-                                            <thead>
-                                                <tr>
-                                                    <th>Student ID</th>
-                                                    <th>Full Name</th>
-                                                    <th>Email Address</th>
-                                                    <th>Validation</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {csvPreview.map((row, idx) => (
-                                                    <tr key={idx} className={row.isValid ? styles.csvRowValid : styles.csvRowError}>
-                                                        <td>{row.student_id}</td>
-                                                        <td>{row.full_name}</td>
-                                                        <td>{row.email}</td>
-                                                        <td>{row.isValid ? "✓ Ready" : `✗ ${row.errorMsg}`}</td>
+                            {csvPreview.length > 0 && (() => {
+                                const csvRowsPerPage = 5;
+                                const totalCsvRows = csvPreview.length;
+                                const totalCsvPages = Math.ceil(totalCsvRows / csvRowsPerPage);
+                                const paginatedCsvPreview = csvPreview.slice((csvPage - 1) * csvRowsPerPage, csvPage * csvRowsPerPage);
+                                const csvStartRow = totalCsvRows === 0 ? 0 : (csvPage - 1) * csvRowsPerPage + 1;
+                                const csvEndRow = Math.min(csvPage * csvRowsPerPage, totalCsvRows);
+
+                                return (
+                                    <div className={styles.csvPreviewWrapper}>
+                                        <div className={styles.csvSummaryText}>
+                                            <span className={styles.validText}>{csvValidCount} Valid Students</span> • 
+                                            <span className={styles.errorText} style={{marginLeft: "5px"}}>{csvErrorsCount} Errors</span>
+                                        </div>
+                                        
+                                        <div className={styles.csvPreviewTableScroll}>
+                                            <table className={styles.csvTable}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Student ID</th>
+                                                        <th>Full Name</th>
+                                                        <th>Email Address</th>
+                                                        <th>Validation</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody>
+                                                    {paginatedCsvPreview.map((row, idx) => (
+                                                        <tr key={idx} className={row.isValid ? styles.csvRowValid : styles.csvRowError}>
+                                                            <td>{row.student_id}</td>
+                                                            <td>{row.full_name}</td>
+                                                            <td>{row.email}</td>
+                                                            <td>{row.isValid ? "✓ Ready" : `✗ ${row.errorMsg}`}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {totalCsvRows > 0 && (
+                                            <div className={styles.paginationRow} style={{ marginTop: "var(--space-2)" }}>
+                                                <div className={styles.paginationInfo}>
+                                                    Showing <strong>{csvStartRow}</strong>-<strong>{csvEndRow}</strong> of <strong>{totalCsvRows}</strong> rows
+                                                </div>
+                                                <div className={styles.paginationBtnGroup}>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setCsvPage(prev => Math.max(1, prev - 1))}
+                                                        disabled={csvPage === 1}
+                                                        className={styles.pageBtn}
+                                                    >
+                                                        Previous
+                                                    </button>
+                                                    {[...Array(totalCsvPages)].map((_, idx) => {
+                                                        const pageNum = idx + 1;
+                                                        return (
+                                                            <button
+                                                                type="button"
+                                                                key={pageNum}
+                                                                onClick={() => setCsvPage(pageNum)}
+                                                                className={`${styles.pageNumberBtn} ${csvPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                                            >
+                                                                {pageNum}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setCsvPage(prev => Math.min(totalCsvPages, prev + 1))}
+                                                        disabled={csvPage === totalCsvPages}
+                                                        className={styles.pageBtn}
+                                                    >
+                                                        Next
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
 
                         <div className={styles.modalFooter}>

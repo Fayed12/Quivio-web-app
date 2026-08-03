@@ -17,7 +17,7 @@ import instructorStudentsReducer from "./slices/instructorStudentsSlice";
 import chatReducer from "./slices/chatSlice";
 import quizVersionsReducer from "./slices/quizVersionsSlice";
 import todosReducer from "./slices/todosSlice";
-import themeReducer from "./slices/themeSLice";
+import themeReducer from "./slices/themeSlice";
 
 // redux
 import { configureStore } from "@reduxjs/toolkit";

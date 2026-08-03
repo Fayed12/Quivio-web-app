@@ -9,5 +9,5 @@ export { useRealtimeCertificates }      from './useRealtimeCertificates';
 export { useRealtimeCategories }        from './useRealtimeCategories';
 export { useRealtimeChat, useRealtimeChatInbox } from './useRealtimeChat';
 export { useRealtimeQuizVersions }      from './useRealtimeQuizVersions';
-export {useRealtimeTodos}               from './useRealtimeTodos';
-
+export { useRealtimeTodos }               from './useRealtimeTodos';
+export { default as usePageAnimation }     from './usePageAnimation';

@@ -6,10 +6,6 @@ import { useParams, useNavigate } from "react-router";
 // date-fns
 import { format } from "date-fns";
 
-// react-pdf
-import { pdf } from "@react-pdf/renderer";
-import CertificatePDF from "../profile/CertificatePDF";
-
 // redux
 import { fetchAttemptById, selectCurrentAttempt } from "../../../redux/slices/attemptsSlice";
 import { fetchMyCertificates, selectMyCertificates } from "../../../redux/slices/certificatesSlice";
@@ -184,6 +180,11 @@ const QuizResults = () => {
         try {
             toast.info("Generating certificate PDF...");
             
+            const [{ pdf }, { default: CertificatePDF }] = await Promise.all([
+                import("@react-pdf/renderer"),
+                import("../profile/CertificatePDF")
+            ]);
+
             // Render document to blob
             const doc = <CertificatePDF cert={cert} profileName={profile?.full_name || user?.email || "Student"} />;
             const blob = await pdf(doc).toBlob();

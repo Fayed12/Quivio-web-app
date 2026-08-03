@@ -1,19 +1,30 @@
 // redux
 import { createSlice } from "@reduxjs/toolkit";
 
+const getInitialTheme = () => {
+    if (typeof window !== "undefined" && window.localStorage) {
+        return localStorage.getItem("theme") || "light";
+    }
+    return "light";
+};
+
 const theme = createSlice({
-    name: 'theme',
+    name: "theme",
     initialState: {
-        currentTheme: localStorage.getItem('theme') || 'light',
+        currentTheme: getInitialTheme(),
     },
     reducers: {
         toggleTheme: (state) => {
-            state.currentTheme = state.currentTheme === 'light' ? 'dark' : 'light';
-            localStorage.setItem('theme', state.currentTheme);
+            state.currentTheme = state.currentTheme === "light" ? "dark" : "light";
+            if (typeof window !== "undefined" && window.localStorage) {
+                localStorage.setItem("theme", state.currentTheme);
+            }
         },
         setTheme: (state, action) => {
             state.currentTheme = action.payload;
-            localStorage.setItem('theme', state.currentTheme);
+            if (typeof window !== "undefined" && window.localStorage) {
+                localStorage.setItem("theme", state.currentTheme);
+            }
         },
     },
 });

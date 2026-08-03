@@ -19,6 +19,7 @@ const LandingPage = lazy(() => import("../pages/landing-page/landingPage"));
 const ErrorPage = lazy(() => import("../pages/error-page/errorPage"));
 const TermsPage = lazy(() => import("../pages/terms-page/TermsPage"));
 const PrivacyPage = lazy(() => import("../pages/privacy-page/PrivacyPage"));
+const VerifyCertificatePage = lazy(() => import("../pages/verify-certificate/VerifyCertificatePage"));
 
 // Lazy-loaded auth pages
 const LoginPage = lazy(() => import("../pages/authentication/login-page/LoginPage"));
@@ -129,6 +130,16 @@ const router = createBrowserRouter([
                 element: (
                     <SuspenseComponent>
                         <PrivacyPage />
+                    </SuspenseComponent>
+                ),
+            },
+
+            // Public Certificate Verification
+            {
+                path: "verify/:code",
+                element: (
+                    <SuspenseComponent>
+                        <VerifyCertificatePage />
                     </SuspenseComponent>
                 ),
             },

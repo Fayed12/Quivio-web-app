@@ -6,7 +6,7 @@ import { useNavigate } from "react-router";
 
 // react-redux
 import { useDispatch, useSelector } from "react-redux";
-import { toggleTheme } from "../../redux/slices/themeSLice";
+import { toggleTheme } from "../../redux/slices/themeSlice";
 import { selectIsAuthenticated, selectRole } from "../../redux/slices/authSlice";
 
 // components

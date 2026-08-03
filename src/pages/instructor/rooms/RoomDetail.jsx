@@ -73,6 +73,10 @@ const RoomDetail = () => {
     const [activeTab, setActiveTab] = useState("overview");
     const [studentSearch, setStudentSearch] = useState("");
     const [roomAssignments, setRoomAssignments] = useState([]);
+
+    // Pagination state
+    const [membersPage, setMembersPage] = useState(1);
+    const [quizzesPage, setQuizzesPage] = useState(1);
     
     // Modals
     const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
@@ -276,6 +280,21 @@ const RoomDetail = () => {
                m.profile?.email?.toLowerCase().includes(studentSearch.toLowerCase());
     });
 
+    // Pagination calculations
+    const membersRowsPerPage = 5;
+    const totalMembers = filteredMembers.length;
+    const totalMembersPages = Math.ceil(totalMembers / membersRowsPerPage);
+    const paginatedMembers = filteredMembers.slice((membersPage - 1) * membersRowsPerPage, membersPage * membersRowsPerPage);
+    const membersStartRow = totalMembers === 0 ? 0 : (membersPage - 1) * membersRowsPerPage + 1;
+    const membersEndRow = Math.min(membersPage * membersRowsPerPage, totalMembers);
+
+    const quizzesRowsPerPage = 5;
+    const totalQuizzes = roomAssignments.length;
+    const totalQuizzesPages = Math.ceil(totalQuizzes / quizzesRowsPerPage);
+    const paginatedAssignments = roomAssignments.slice((quizzesPage - 1) * quizzesRowsPerPage, quizzesPage * quizzesRowsPerPage);
+    const quizzesStartRow = totalQuizzes === 0 ? 0 : (quizzesPage - 1) * quizzesRowsPerPage + 1;
+    const quizzesEndRow = Math.min(quizzesPage * quizzesRowsPerPage, totalQuizzes);
+
     // Filter non-members inside the add modal
     const filteredNonMembers = nonMembers.filter(n => {
         return n.profile?.full_name?.toLowerCase().includes(bankSearch.toLowerCase()) || 
@@ -470,7 +489,10 @@ const RoomDetail = () => {
                                 type="text" 
                                 placeholder="Search room members..."
                                 value={studentSearch}
-                                onChange={(e) => setStudentSearch(e.target.value)}
+                                onChange={(e) => {
+                                    setStudentSearch(e.target.value);
+                                    setMembersPage(1);
+                                }}
                                 className={styles.searchInput}
                             />
                         </div>
@@ -492,7 +514,7 @@ const RoomDetail = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {filteredMembers.map((m) => (
+                                {paginatedMembers.map((m) => (
                                     <TableRow key={m.id} className={styles.tableRow}>
                                         <TableCell className={styles.tdCell}>
                                             <div className={styles.userNameCol}>
@@ -533,6 +555,43 @@ const RoomDetail = () => {
                             </TableBody>
                         </Table>
                     </TableContainer>
+
+                    {/* Pagination Controls */}
+                    {totalMembers > 0 && (
+                        <div className={styles.paginationRow}>
+                            <div className={styles.paginationInfo}>
+                                Showing <strong>{membersStartRow}</strong>-<strong>{membersEndRow}</strong> of <strong>{totalMembers}</strong> students
+                            </div>
+                            <div className={styles.paginationBtnGroup}>
+                                <button 
+                                    onClick={() => setMembersPage(prev => Math.max(1, prev - 1))}
+                                    disabled={membersPage === 1}
+                                    className={styles.pageBtn}
+                                >
+                                    Previous
+                                </button>
+                                {[...Array(totalMembersPages)].map((_, idx) => {
+                                    const pageNum = idx + 1;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setMembersPage(pageNum)}
+                                            className={`${styles.pageNumberBtn} ${membersPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                <button 
+                                    onClick={() => setMembersPage(prev => Math.min(totalMembersPages, prev + 1))}
+                                    disabled={membersPage === totalMembersPages}
+                                    className={styles.pageBtn}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -558,7 +617,7 @@ const RoomDetail = () => {
                                 </TableRow>
                             </TableHead>
                             <TableBody>
-                                {roomAssignments.map((ass) => (
+                                {paginatedAssignments.map((ass) => (
                                     <TableRow key={ass.id} className={styles.tableRow}>
                                         <TableCell className={styles.tdCell} style={{fontWeight: 600}}>{ass.quiz?.title}</TableCell>
                                         <TableCell align="center" className={styles.tdCell}>{ass.quiz?.category?.name || "General"}</TableCell>
@@ -586,6 +645,43 @@ const RoomDetail = () => {
                             </TableBody>
                         </Table>
                     </TableContainer>
+
+                    {/* Pagination Controls */}
+                    {totalQuizzes > 0 && (
+                        <div className={styles.paginationRow}>
+                            <div className={styles.paginationInfo}>
+                                Showing <strong>{quizzesStartRow}</strong>-<strong>{quizzesEndRow}</strong> of <strong>{totalQuizzes}</strong> assigned quizzes
+                            </div>
+                            <div className={styles.paginationBtnGroup}>
+                                <button 
+                                    onClick={() => setQuizzesPage(prev => Math.max(1, prev - 1))}
+                                    disabled={quizzesPage === 1}
+                                    className={styles.pageBtn}
+                                >
+                                    Previous
+                                </button>
+                                {[...Array(totalQuizzesPages)].map((_, idx) => {
+                                    const pageNum = idx + 1;
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            onClick={() => setQuizzesPage(pageNum)}
+                                            className={`${styles.pageNumberBtn} ${quizzesPage === pageNum ? styles.pageNumberBtnActive : ""}`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+                                <button 
+                                    onClick={() => setQuizzesPage(prev => Math.min(totalQuizzesPages, prev + 1))}
+                                    disabled={quizzesPage === totalQuizzesPages}
+                                    className={styles.pageBtn}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

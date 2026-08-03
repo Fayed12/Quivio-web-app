@@ -21,7 +21,7 @@ import {
     useRealtimeCertificates,
     useRealtimeCategories,
 } from "./hooks";
-import { selectTheme } from "./redux/slices/themeSLice";
+import { selectTheme } from "./redux/slices/themeSlice";
 import { supabase } from "./services/config/supabaseClient";
 
 // toastify
@@ -46,7 +46,9 @@ import { useDispatch, useSelector } from "react-redux";
 function RealtimeProvider() {
     // ── Notification toast handler ───────────────────────────────────────────
     const handleNewNotification = useCallback((notif) => {
-        console.info("[Notification]", notif.title, notif.body);
+        if (import.meta.env.DEV) {
+            console.info("[Notification]", notif.title, notif.body);
+        }
         const isDark = document.documentElement.classList.contains("dark");
         const options = {
             position: "top-right",
@@ -75,7 +77,9 @@ function RealtimeProvider() {
 
     // ── Achievement unlock handler ───────────────────────────────────────────
     const handleAchievementUnlock = useCallback(async (row) => {
-        console.info("[Achievement unlocked]", row);
+        if (import.meta.env.DEV) {
+            console.info("[Achievement unlocked]", row);
+        }
         
         let name = "New Achievement";
         let description = "You've unlocked a new achievement!";
@@ -95,7 +99,9 @@ function RealtimeProvider() {
                 xpReward = data.xp_reward;
             }
         } catch (err) {
-            console.error("Error fetching achievement details:", err);
+            if (import.meta.env.DEV) {
+                console.error("Error fetching achievement details:", err);
+            }
         }
 
         const isDark = document.documentElement.classList.contains("dark");

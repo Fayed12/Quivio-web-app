@@ -33,7 +33,7 @@ const ProtectedInstructorLayout = () => {
     const [isCollapsed, setIsCollapsed] = useState(() => {
         const saved = localStorage.getItem("instructor-sidebar-collapsed");
         if (saved !== null) return saved === "true";
-        return typeof window !== "undefined" ? window.innerWidth <= 1024 : false;
+        return typeof window !== "undefined" ? window.innerWidth <= 1100 : false;
     });
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(
@@ -163,8 +163,8 @@ const ProtectedInstructorLayout = () => {
             setIsMobile(mobile);
             if (mobile) {
                 setIsMobileOpen(false); // Close drawer if resizing to mobile
-            } else if (width <= 1024) {
-                setIsCollapsed(true); // Auto collapse on tablet viewports
+            } else if (width <= 1100) {
+                setIsCollapsed(true); // Auto collapse on tablet viewports (768px - 1100px)
             } else {
                 // Restore saved preference on larger screens
                 const saved = localStorage.getItem("instructor-sidebar-collapsed");
