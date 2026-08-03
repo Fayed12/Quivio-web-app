@@ -30,17 +30,42 @@ export const useAssignmentDetailData = (assignmentId) => {
                 .eq("id", assignmentId)
                 .single();
 
-            if (assErr) throw assErr;
+            if (assErr || !ass) {
+                console.error("Assignment fetch error:", assErr);
+                setLoading(false);
+                return;
+            }
             setAssignment(ass);
 
             // 2. Determine target students (from room_members or direct student_uid)
             let targetMembers = [];
             if (ass.room_id) {
-                const { data: members } = await supabase
+                // Query room_members directly without nested foreign key embedding error
+                const { data: members, error: memErr } = await supabase
                     .from("room_members")
-                    .select("*, profile:profiles(*)")
+                    .select("*")
                     .eq("room_id", ass.room_id);
-                targetMembers = members || [];
+
+                if (memErr) console.error("Error fetching room members:", memErr);
+                
+                const memberUids = (members || []).map(m => m.uid || m.student_uid || m.user_id).filter(Boolean);
+                let profileMap = new Map();
+                if (memberUids.length > 0) {
+                    const { data: profs } = await supabase
+                        .from("profiles")
+                        .select("*")
+                        .in("uid", memberUids);
+                    (profs || []).forEach(p => profileMap.set(p.uid, p));
+                }
+
+                targetMembers = (members || []).map(m => {
+                    const mUid = m.uid || m.student_uid || m.user_id;
+                    return {
+                        ...m,
+                        uid: mUid,
+                        profile: profileMap.get(mUid) || null
+                    };
+                });
             } else if (ass.student_uid) {
                 const { data: profile } = await supabase
                     .from("profiles")
@@ -53,31 +78,13 @@ export const useAssignmentDetailData = (assignmentId) => {
                 }];
             }
 
-            // Fallback: If any member is missing profile object, fetch profiles by uid
-            const missingUids = targetMembers.filter(m => !m.profile && (m.uid || m.student_uid)).map(m => m.uid || m.student_uid);
-            if (missingUids.length > 0) {
-                const { data: missingProfiles } = await supabase
-                    .from("profiles")
-                    .select("*")
-                    .in("uid", missingUids);
-                const profMap = new Map((missingProfiles || []).map(p => [p.uid, p]));
-                targetMembers = targetMembers.map(m => {
-                    const mUid = m.uid || m.student_uid;
-                    return {
-                        ...m,
-                        profile: m.profile || profMap.get(mUid) || null
-                    };
-                });
-            }
-
-            // 3. Fetch attempts for this quiz
+            // 3. Fetch attempts for this quiz (without assuming created_at column exists)
             const { data: attempts, error: attErr } = await supabase
                 .from("attempts")
                 .select("*")
-                .eq("quiz_id", ass.quiz_id)
-                .order("created_at", { ascending: false });
+                .eq("quiz_id", ass.quiz_id);
 
-            if (attErr) throw attErr;
+            if (attErr) console.error("Error fetching attempts for assignment quiz:", attErr);
 
             // 4. Map students completion status & calculate statistics
             let completedCount = 0;
@@ -111,7 +118,7 @@ export const useAssignmentDetailData = (assignmentId) => {
                 }
 
                 const submittedTime = isCompleted 
-                    ? (userAttempt.completed_at || userAttempt.submitted_at || userAttempt.created_at)
+                    ? (userAttempt.submitted_at || userAttempt.completed_at || userAttempt.started_at)
                     : null;
 
                 return {

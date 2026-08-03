@@ -7,9 +7,13 @@ import { supabase } from "../../services/config/supabaseClient";
 
 export const useAssignmentsData = () => {
     const dispatch = useDispatch();
-    const assignments = useSelector(selectMyAssignments) || [];
-    const quizzes = useSelector(selectMyQuizzes) || [];
-    const rooms = useSelector(selectMyRooms) || [];
+    const rawAssignments = useSelector(selectMyAssignments);
+    const rawQuizzes = useSelector(selectMyQuizzes);
+    const rawRooms = useSelector(selectMyRooms);
+
+    const assignments = useMemo(() => rawAssignments || [], [rawAssignments]);
+    const quizzes = useMemo(() => rawQuizzes || [], [rawQuizzes]);
+    const rooms = useMemo(() => rawRooms || [], [rawRooms]);
 
     const [completionsMap, setCompletionsMap] = useState({});
     const [loadingCompletions, setLoadingCompletions] = useState(false);
@@ -35,45 +39,68 @@ export const useAssignmentsData = () => {
                 const roomIds = assignments.map(a => a.room_id).filter(Boolean);
                 const quizIds = assignments.map(a => a.quiz_id).filter(Boolean);
 
-                if (!roomIds.length || !quizIds.length) {
+                if (!quizIds.length) {
                     setLoadingCompletions(false);
                     return;
                 }
 
-                // Fetch room members
-                const { data: members } = await supabase
-                    .from("room_members")
-                    .select("room_id, uid")
-                    .in("room_id", roomIds);
+                // Fetch room members if any room assignments exist
+                let members = [];
+                if (roomIds.length > 0) {
+                    const { data: memData } = await supabase
+                        .from("room_members")
+                        .select("room_id, uid")
+                        .in("room_id", roomIds);
+                    members = memData || [];
+                }
 
-                // Fetch attempts
+                // Fetch attempts for the quizzes
                 const { data: attempts } = await supabase
                     .from("attempts")
-                    .select("uid, quiz_id, status")
-                    .in("quiz_id", quizIds)
-                    .eq("status", "completed");
+                    .select("uid, quiz_id, status, score, completed_at, submitted_at")
+                    .in("quiz_id", quizIds);
 
                 const map = {};
                 assignments.forEach(ass => {
-                    const rId = ass.room_id || ass.room?.id;
                     const qId = ass.quiz_id || ass.quiz?.id;
-                    if (!rId || !qId) {
+                    const rId = ass.room_id || ass.room?.id;
+                    const stUid = ass.student_uid || ass.student?.uid;
+
+                    if (!qId) {
                         map[ass.id] = { completed: 0, total: 0 };
                         return;
                     }
 
-                    const roomMembers = (members || []).filter(m => m.room_id === rId);
-                    const memberUids = new Set(roomMembers.map(m => m.uid));
-                    const uniqueCompletions = new Set(
-                        (attempts || [])
-                            .filter(att => att.quiz_id === qId && memberUids.has(att.uid))
-                            .map(att => att.uid)
-                    );
-
-                    map[ass.id] = {
-                        completed: uniqueCompletions.size,
-                        total: roomMembers.length
-                    };
+                    if (stUid) {
+                        // Individual student assignment
+                        const userAttempt = (attempts || []).find(att => {
+                            const isUser = att.uid === stUid || att.student_uid === stUid;
+                            const isDone = att.status === "completed" || att.status === "submitted" || att.score !== null || att.completed_at !== null;
+                            return att.quiz_id === qId && isUser && isDone;
+                        });
+                        map[ass.id] = {
+                            completed: userAttempt ? 1 : 0,
+                            total: 1
+                        };
+                    } else if (rId) {
+                        // Classroom assignment
+                        const roomMembers = members.filter(m => m.room_id === rId);
+                        const memberUids = new Set(roomMembers.map(m => m.uid || m.student_uid).filter(Boolean));
+                        const uniqueCompletions = new Set(
+                            (attempts || [])
+                                .filter(att => {
+                                    const isDone = att.status === "completed" || att.status === "submitted" || att.score !== null || att.completed_at !== null;
+                                    return att.quiz_id === qId && memberUids.has(att.uid) && isDone;
+                                })
+                                .map(att => att.uid)
+                        );
+                        map[ass.id] = {
+                            completed: uniqueCompletions.size,
+                            total: roomMembers.length
+                        };
+                    } else {
+                        map[ass.id] = { completed: 0, total: 0 };
+                    }
                 });
                 setCompletionsMap(map);
             } catch (err) {
